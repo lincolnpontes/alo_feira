@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Gestor de Compras v3.0</title>
+    <title>Gestor de Compras v4.0</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -28,7 +28,7 @@
         body.theme-compras .header { background-color: #6a1b9a !important; }
 
         .area-conteudo { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .scroll-area { overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 80px; }
+        .scroll-area { overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 90px; }
 
         /* FILTROS */
         .filters { padding: 10px 15px; display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; border-bottom: 1px solid #eee; background: white; flex-shrink: 0; }
@@ -37,9 +37,9 @@
 
         /* LISTAS & ITENS */
         .list { padding: 0; margin: 0; list-style: none; }
-        .item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid #eee; position: relative; transition: background 0.2s; }
+        .item { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #eee; position: relative; transition: background 0.2s; }
         .item-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; flex-shrink: 0; color: white; font-size: 18px; }
-        .item-info { flex: 1; pointer-events: none; }
+        .item-info { flex: 1; pointer-events: none; display: flex; flex-direction: column; justify-content: center; }
         .item-title { font-weight: bold; font-size: 16px; margin-bottom: 2px; }
         .item-subtitle { color: #666; font-size: 12px; line-height: 1.4; }
         
@@ -50,9 +50,9 @@
         .status-pendente { border-left: 6px solid #ff9800; background-color: #fff3e0; }
         .status-comprado { border-left: 6px solid #81c784; background-color: #e8f5e9; } 
         .status-pedido_forn { border-left: 6px solid #9c27b0; background-color: #f3e5f5; } 
-        .status-recebido { border-left: 6px solid #2e7d32; background-color: #c8e6c9; } 
+        .status-entregue { border-left: 6px solid #1b5e20; background-color: #c8e6c9; } 
         
-        .item-pedido-ativo { border-left: 4px solid #1565C0; background-color: #e3f2fd; }
+        .item-pedido-rascunho { border-left: 4px solid #1565C0; background-color: #e3f2fd; }
 
         .checkbox-selecao { width: 22px; height: 22px; border: 2px solid #6a1b9a; border-radius: 4px; display: inline-block; vertical-align: middle; margin-right: 10px; position: relative; pointer-events: none; }
         .item.selecionado .checkbox-selecao::after { content: '✓'; color: #6a1b9a; position: absolute; font-size: 18px; top: -2px; left: 3px; font-weight: bold; }
@@ -65,8 +65,7 @@
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; margin-bottom: 4px; color: #555; font-weight: bold; font-size: 12px; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
-        .form-group input[type="color"] { height: 40px; padding: 0; cursor: pointer; }
-
+        
         .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
         .btn-cancel, .btn-action, .btn-danger { padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; flex: 1; text-align: center; border: none; font-size: 14px; }
         .btn-cancel { background: #eee; color: #333; }
@@ -78,11 +77,12 @@
         .fab { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; color: white; border: none; }
         .fab-zap { background-color: #25d366; }
         .fab-select { background-color: #ff9800; }
+        
+        .btn-enviar-pedidos { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 15px; background-color: #1565C0; color: white; font-weight: bold; font-size: 16px; border: none; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 90; text-align: center; }
 
         .gerenciar-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
         .gerenciar-info { flex: 1; font-size: 13px; }
         .gerenciar-actions button { background: #eee; border: none; cursor: pointer; font-size: 14px; margin-left: 5px; padding: 6px; border-radius: 4px; }
-        .color-preview { display: inline-block; padding: 2px 8px; border-radius: 12px; margin-right: 5px; border: 1px solid #ccc; font-weight: bold; font-size: 11px; }
     </style>
 </head>
 <body class="theme-pedido" oncontextmenu="return false;">
@@ -109,6 +109,8 @@
             <ul class="list" id="listaPrincipal"></ul>
         </div>
     </div>
+
+    <button class="btn-enviar-pedidos" id="btnEnviarPedidos" style="display: none;" onclick="enviarPedidosParaCompras()">Enviar Pedido(s)</button>
 
     <div class="fab-container" id="fabContainer" style="display: none;">
         <button class="fab fab-select" onclick="toggleModoSelecao()" id="btnModoSelecao">☑️</button>
@@ -183,9 +185,21 @@
             <select id="editPedidoUnidade"></select>
         </div>
         <div class="modal-actions">
-            <button class="btn-danger" onclick="excluirPedidoAtivo()">🗑️ Excluir</button>
+            <button class="btn-danger" onclick="excluirRascunho()">🗑️ Excluir Rascunho</button>
             <button class="btn-cancel" onclick="fecharModal('modalEditarPedido')">Cancelar</button>
             <button class="btn-action" onclick="salvarEdicaoPedido()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalHistoricoCompra">
+    <div class="modal">
+        <div class="modal-title">Detalhes do Pedido</div>
+        <input type="hidden" id="histCompraId">
+        <div id="histCompraLista" style="font-size:13px; margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px; max-height: 150px; overflow-y: auto;"></div>
+        <div class="modal-actions">
+            <button class="btn-danger" onclick="excluirItemCompra()">🗑️ Excluir Item</button>
+            <button class="btn-cancel" onclick="fecharModal('modalHistoricoCompra')">Voltar</button>
         </div>
     </div>
 </div>
@@ -281,10 +295,14 @@
     <div class="modal">
         <div class="modal-title">Restaurante</div>
         <div class="form-group"><label>Nome Fantasia:</label><input type="text" id="restNome"></div>
-        <div class="form-group"><label>CNPJ:</label><input type="text" id="restCNPJ" oninput="maskCNPJ(this)" maxlength="18"></div>
+        <div class="form-group"><label>CNPJ:</label><input type="text" id="restCNPJ" inputmode="numeric" oninput="maskCNPJ(this)" maxlength="18"></div>
         <div class="form-group"><label>Rua:</label><input type="text" id="restRua"></div>
-        <div class="form-group"><label>Número:</label><input type="text" id="restNum"></div>
-        <div class="form-group"><label>Bairro:</label><input type="text" id="restBairro"></div>
+        
+        <div style="display: flex; gap:10px;">
+            <div class="form-group" style="flex:1;"><label>Número:</label><input type="text" id="restNum" inputmode="numeric"></div>
+            <div class="form-group" style="flex:3;"><label>Bairro:</label><input type="text" id="restBairro"></div>
+        </div>
+        
         <div style="display: flex; gap:10px;">
             <div class="form-group" style="flex:2;"><label>Cidade:</label><input type="text" id="restCidade"></div>
             <div class="form-group" style="flex:1;"><label>UF:</label>
@@ -293,9 +311,9 @@
                 </select>
             </div>
         </div>
-        <div class="form-group"><label>Ponto de Referência:</label><input type="text" id="restPonto"></div>
+        <div class="form-group"><label>Ponto de Referência (Opcional):</label><input type="text" id="restPonto"></div>
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharForm('modalFormRestaurante', 'restaurante')">Voltar</button>
+            <button class="btn-cancel" onclick="fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display='flex';">Cancelar</button>
             <button class="btn-action" onclick="salvarRestaurante()">Salvar</button>
         </div>
     </div>
@@ -311,7 +329,7 @@
         <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" id="prodMarcasOk"></div>
         <div class="form-group"><label>Marcas Reprovadas:</label><input type="text" id="prodMarcasNok"></div>
         <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex:1;"><label>Preço (R$):</label><input type="text" id="prodPreco" oninput="maskMoeda(this)" placeholder="0,00"></div>
+            <div class="form-group" style="flex:1;"><label>Preço (R$):</label><input type="text" id="prodPreco" inputmode="numeric" oninput="maskMoeda(this)" placeholder="0,00"></div>
             <div class="form-group" style="flex:1;"><label>Data do Preço:</label><input type="date" id="prodPrecoData"></div>
         </div>
         <div class="modal-actions">
@@ -357,10 +375,10 @@
         <input type="hidden" id="fornId">
         <div class="form-group"><label>Nome da Empresa:</label><input type="text" id="fornNome"></div>
         <div class="form-group"><label>Nome do Vendedor:</label><input type="text" id="fornVendedor"></div>
-        <div class="form-group"><label>WhatsApp Vendedor:</label><input type="text" id="fornTel" oninput="maskTelefone(this)" placeholder="(00) 00000-0000" maxlength="15"></div>
+        <div class="form-group"><label>WhatsApp Vendedor:</label><input type="text" id="fornTel" inputmode="numeric" oninput="maskTelefone(this)" placeholder="(00) 00000-0000" maxlength="15"></div>
         <div style="display:flex; gap:10px;">
-            <div class="form-group" style="flex:1;"><label>Tel. Gerente:</label><input type="text" id="fornTelGerente" oninput="maskTelefone(this)" maxlength="15"></div>
-            <div class="form-group" style="flex:1;"><label>Tel. Empresa:</label><input type="text" id="fornTelEmpresa" oninput="maskTelefone(this)" maxlength="15"></div>
+            <div class="form-group" style="flex:1;"><label>Tel. Gerente:</label><input type="text" id="fornTelGerente" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
+            <div class="form-group" style="flex:1;"><label>Tel. Empresa:</label><input type="text" id="fornTelEmpresa" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
         </div>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="fecharForm('modalFormFornecedor', 'fornecedores')">Cancelar</button>
@@ -384,10 +402,10 @@
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [], produtosRiscados: [],
             configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false }
         };
-        let salvo = localStorage.getItem('gc_v30');
+        let salvo = localStorage.getItem('gc_v40');
         return salvo ? JSON.parse(salvo) : base;
     }
-    function salvarBanco() { localStorage.setItem('gc_v30', JSON.stringify(db)); }
+    function salvarBanco() { localStorage.setItem('gc_v40', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
     /* =========================================================================
@@ -404,19 +422,37 @@
     function solicitarAcessoAvancado() { fecharModal('modalPainelUnificado'); document.getElementById('senhaAvancada').value = ''; document.getElementById('modalSenhaAvancada').style.display = 'flex'; setTimeout(()=>document.getElementById('senhaAvancada').focus(), 100); }
     document.getElementById('senhaAvancada').addEventListener('input', function(e) { if(this.value === "1999") { this.blur(); this.value = ''; fecharModal('modalSenhaAvancada'); document.getElementById('configUrlApp').value = db.configs.url || ''; document.getElementById('modalConfigAvancadas').style.display = 'flex'; } });
 
-    function salvarURL() { const inputUrl = document.getElementById('configUrlApp').value.trim(); if(!inputUrl) return alert("Digite a URL!"); db.configs.url = inputUrl; salvarBanco(); puxarDaNuvem(false); }
+    function salvarURL() { 
+        const inputUrl = document.getElementById('configUrlApp').value.trim(); 
+        if(!inputUrl) return alert("Digite a URL!"); 
+        db.configs.url = inputUrl; salvarBanco(); 
+        puxarDaNuvem(true); 
+    }
+    
     async function sincronizarSalvarNuvem() {
         if(!db.configs.url) return alert("Configure a URL primeiro!");
         if(!db.configs.dadosBaixados) { if(!confirm("Você não puxou dados da nuvem. Salvar apagará a nuvem. Forçar?")) return; }
         try { const btn = document.getElementById('btnSalvarNuvem'); if(btn) btn.innerText = "Salvando..."; await fetch(db.configs.url, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'salvar_banco', dados: db }) }); db.configs.dadosBaixados = true; salvarBanco(); alert("Salvo na nuvem!"); if(btn) btn.innerText = "⬆️ Salvar na Nuvem"; } catch(e) { alert("Erro ao salvar."); }
     }
+    
     async function puxarDaNuvem(pedirConfirmacao = true) {
         if(!db.configs.url) return;
-        if(pedirConfirmacao && !confirm("Puxar substituirá os dados da tela. Continuar?")) return;
-        try { let res = await fetch(db.configs.url); let nuvemDB = await res.json(); if(nuvemDB && nuvemDB.produtos) { let modoAtual = db.configs.modo; db = nuvemDB; db.configs.modo = modoAtual; db.configs.dadosBaixados = true; salvarBanco(); if(pedirConfirmacao) { alert("Sucesso!"); location.reload(); } } } catch(e) { alert("Erro ao puxar da nuvem."); }
+        try { 
+            let res = await fetch(db.configs.url, { redirect: "follow" }); 
+            let nuvemDB = await res.json(); 
+            if(nuvemDB && nuvemDB.produtos) { 
+                let modoAtual = db.configs.modo; db = nuvemDB; db.configs.modo = modoAtual; db.configs.dadosBaixados = true; salvarBanco(); 
+                if(pedirConfirmacao) { alert("Sucesso! Banco puxado da nuvem."); location.reload(); } 
+            } else {
+                if(pedirConfirmacao) alert("A nuvem está vazia. Salve seus dados nela primeiro.");
+            }
+        } catch(e) { 
+            if(pedirConfirmacao) alert("Erro ao puxar da nuvem. Verifique a URL."); 
+        }
     }
+    
     function excluirTodoHistorico() { let frase = document.getElementById('inputExcluirTudo').value; if(frase === "quero excluir todo o histórico") { db.pedidosAtivos = []; db.produtosRiscados = []; salvarBanco(); alert("Histórico apagado localmente. Salve na nuvem para refletir lá."); document.getElementById('inputExcluirTudo').value = ''; renderizarLista(); } else { alert("Frase incorreta."); } }
-    function forcarAtualizacao() { localStorage.removeItem('gc_v30'); window.location.reload(true); }
+    function forcarAtualizacao() { localStorage.removeItem('gc_v40'); window.location.reload(true); }
 
     /* =========================================================================
        INICIALIZAÇÃO E UI
@@ -432,9 +468,13 @@
 
     function alterarModo(modo) {
         db.configs.modo = modo; modoSelecaoAtivo = false; itensSelecionadosRelatorio.clear();
-        document.body.className = `theme-${modo}`; document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#6a1b9a'; document.getElementById('fabContainer').style.display = modo === 'compras' ? 'flex' : 'none';
+        document.body.className = `theme-${modo}`; document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#6a1b9a'; 
+        
+        document.getElementById('fabContainer').style.display = modo === 'compras' ? 'flex' : 'none';
+        
         let dicas = document.getElementById('dicasCabecalho');
-        if(modo === 'pedido') { dicas.innerHTML = "👉 Deslize dir: Riscar<br>👆 Toque: Pedir"; } else { dicas.innerHTML = "👉 Mudar Status<br>⏳ Segurar: Fornecedor<br>✌️ 2 toques: Riscar"; }
+        if(modo === 'pedido') { dicas.innerHTML = "👉 Deslize dir: Riscar<br>👆 Toque: Pedir"; } else { dicas.innerHTML = "👉 Mudar Status<br>⏳ Segurar: Fornecedor<br>✌️ 2 toques: Excluir/Riscar"; }
+        
         salvarBanco(); renderizarFiltros(); renderizarLista();
     }
 
@@ -449,29 +489,72 @@
     function renderizarLista() {
         const lista = document.getElementById('listaPrincipal'); lista.innerHTML = ''; let itensMostrados = 0;
         let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = colabLogado && colabLogado.catsPermitidas && colabLogado.catsPermitidas.length > 0 ? colabLogado.catsPermitidas : null;
+        
+        let temRascunho = false;
 
         if (db.configs.modo === 'pedido') {
             db.produtos.forEach(p => {
                 if(categoriaAtual && p.categoria !== categoriaAtual) return; if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
-                const isRiscado = db.produtosRiscados.includes(p.id); const pedidoAtivo = db.pedidosAtivos.find(pa => pa.produtoId === p.id && pa.status !== 'recebido');
-                let classesExtra = isRiscado ? "riscado" : ""; let subtitulo = `Unidades: ${p.unidades.join(', ')}`;
-                if (pedidoAtivo) { classesExtra += " item-pedido-ativo"; subtitulo = `Pedido: <b>${pedidoAtivo.qtd} ${pedidoAtivo.unidade}</b>`; }
-                lista.innerHTML += `<li class="item ${classesExtra}" data-id="${p.id}" data-pedid="${pedidoAtivo ? pedidoAtivo.idUnico : ''}" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)"><div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${p.nome.charAt(0)}</div><div class="item-info"><div class="item-title">${p.nome}</div><div class="item-subtitle">${subtitulo}</div></div></li>`;
+                
+                // Puxar pedidos deste produto (rascunhos, pendentes, etc, que NÃO foram excluídos há mais de 7 dias)
+                const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id);
+                let isRiscado = db.produtosRiscados.includes(p.id);
+                
+                // Se o último for excluído há menos de 7 dias, mostra riscado
+                let ultimo = pedidosDeste[pedidosDeste.length-1];
+                if(ultimo && ultimo.excluido) {
+                    const diffDays = (Date.now() - ultimo.dataExclusao) / (1000 * 60 * 60 * 24);
+                    if(diffDays < 7) isRiscado = true;
+                }
+
+                // Identifica o ativo (não excluído e não entregue)
+                const pedidoAtivo = pedidosDeste.find(pa => !pa.excluido && pa.status !== 'entregue');
+                
+                let classesExtra = isRiscado ? "riscado " : ""; 
+                let infoDireita = "";
+                let subtitulo = `Unidades: ${p.unidades.join(', ')}`;
+                
+                if (pedidoAtivo) { 
+                    if(pedidoAtivo.status === 'rascunho') {
+                        classesExtra += "item-pedido-rascunho"; 
+                        temRascunho = true;
+                    } else {
+                        classesExtra += "item-pedido-ativo"; 
+                    }
+                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><span style="font-size: 10px; color: #1565C0; margin-bottom: 2px;">Há pedido(s) ativo(s)</span><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${pedidoAtivo.qtd} ${pedidoAtivo.unidade}</span></div>`;
+                }
+
+                lista.innerHTML += `
+                    <li class="item ${classesExtra}" data-id="${p.id}" data-pedid="${pedidoAtivo ? pedidoAtivo.idUnico : ''}" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">
+                        <div style="display: flex; align-items: center; flex: 1;">
+                            <div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${p.nome.charAt(0)}</div>
+                            <div class="item-info">
+                                <div class="item-title">${p.nome}</div>
+                                <div class="item-subtitle">${subtitulo}</div>
+                            </div>
+                        </div>
+                        ${infoDireita}
+                    </li>`;
                 itensMostrados++;
             });
+            
+            document.getElementById('btnEnviarPedidos').style.display = temRascunho ? 'block' : 'none';
+
         } else {
-            db.pedidosAtivos.filter(pa => pa.status !== 'recebido').forEach(pa => {
+            // MODO COMPRAS
+            db.pedidosAtivos.filter(pa => !pa.excluido && pa.status !== 'rascunho').forEach(pa => {
                 const p = db.produtos.find(prod => prod.id === pa.produtoId); if(!p) return; if(categoriaAtual && p.categoria !== categoriaAtual) return;
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
-                let emojiStatus = pa.status === 'pendente' ? '⏳' : (pa.status === 'comprado' ? '✅' : (pa.status === 'pedido_forn' ? '📦' : ''));
+                let emojiStatus = pa.status === 'pendente' ? '⏳' : (pa.status === 'comprado' ? '✅' : (pa.status === 'pedido_forn' ? '📦' : (pa.status === 'entregue' ? '✔️' : '')));
                 let isSelected = itensSelecionadosRelatorio.has(pa.idUnico); let htmlSelecao = modoSelecaoAtivo ? `<div class="checkbox-selecao"></div>` : '';
                 
-                let histPreco = (p.historicoPrecos && p.historicoPrecos.length > 0) ? p.historicoPrecos[p.historicoPrecos.length-1].preco : 0;
                 let tituloItem = `${p.nome} - ${pa.qtd} ${pa.unidade}`;
                 let statusText = pa.status === 'pedido_forn' ? 'Pedido Fornecedor' : pa.status;
+                
+                let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado')) ? ' <span style="font-size:10px; color:#d32f2f; font-weight:bold;">(Editado)</span>' : '';
 
-                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''} ${pa.riscado ? 'riscado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info"><div class="item-title">${tituloItem}</div><div class="item-subtitle">Marcas OK: ${p.marcasAprovadas || 'N/A'}<br><b style="text-transform: uppercase;">Status: ${statusText}</b></div></div></li>`;
+                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info"><div class="item-title">${tituloItem}${editIndicador}</div><div class="item-subtitle">Marcas OK: ${p.marcasAprovadas || 'N/A'}<br><b style="text-transform: uppercase;">Status: ${statusText}</b></div></div></li>`;
                 itensMostrados++;
             });
         }
@@ -499,36 +582,44 @@
     }
 
     function acaoToqueSimples(el) { if(db.configs.modo === 'pedido') { const pId = el.getAttribute('data-id'); const pedId = el.getAttribute('data-pedid'); if(!pedId) abrirModalFazerPedido(pId); } }
+    
     function acaoDuploToque(el) {
         if(db.configs.modo === 'pedido') { const pedId = el.getAttribute('data-pedid'); if(pedId) abrirModalEditarPedido(pedId); } 
         else {
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
             if(pa) {
-                if(confirm(pa.riscado ? "Desfazer risco (reativar item)?" : "Marcar item como riscado/excluído temporário?")) { pa.riscado = !pa.riscado; salvarBanco(); renderizarLista(); }
+                // Modo Compras: Mostrar histórico de edições e botão excluir
+                abrirHistoricoCompra(paId);
             }
         }
     }
+    
     function acaoSegurar(el) {
-        if(db.configs.modo === 'compras') { const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && (pa.status === 'pendente' || pa.status === 'comprado')) { pa.status = 'pedido_forn'; salvarBanco(); renderizarLista(); } }
+        if(db.configs.modo === 'compras') { const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa) { pa.status = 'pedido_forn'; salvarBanco(); renderizarLista(); } }
     }
+    
     function acaoDeslizarDireita(el) {
         if(db.configs.modo === 'pedido') { const pId = el.getAttribute('data-id'); if(!db.produtosRiscados.includes(pId)) { db.produtosRiscados.push(pId); salvarBanco(); renderizarLista(); } } 
         else {
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
             if(pa) {
                 if (pa.status === 'pendente') { pa.status = 'comprado'; }
-                else if (pa.status === 'pedido_forn') { pa.status = 'recebido'; }
+                else if (pa.status === 'pedido_forn') { pa.status = 'entregue'; }
                 salvarBanco(); renderizarLista();
             }
         }
     }
+    
     function acaoDeslizarEsquerda(el) {
         if(db.configs.modo === 'pedido') { const pId = el.getAttribute('data-id'); db.produtosRiscados = db.produtosRiscados.filter(id => id !== pId); salvarBanco(); renderizarLista(); } 
-        else { const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && pa.status === 'comprado') { pa.status = 'pendente'; salvarBanco(); renderizarLista(); } }
+        else { 
+            const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
+            if(pa) { pa.status = 'pendente'; salvarBanco(); renderizarLista(); } 
+        }
     }
 
     /* =========================================================================
-       PEDIDOS
+       OPERAÇÕES DE PEDIDO (RASCUNHO -> COMPRAS)
        ========================================================================= */
     function abrirModalFazerPedido(pId) {
         const p = db.produtos.find(x => x.id === pId); if(!p) return;
@@ -536,14 +627,82 @@
         const selUn = document.getElementById('pedidoUnidade'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}">${u}</option>`);
         document.getElementById('modalFazerPedido').style.display = 'flex'; setTimeout(()=> document.getElementById('pedidoQtd').focus(), 100);
     }
-    function confirmarPedido() { const pId = document.getElementById('pedidoIdProduto').value; const qtd = parseFloat(document.getElementById('pedidoQtd').value); const un = document.getElementById('pedidoUnidade').value; if(!qtd || qtd <= 0) return alert("Inválido."); db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, status: 'pendente', riscado: false, colaboradorId: db.configs.colabAtivoId }); salvarBanco(); fecharModal('modalFazerPedido'); renderizarLista(); }
     
-    function abrirModalEditarPedido(paId) { const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); document.getElementById('editPedidoId').value = paId; document.getElementById('editPedidoQtd').value = pa.qtd; const selUn = document.getElementById('editPedidoUnidade'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); document.getElementById('modalEditarPedido').style.display = 'flex'; }
-    function salvarEdicaoPedido() { const paId = document.getElementById('editPedidoId').value; const qtd = parseFloat(document.getElementById('editPedidoQtd').value); if(!qtd || qtd <= 0) return alert("Inválido."); let pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa) { pa.qtd = qtd; pa.unidade = document.getElementById('editPedidoUnidade').value; salvarBanco(); } fecharModal('modalEditarPedido'); renderizarLista(); }
-    function excluirPedidoAtivo() { const paId = document.getElementById('editPedidoId').value; db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== paId); salvarBanco(); fecharModal('modalEditarPedido'); renderizarLista(); }
+    function confirmarPedido() { 
+        const pId = document.getElementById('pedidoIdProduto').value; const qtd = parseFloat(document.getElementById('pedidoQtd').value); const un = document.getElementById('pedidoUnidade').value; 
+        if(!qtd || qtd <= 0) return alert("Inválido."); 
+        
+        // Entra como Rascunho
+        db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId }); 
+        salvarBanco(); fecharModal('modalFazerPedido'); renderizarLista(); 
+    }
+    
+    function abrirModalEditarPedido(paId) { 
+        const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); 
+        document.getElementById('editPedidoId').value = paId; document.getElementById('editPedidoQtd').value = pa.qtd; 
+        const selUn = document.getElementById('editPedidoUnidade'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); 
+        document.getElementById('modalEditarPedido').style.display = 'flex'; 
+    }
+    
+    function salvarEdicaoPedido() { 
+        const paId = document.getElementById('editPedidoId').value; const qtd = parseFloat(document.getElementById('editPedidoQtd').value); 
+        if(!qtd || qtd <= 0) return alert("Inválido."); 
+        let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
+        if(pa) { 
+            pa.qtd = qtd; pa.unidade = document.getElementById('editPedidoUnidade').value; 
+            pa.historico = pa.historico || [];
+            pa.historico.push({ data: new Date().toLocaleString(), msg: `Editado para: ${qtd} ${pa.unidade}` });
+            salvarBanco(); 
+        } 
+        fecharModal('modalEditarPedido'); renderizarLista(); 
+    }
+    
+    function excluirRascunho() { 
+        const paId = document.getElementById('editPedidoId').value; 
+        let pa = db.pedidosAtivos.find(x => x.idUnico === paId);
+        if(pa) {
+            pa.excluido = true; pa.dataExclusao = Date.now();
+        }
+        salvarBanco(); fecharModal('modalEditarPedido'); renderizarLista(); 
+    }
+
+    function enviarPedidosParaCompras() {
+        let rascunhos = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido);
+        rascunhos.forEach(pa => {
+            pa.status = 'pendente';
+        });
+        salvarBanco();
+        alert("Pedidos enviados para compras com sucesso!");
+        renderizarLista();
+    }
 
     /* =========================================================================
-       RELATÓRIO
+       HISTÓRICO NO MODO COMPRAS
+       ========================================================================= */
+    function abrirHistoricoCompra(paId) {
+        const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return;
+        document.getElementById('histCompraId').value = paId;
+        let html = "<ul>";
+        if(pa.historico) pa.historico.forEach(h => { html += `<li>${h.data} - ${h.msg}</li>`; });
+        else html += "<li>Sem histórico</li>";
+        html += "</ul>";
+        document.getElementById('histCompraLista').innerHTML = html;
+        document.getElementById('modalHistoricoCompra').style.display = 'flex';
+    }
+
+    function excluirItemCompra() {
+        const paId = document.getElementById('histCompraId').value; 
+        let pa = db.pedidosAtivos.find(x => x.idUnico === paId);
+        if(pa) {
+            if(confirm("Excluir item definitivamente? Ele ficará riscado no Modo Pedido por 7 dias.")) {
+                pa.excluido = true; pa.dataExclusao = Date.now();
+                salvarBanco(); fecharModal('modalHistoricoCompra'); renderizarLista();
+            }
+        }
+    }
+
+    /* =========================================================================
+       RELATÓRIO WHATSAPP
        ========================================================================= */
     function abrirModalRelatorio() {
         if(itensSelecionadosRelatorio.size === 0) return alert("Selecione os itens marcando o botão ☑️ primeiro.");
@@ -555,7 +714,8 @@
         const fornId = document.getElementById('relatFornecedor').value; const colabId = document.getElementById('relatColaborador').value;
         const res = db.restaurante; const colab = db.colaboradores.find(c => c.id === colabId) || {nome:"", telefone:""}; const forn = db.fornecedores.find(f => f.id === fornId);
         
-        let texto = `> *${res.nome.toUpperCase()}*\n> CNPJ: ${res.cnpj}\n> Contato: ${colab.nome}\n> Telefone: ${colab.telefone}\n> End.: ${res.rua}, ${res.numero}\n> (${res.bairro} - ${res.cidade} / ${res.uf})\n> Ponto de referência: ${res.ponto}\n\n`;
+        let pontoOpt = res.ponto ? `\n> Ponto de referência: ${res.ponto}` : '';
+        let texto = `> *${res.nome.toUpperCase()}*\n> CNPJ: ${res.cnpj}\n> Contato: ${colab.nome}\n> Telefone: ${colab.telefone}\n> End.: ${res.rua}, ${res.numero}\n> (${res.bairro} - ${res.cidade} / ${res.uf})${pontoOpt}\n\n`;
         texto += `${forn ? '*' + forn.nome.toUpperCase() + '*\n\n' : ''}*Itens para cotação:*\n\n`;
 
         Array.from(itensSelecionadosRelatorio).forEach(idUnico => {
@@ -566,8 +726,7 @@
         document.getElementById('relatTexto').value = texto;
         
         const btnZap = document.querySelector('.btn-zap');
-        if(forn && forn.telefone) { btnZap.innerText = `💬 Enviar Whatsapp`; btnZap.dataset.tel = forn.telefone; } 
-        else { btnZap.innerText = "💬 Enviar Whatsapp"; btnZap.dataset.tel = ""; }
+        if(forn && forn.telefone) { btnZap.dataset.tel = forn.telefone; } else { btnZap.dataset.tel = ""; }
     }
     function enviarWhatsAppAPI() {
         const texto = document.getElementById('relatTexto').value; const tel = document.querySelector('.btn-zap').dataset.tel;
