@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Gestor de Compras v4.0</title>
+    <title>Gestor de Compras v5.0</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -44,7 +44,7 @@
         .item-subtitle { color: #666; font-size: 12px; line-height: 1.4; }
         
         /* STATUS & CORES */
-        .riscado { opacity: 0.4; }
+        .riscado { opacity: 0.5; }
         .riscado .item-title { text-decoration: line-through; }
         
         .status-pendente { border-left: 6px solid #ff9800; background-color: #fff3e0; }
@@ -73,6 +73,14 @@
         .btn-danger { background: #d32f2f; color: white; }
         .btn-outline { background: transparent; border: 1px solid #1565C0; color: #1565C0; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 8px; text-align: left; }
         
+        /* TOGGLE SWITCHES (Elipse com bola) */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; margin-right: 10px; vertical-align: middle; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        input:checked + .slider { background-color: #1565C0; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
         .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 90; }
         .fab { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; color: white; border: none; }
         .fab-zap { background-color: #25d366; }
@@ -153,39 +161,26 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="modalFazerPedido">
-    <div class="modal">
-        <div class="modal-title" id="pedidoTitulo">Pedir Item</div>
-        <input type="hidden" id="pedidoIdProduto">
-        <div class="form-group">
-            <label>Quantidade:</label>
-            <input type="number" id="pedidoQtd" step="0.01">
-        </div>
-        <div class="form-group">
-            <label>Unidade:</label>
-            <select id="pedidoUnidade"></select>
-        </div>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharModal('modalFazerPedido')">Cancelar</button>
-            <button class="btn-action" onclick="confirmarPedido()">Adicionar</button>
-        </div>
-    </div>
-</div>
-
 <div class="modal-overlay" id="modalEditarPedido">
     <div class="modal">
-        <div class="modal-title">Editar Pedido</div>
+        <div class="modal-title">Detalhes do Pedido</div>
         <input type="hidden" id="editPedidoId">
-        <div class="form-group">
-            <label>Nova Quantidade:</label>
-            <input type="number" id="editPedidoQtd" step="0.01">
+        <div style="display: flex; gap:10px;">
+            <div class="form-group" style="flex:1;">
+                <label>Quantidade:</label>
+                <input type="number" id="editPedidoQtd" step="0.01">
+            </div>
+            <div class="form-group" style="flex:1;">
+                <label>Unidade:</label>
+                <select id="editPedidoUnidade"></select>
+            </div>
         </div>
         <div class="form-group">
-            <label>Unidade:</label>
-            <select id="editPedidoUnidade"></select>
+            <label>Observação (Opcional):</label>
+            <input type="text" id="editPedidoObs" placeholder="Ex: maduro, marca tal...">
         </div>
         <div class="modal-actions">
-            <button class="btn-danger" onclick="excluirRascunho()">🗑️ Excluir Rascunho</button>
+            <button class="btn-danger" onclick="excluirRascunho()">🗑️ Desmarcar</button>
             <button class="btn-cancel" onclick="fecharModal('modalEditarPedido')">Cancelar</button>
             <button class="btn-action" onclick="salvarEdicaoPedido()">Salvar</button>
         </div>
@@ -194,7 +189,7 @@
 
 <div class="modal-overlay" id="modalHistoricoCompra">
     <div class="modal">
-        <div class="modal-title">Detalhes do Pedido</div>
+        <div class="modal-title">Detalhes da Compra</div>
         <input type="hidden" id="histCompraId">
         <div id="histCompraLista" style="font-size:13px; margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px; max-height: 150px; overflow-y: auto;"></div>
         <div class="modal-actions">
@@ -235,50 +230,29 @@
         <button class="btn-outline" onclick="abrirGerenciar('fornecedores')">🚚 Gerenciar Fornecedores</button>
         
         <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
-        <div class="form-group">
-            <label><input type="checkbox" id="configExigirColab" onchange="toggleExigirColab()"> Exigir Identificação de Colaborador</label>
+        <div class="form-group" style="display:flex; align-items:center;">
+            <label class="switch"><input type="checkbox" id="configExigirColab" onchange="toggleExigirColab()"><span class="slider"></span></label>
+            <span style="font-weight:bold; font-size:14px; color:#555; padding-top:2px;">Exigir Identificação de Colaborador</span>
         </div>
         
         <h3 style="font-size: 16px; color: #d32f2f; margin-top: 25px; margin-bottom: 10px;">Avançado</h3>
         <button class="btn-danger" style="width: 100%; margin-bottom: 10px;" onclick="solicitarAcessoAvancado()">⚠️ Configurações Avançadas</button>
         
-        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalPainelUnificado')">Fechar</button></div>
+        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalPainelUnificado'); renderizarLista();">Fechar</button></div>
     </div>
 </div>
 
 <div class="modal-overlay" id="modalConfigAvancadas">
     <div class="modal" style="max-height: 90vh; overflow-y: auto;">
         <div class="modal-title" style="color:#d32f2f;">Zona de Risco</div>
-        
-        <h3 style="font-size: 15px; color: #333; margin-top: 0; margin-bottom: 10px;">Sincronização e Nuvem</h3>
-        <div class="form-group">
-            <label>URL Google Script:</label>
-            <input type="text" id="configUrlApp" placeholder="https://script.google.com/macros/s/...">
-            <button class="btn-action" style="width: 100%; margin-top: 10px; background-color: #4CAF50;" onclick="salvarURL()">💾 Salvar URL e Puxar Dados</button>
-        </div>
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button id="btnSalvarNuvem" class="btn-outline" style="margin: 0; flex: 1; justify-content: center; font-size: 13px; border-color:#2e7d32; color:#2e7d32;" onclick="sincronizarSalvarNuvem()">⬆️ Salvar na Nuvem</button>
-        </div>
-
+        <div class="form-group"><label>URL Google Script:</label><input type="text" id="configUrlApp" placeholder="https://script.google.com/macros/s/..."><button class="btn-action" style="width: 100%; margin-top: 10px; background-color: #4CAF50;" onclick="salvarURL()">💾 Salvar URL e Puxar Dados</button></div>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;"><button id="btnSalvarNuvem" class="btn-outline" style="margin: 0; flex: 1; justify-content: center; font-size: 13px; border-color:#2e7d32; color:#2e7d32;" onclick="sincronizarSalvarNuvem()">⬆️ Salvar na Nuvem</button></div>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-
         <p style="font-size: 13px; color: #555; margin-bottom: 5px;">Atenção: A ação abaixo é irreversível.</p>
-        <div class="form-group">
-            <label>Para apagar todos os pedidos, digite: <b>quero excluir todo o histórico</b></label>
-            <input type="text" id="inputExcluirTudo" placeholder="digite a frase exata">
-            <button class="btn-danger" style="margin-top: 10px; width: 100%;" onclick="excluirTodoHistorico()">🗑️ Apagar Todo o Histórico</button>
-        </div>
-
+        <div class="form-group"><label>Para apagar todos os pedidos, digite: <b>quero excluir todo o histórico</b></label><input type="text" id="inputExcluirTudo" placeholder="digite a frase exata"><button class="btn-danger" style="margin-top: 10px; width: 100%;" onclick="excluirTodoHistorico()">🗑️ Apagar Todo o Histórico</button></div>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-
-        <div class="form-group">
-            <label>Problemas de Cache ou Atualização?</label>
-            <button class="btn-outline" style="border-color:#fbc02d; color:#fbc02d; width: 100%;" onclick="forcarAtualizacao()">🔄 Forçar Atualização (Limpar Cache)</button>
-        </div>
-
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharModal('modalConfigAvancadas'); document.getElementById('modalPainelUnificado').style.display='flex';">Voltar</button>
-        </div>
+        <div class="form-group"><label>Problemas de Cache ou Atualização?</label><button class="btn-outline" style="border-color:#fbc02d; color:#fbc02d; width: 100%;" onclick="forcarAtualizacao()">🔄 Forçar Atualização (Limpar Cache)</button></div>
+        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalConfigAvancadas'); document.getElementById('modalPainelUnificado').style.display='flex';">Voltar</button></div>
     </div>
 </div>
 
@@ -287,7 +261,7 @@
         <div class="modal-title" id="tituloListagem">Gerenciar</div>
         <button class="btn-action" id="btnNovoListagem" style="width: 100%; margin-bottom: 15px;">+ Novo</button>
         <div id="conteudoListagem" style="max-height: 50vh; overflow-y: auto;"></div>
-        <div class="modal-actions"><button class="btn-cancel" onclick="voltarParaPainel()">Voltar</button></div>
+        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalListagem'); document.getElementById('modalPainelUnificado').style.display='flex';">Voltar</button></div>
     </div>
 </div>
 
@@ -297,25 +271,10 @@
         <div class="form-group"><label>Nome Fantasia:</label><input type="text" id="restNome"></div>
         <div class="form-group"><label>CNPJ:</label><input type="text" id="restCNPJ" inputmode="numeric" oninput="maskCNPJ(this)" maxlength="18"></div>
         <div class="form-group"><label>Rua:</label><input type="text" id="restRua"></div>
-        
-        <div style="display: flex; gap:10px;">
-            <div class="form-group" style="flex:1;"><label>Número:</label><input type="text" id="restNum" inputmode="numeric"></div>
-            <div class="form-group" style="flex:3;"><label>Bairro:</label><input type="text" id="restBairro"></div>
-        </div>
-        
-        <div style="display: flex; gap:10px;">
-            <div class="form-group" style="flex:2;"><label>Cidade:</label><input type="text" id="restCidade"></div>
-            <div class="form-group" style="flex:1;"><label>UF:</label>
-                <select id="restUF">
-                    <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option>
-                </select>
-            </div>
-        </div>
+        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:1;"><label>Número:</label><input type="text" id="restNum" inputmode="numeric"></div><div class="form-group" style="flex:3;"><label>Bairro:</label><input type="text" id="restBairro"></div></div>
+        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:2;"><label>Cidade:</label><input type="text" id="restCidade"></div><div class="form-group" style="flex:1;"><label>UF:</label><select id="restUF"><option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select></div></div>
         <div class="form-group"><label>Ponto de Referência (Opcional):</label><input type="text" id="restPonto"></div>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display='flex';">Cancelar</button>
-            <button class="btn-action" onclick="salvarRestaurante()">Salvar</button>
-        </div>
+        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display='flex';">Cancelar</button><button class="btn-action" onclick="salvarRestaurante()">Salvar</button></div>
     </div>
 </div>
 
@@ -325,17 +284,17 @@
         <input type="hidden" id="prodId">
         <div class="form-group"><label>Nome:</label><input type="text" id="prodNome"></div>
         <div class="form-group"><label>Categoria:</label><select id="prodCategoria"></select></div>
-        <div class="form-group"><label>Unidades (separadas por vírgula):</label><input type="text" id="prodUnidades" placeholder="ex: kg, cx, pct"></div>
+        <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex:1;"><label>Qtd Padrão:</label><input type="number" id="prodQtdPadrao" step="0.01" placeholder="Ex: 6"></div>
+            <div class="form-group" style="flex:2;"><label>Unidades (vírgula):</label><input type="text" id="prodUnidades" placeholder="ex: kg, cx, pct"></div>
+        </div>
         <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" id="prodMarcasOk"></div>
         <div class="form-group"><label>Marcas Reprovadas:</label><input type="text" id="prodMarcasNok"></div>
         <div style="display: flex; gap: 10px;">
             <div class="form-group" style="flex:1;"><label>Preço (R$):</label><input type="text" id="prodPreco" inputmode="numeric" oninput="maskMoeda(this)" placeholder="0,00"></div>
             <div class="form-group" style="flex:1;"><label>Data do Preço:</label><input type="date" id="prodPrecoData"></div>
         </div>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharForm('modalFormProduto', 'produtos')">Cancelar</button>
-            <button class="btn-action" onclick="salvarProduto()">Salvar</button>
-        </div>
+        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormProduto'); abrirGerenciar('produtos');">Cancelar</button><button class="btn-action" onclick="salvarProduto()">Salvar</button></div>
     </div>
 </div>
 
@@ -348,10 +307,7 @@
             <div class="form-group" style="flex:1;"><label>Cor Fundo:</label><input type="color" id="catCor"></div>
             <div class="form-group" style="flex:1;"><label>Cor Texto:</label><input type="color" id="catCorTexto"></div>
         </div>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharForm('modalFormCategoria', 'categorias')">Cancelar</button>
-            <button class="btn-action" onclick="salvarCategoria()">Salvar</button>
-        </div>
+        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormCategoria'); abrirGerenciar('categorias');">Cancelar</button><button class="btn-action" onclick="salvarCategoria()">Salvar</button></div>
     </div>
 </div>
 
@@ -361,11 +317,10 @@
         <input type="hidden" id="colabId">
         <div class="form-group"><label>Nome:</label><input type="text" id="colabNome"></div>
         <div class="form-group"><label>Senha:</label><input type="password" id="colabSenha" placeholder="Deixe em branco p/ 123"></div>
-        <div class="form-group"><label>Categorias Permitidas:</label><div id="colabCategoriasBox" style="font-size:13px; max-height:100px; overflow-y:auto; border:1px solid #ccc; padding:5px; border-radius:4px;"></div></div>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharForm('modalFormColaborador', 'colaboradores')">Cancelar</button>
-            <button class="btn-action" onclick="salvarColaborador()">Salvar</button>
+        <div class="form-group"><label>Categorias Permitidas:</label>
+            <div id="colabCategoriasBox" style="font-size:14px; max-height:150px; overflow-y:auto; border:1px solid #ccc; padding:10px; border-radius:4px; background:#fafafa;"></div>
         </div>
+        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores');">Cancelar</button><button class="btn-action" onclick="salvarColaborador()">Salvar</button></div>
     </div>
 </div>
 
@@ -374,16 +329,14 @@
         <div class="modal-title">Fornecedor</div>
         <input type="hidden" id="fornId">
         <div class="form-group"><label>Nome da Empresa:</label><input type="text" id="fornNome"></div>
-        <div class="form-group"><label>Nome do Vendedor:</label><input type="text" id="fornVendedor"></div>
+        <div class="form-group"><label>Nome do Vendedor (Opcional):</label><input type="text" id="fornVendedor"></div>
         <div class="form-group"><label>WhatsApp Vendedor:</label><input type="text" id="fornTel" inputmode="numeric" oninput="maskTelefone(this)" placeholder="(00) 00000-0000" maxlength="15"></div>
+        <div class="form-group"><label>Nome do Gerente (Opcional):</label><input type="text" id="fornNomeGerente"></div>
         <div style="display:flex; gap:10px;">
-            <div class="form-group" style="flex:1;"><label>Tel. Gerente:</label><input type="text" id="fornTelGerente" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
-            <div class="form-group" style="flex:1;"><label>Tel. Empresa:</label><input type="text" id="fornTelEmpresa" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
+            <div class="form-group" style="flex:1;"><label>Tel. Gerente (Opcional):</label><input type="text" id="fornTelGerente" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
+            <div class="form-group" style="flex:1;"><label>Tel. Empresa (Opcional):</label><input type="text" id="fornTelEmpresa" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
         </div>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharForm('modalFormFornecedor', 'fornecedores')">Cancelar</button>
-            <button class="btn-action" onclick="salvarFornecedor()">Salvar</button>
-        </div>
+        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores');">Cancelar</button><button class="btn-action" onclick="salvarFornecedor()">Salvar</button></div>
     </div>
 </div>
 
@@ -399,13 +352,13 @@
     function carregarBanco() {
         let base = {
             restaurante: { nome: "", cnpj: "", rua: "", numero: "", bairro: "", cidade: "", uf: "PB", ponto: "" },
-            categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [], produtosRiscados: [],
+            categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
             configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false }
         };
-        let salvo = localStorage.getItem('gc_v40');
+        let salvo = localStorage.getItem('gc_v50');
         return salvo ? JSON.parse(salvo) : base;
     }
-    function salvarBanco() { localStorage.setItem('gc_v40', JSON.stringify(db)); }
+    function salvarBanco() { localStorage.setItem('gc_v50', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
     /* =========================================================================
@@ -422,59 +375,36 @@
     function solicitarAcessoAvancado() { fecharModal('modalPainelUnificado'); document.getElementById('senhaAvancada').value = ''; document.getElementById('modalSenhaAvancada').style.display = 'flex'; setTimeout(()=>document.getElementById('senhaAvancada').focus(), 100); }
     document.getElementById('senhaAvancada').addEventListener('input', function(e) { if(this.value === "1999") { this.blur(); this.value = ''; fecharModal('modalSenhaAvancada'); document.getElementById('configUrlApp').value = db.configs.url || ''; document.getElementById('modalConfigAvancadas').style.display = 'flex'; } });
 
-    function salvarURL() { 
-        const inputUrl = document.getElementById('configUrlApp').value.trim(); 
-        if(!inputUrl) return alert("Digite a URL!"); 
-        db.configs.url = inputUrl; salvarBanco(); 
-        puxarDaNuvem(true); 
-    }
-    
+    function salvarURL() { const inputUrl = document.getElementById('configUrlApp').value.trim(); if(!inputUrl) return alert("Digite a URL!"); db.configs.url = inputUrl; salvarBanco(); puxarDaNuvem(true); }
     async function sincronizarSalvarNuvem() {
         if(!db.configs.url) return alert("Configure a URL primeiro!");
         if(!db.configs.dadosBaixados) { if(!confirm("Você não puxou dados da nuvem. Salvar apagará a nuvem. Forçar?")) return; }
         try { const btn = document.getElementById('btnSalvarNuvem'); if(btn) btn.innerText = "Salvando..."; await fetch(db.configs.url, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'salvar_banco', dados: db }) }); db.configs.dadosBaixados = true; salvarBanco(); alert("Salvo na nuvem!"); if(btn) btn.innerText = "⬆️ Salvar na Nuvem"; } catch(e) { alert("Erro ao salvar."); }
     }
-    
     async function puxarDaNuvem(pedirConfirmacao = true) {
         if(!db.configs.url) return;
-        try { 
-            let res = await fetch(db.configs.url, { redirect: "follow" }); 
-            let nuvemDB = await res.json(); 
-            if(nuvemDB && nuvemDB.produtos) { 
-                let modoAtual = db.configs.modo; db = nuvemDB; db.configs.modo = modoAtual; db.configs.dadosBaixados = true; salvarBanco(); 
-                if(pedirConfirmacao) { alert("Sucesso! Banco puxado da nuvem."); location.reload(); } 
-            } else {
-                if(pedirConfirmacao) alert("A nuvem está vazia. Salve seus dados nela primeiro.");
-            }
-        } catch(e) { 
-            if(pedirConfirmacao) alert("Erro ao puxar da nuvem. Verifique a URL."); 
-        }
+        try { let res = await fetch(db.configs.url, { redirect: "follow" }); let nuvemDB = await res.json(); if(nuvemDB && nuvemDB.produtos) { let modoAtual = db.configs.modo; db = nuvemDB; db.configs.modo = modoAtual; db.configs.dadosBaixados = true; salvarBanco(); if(pedirConfirmacao) { alert("Sucesso! Banco puxado da nuvem."); location.reload(); } } else { if(pedirConfirmacao) alert("A nuvem está vazia. Salve seus dados nela primeiro."); } } catch(e) { if(pedirConfirmacao) alert("Erro ao puxar da nuvem. Verifique a URL."); }
     }
-    
-    function excluirTodoHistorico() { let frase = document.getElementById('inputExcluirTudo').value; if(frase === "quero excluir todo o histórico") { db.pedidosAtivos = []; db.produtosRiscados = []; salvarBanco(); alert("Histórico apagado localmente. Salve na nuvem para refletir lá."); document.getElementById('inputExcluirTudo').value = ''; renderizarLista(); } else { alert("Frase incorreta."); } }
-    function forcarAtualizacao() { localStorage.removeItem('gc_v40'); window.location.reload(true); }
+    function excluirTodoHistorico() { let frase = document.getElementById('inputExcluirTudo').value; if(frase === "quero excluir todo o histórico") { db.pedidosAtivos = []; salvarBanco(); alert("Histórico apagado localmente."); document.getElementById('inputExcluirTudo').value = ''; renderizarLista(); } else { alert("Frase incorreta."); } }
+    function forcarAtualizacao() { localStorage.removeItem('gc_v50'); window.location.reload(true); }
 
     /* =========================================================================
        INICIALIZAÇÃO E UI
        ========================================================================= */
-    window.onload = () => {
-        setTimeout(() => { document.getElementById('splashScreen').style.display = 'none'; }, 1000);
-        if(db.configs.exigirColaborador && !db.configs.colabAtivoId) { abrirSelecaoColaboradorInicial(); } else { iniciarApp(); }
-    };
+    window.onload = () => { setTimeout(() => { document.getElementById('splashScreen').style.display = 'none'; }, 1000); if(db.configs.exigirColaborador && !db.configs.colabAtivoId) { abrirSelecaoColaboradorInicial(); } else { iniciarApp(); } };
 
     function iniciarApp() { document.getElementById('seletorModo').value = db.configs.modo; document.getElementById('configExigirColab').checked = db.configs.exigirColaborador; alterarModo(db.configs.modo); }
     function abrirSelecaoColaboradorInicial() { const sel = document.getElementById('selectColabInicial'); sel.innerHTML = '<option value="">-- Selecione --</option>'; db.colaboradores.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nome}</option>`); document.getElementById('modalColaboradorObrigatorio').style.display = 'flex'; }
     function definirColaboradorAtivo() { const id = document.getElementById('selectColabInicial').value; if(!id) return alert("Selecione."); db.configs.colabAtivoId = id; salvarBanco(); fecharModal('modalColaboradorObrigatorio'); iniciarApp(); }
+    function toggleExigirColab() { db.configs.exigirColaborador = document.getElementById('configExigirColab').checked; salvarBanco(); }
 
     function alterarModo(modo) {
         db.configs.modo = modo; modoSelecaoAtivo = false; itensSelecionadosRelatorio.clear();
         document.body.className = `theme-${modo}`; document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#6a1b9a'; 
-        
         document.getElementById('fabContainer').style.display = modo === 'compras' ? 'flex' : 'none';
         
         let dicas = document.getElementById('dicasCabecalho');
-        if(modo === 'pedido') { dicas.innerHTML = "👉 Deslize dir: Riscar<br>👆 Toque: Pedir"; } else { dicas.innerHTML = "👉 Mudar Status<br>⏳ Segurar: Fornecedor<br>✌️ 2 toques: Excluir/Riscar"; }
-        
+        if(modo === 'pedido') { dicas.innerHTML = "👆 Toque: Pedir Padrão<br>👈 Deslize: Desmarcar<br>✌️ 2 Toques: Editar/Obs"; } else { dicas.innerHTML = "👉 Status | ⏳ Segurar: Fornecedor<br>✌️ 2 toques: Excluir/Desriscar"; }
         salvarBanco(); renderizarFiltros(); renderizarLista();
     }
 
@@ -489,61 +419,41 @@
     function renderizarLista() {
         const lista = document.getElementById('listaPrincipal'); lista.innerHTML = ''; let itensMostrados = 0;
         let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = colabLogado && colabLogado.catsPermitidas && colabLogado.catsPermitidas.length > 0 ? colabLogado.catsPermitidas : null;
-        
         let temRascunho = false;
+        let agora = Date.now();
 
         if (db.configs.modo === 'pedido') {
             db.produtos.forEach(p => {
                 if(categoriaAtual && p.categoria !== categoriaAtual) return; if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
                 
-                // Puxar pedidos deste produto (rascunhos, pendentes, etc, que NÃO foram excluídos há mais de 7 dias)
-                const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id);
-                let isRiscado = db.produtosRiscados.includes(p.id);
+                const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id && !pa.excluido && pa.status !== 'entregue');
+                const pedidoAtivo = pedidosDeste[0];
                 
-                // Se o último for excluído há menos de 7 dias, mostra riscado
-                let ultimo = pedidosDeste[pedidosDeste.length-1];
-                if(ultimo && ultimo.excluido) {
-                    const diffDays = (Date.now() - ultimo.dataExclusao) / (1000 * 60 * 60 * 24);
-                    if(diffDays < 7) isRiscado = true;
-                }
-
-                // Identifica o ativo (não excluído e não entregue)
-                const pedidoAtivo = pedidosDeste.find(pa => !pa.excluido && pa.status !== 'entregue');
-                
-                let classesExtra = isRiscado ? "riscado " : ""; 
-                let infoDireita = "";
-                let subtitulo = `Unidades: ${p.unidades.join(', ')}`;
+                let classesExtra = ""; let infoDireita = "";
+                let padraoTexto = p.qtdPadrao ? ` (Padrão: ${p.qtdPadrao})` : "";
+                let subtitulo = `Unidades: ${p.unidades.join(', ')}${padraoTexto}`;
                 
                 if (pedidoAtivo) { 
-                    if(pedidoAtivo.status === 'rascunho') {
-                        classesExtra += "item-pedido-rascunho"; 
-                        temRascunho = true;
-                    } else {
-                        classesExtra += "item-pedido-ativo"; 
-                    }
-                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><span style="font-size: 10px; color: #1565C0; margin-bottom: 2px;">Há pedido(s) ativo(s)</span><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${pedidoAtivo.qtd} ${pedidoAtivo.unidade}</span></div>`;
+                    if(pedidoAtivo.status === 'rascunho') { classesExtra += "item-pedido-rascunho"; temRascunho = true; } else { classesExtra += "item-pedido-ativo"; }
+                    let obsVisual = pedidoAtivo.obs ? `<br><span style="color:#d32f2f; font-size:11px;">Obs: ${pedidoAtivo.obs}</span>` : "";
+                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><span style="font-size: 10px; color: #1565C0; margin-bottom: 2px;">Há pedido(s) ativo(s)</span><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${pedidoAtivo.qtd} ${pedidoAtivo.unidade}</span>${obsVisual}</div>`;
                 }
 
-                lista.innerHTML += `
-                    <li class="item ${classesExtra}" data-id="${p.id}" data-pedid="${pedidoAtivo ? pedidoAtivo.idUnico : ''}" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">
-                        <div style="display: flex; align-items: center; flex: 1;">
-                            <div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${p.nome.charAt(0)}</div>
-                            <div class="item-info">
-                                <div class="item-title">${p.nome}</div>
-                                <div class="item-subtitle">${subtitulo}</div>
-                            </div>
-                        </div>
-                        ${infoDireita}
-                    </li>`;
+                lista.innerHTML += `<li class="item ${classesExtra}" data-id="${p.id}" data-pedid="${pedidoAtivo ? pedidoAtivo.idUnico : ''}" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)"><div style="display: flex; align-items: center; flex: 1;"><div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${p.nome.charAt(0)}</div><div class="item-info"><div class="item-title">${p.nome}</div><div class="item-subtitle">${subtitulo}</div></div></div>${infoDireita}</li>`;
                 itensMostrados++;
             });
-            
             document.getElementById('btnEnviarPedidos').style.display = temRascunho ? 'block' : 'none';
 
         } else {
             // MODO COMPRAS
-            db.pedidosAtivos.filter(pa => !pa.excluido && pa.status !== 'rascunho').forEach(pa => {
+            db.pedidosAtivos.filter(pa => pa.status !== 'rascunho').forEach(pa => {
+                // Filtro 7 dias se excluído
+                if(pa.excluido) {
+                    const diffDays = (agora - pa.dataExclusao) / (1000 * 60 * 60 * 24);
+                    if(diffDays >= 7) return; 
+                }
+
                 const p = db.produtos.find(prod => prod.id === pa.produtoId); if(!p) return; if(categoriaAtual && p.categoria !== categoriaAtual) return;
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
                 let emojiStatus = pa.status === 'pendente' ? '⏳' : (pa.status === 'comprado' ? '✅' : (pa.status === 'pedido_forn' ? '📦' : (pa.status === 'entregue' ? '✔️' : '')));
@@ -551,10 +461,10 @@
                 
                 let tituloItem = `${p.nome} - ${pa.qtd} ${pa.unidade}`;
                 let statusText = pa.status === 'pedido_forn' ? 'Pedido Fornecedor' : pa.status;
-                
                 let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado')) ? ' <span style="font-size:10px; color:#d32f2f; font-weight:bold;">(Editado)</span>' : '';
+                let obsVisual = pa.obs ? `<br><span style="color:#d32f2f; font-weight:bold;">Obs: ${pa.obs}</span>` : "";
 
-                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info"><div class="item-title">${tituloItem}${editIndicador}</div><div class="item-subtitle">Marcas OK: ${p.marcasAprovadas || 'N/A'}<br><b style="text-transform: uppercase;">Status: ${statusText}</b></div></div></li>`;
+                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''} ${pa.excluido ? 'riscado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info"><div class="item-title">${tituloItem}${editIndicador}</div><div class="item-subtitle">Marcas OK: ${p.marcasAprovadas || 'N/A'}${obsVisual}<br><b style="text-transform: uppercase;">Status: ${statusText}</b></div></div></li>`;
                 itensMostrados++;
             });
         }
@@ -581,67 +491,64 @@
         else if (diffX < -80) { acaoDeslizarEsquerda(el); } else if (diffX > 80) { acaoDeslizarDireita(el); }
     }
 
-    function acaoToqueSimples(el) { if(db.configs.modo === 'pedido') { const pId = el.getAttribute('data-id'); const pedId = el.getAttribute('data-pedid'); if(!pedId) abrirModalFazerPedido(pId); } }
+    function acaoToqueSimples(el) { 
+        if(db.configs.modo === 'pedido') { 
+            const pId = el.getAttribute('data-id'); const pedId = el.getAttribute('data-pedid'); 
+            if(!pedId) {
+                // Adiciona direto com Qtd Padrão
+                const p = db.produtos.find(x => x.id === pId); if(!p) return;
+                let qtd = p.qtdPadrao || 1; let un = p.unidades[0] || 'un';
+                db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, obs: '', status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
+                salvarBanco(); renderizarLista();
+            } 
+        } 
+    }
     
     function acaoDuploToque(el) {
         if(db.configs.modo === 'pedido') { const pedId = el.getAttribute('data-pedid'); if(pedId) abrirModalEditarPedido(pedId); } 
         else {
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
             if(pa) {
-                // Modo Compras: Mostrar histórico de edições e botão excluir
-                abrirHistoricoCompra(paId);
+                if(pa.excluido) { if(confirm("Desfazer exclusão?")) { pa.excluido = false; salvarBanco(); renderizarLista(); } }
+                else { abrirHistoricoCompra(paId); }
             }
         }
     }
     
-    function acaoSegurar(el) {
-        if(db.configs.modo === 'compras') { const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa) { pa.status = 'pedido_forn'; salvarBanco(); renderizarLista(); } }
-    }
+    function acaoSegurar(el) { if(db.configs.modo === 'compras') { const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && !pa.excluido) { pa.status = 'pedido_forn'; salvarBanco(); renderizarLista(); } } }
     
     function acaoDeslizarDireita(el) {
-        if(db.configs.modo === 'pedido') { const pId = el.getAttribute('data-id'); if(!db.produtosRiscados.includes(pId)) { db.produtosRiscados.push(pId); salvarBanco(); renderizarLista(); } } 
-        else {
+        if(db.configs.modo === 'compras') {
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
-            if(pa) {
-                if (pa.status === 'pendente') { pa.status = 'comprado'; }
-                else if (pa.status === 'pedido_forn') { pa.status = 'entregue'; }
+            if(pa && !pa.excluido) {
+                if (pa.status === 'pendente') { pa.status = 'comprado'; } else if (pa.status === 'pedido_forn') { pa.status = 'entregue'; pa.excluido = true; pa.dataExclusao = Date.now(); }
                 salvarBanco(); renderizarLista();
             }
         }
     }
     
     function acaoDeslizarEsquerda(el) {
-        if(db.configs.modo === 'pedido') { const pId = el.getAttribute('data-id'); db.produtosRiscados = db.produtosRiscados.filter(id => id !== pId); salvarBanco(); renderizarLista(); } 
+        if(db.configs.modo === 'pedido') { 
+            const pedId = el.getAttribute('data-pedid'); 
+            if(pedId) { 
+                let pa = db.pedidosAtivos.find(x => x.idUnico === pedId);
+                if(pa && pa.status === 'rascunho') { db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== pedId); salvarBanco(); renderizarLista(); }
+            } 
+        } 
         else { 
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
-            if(pa) { pa.status = 'pendente'; salvarBanco(); renderizarLista(); } 
+            if(pa && !pa.excluido) { pa.status = 'pendente'; salvarBanco(); renderizarLista(); } 
         }
     }
 
     /* =========================================================================
        OPERAÇÕES DE PEDIDO (RASCUNHO -> COMPRAS)
        ========================================================================= */
-    function abrirModalFazerPedido(pId) {
-        const p = db.produtos.find(x => x.id === pId); if(!p) return;
-        document.getElementById('pedidoIdProduto').value = pId; document.getElementById('pedidoTitulo').innerText = p.nome; document.getElementById('pedidoQtd').value = "";
-        const selUn = document.getElementById('pedidoUnidade'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}">${u}</option>`);
-        document.getElementById('modalFazerPedido').style.display = 'flex'; setTimeout(()=> document.getElementById('pedidoQtd').focus(), 100);
-    }
-    
-    function confirmarPedido() { 
-        const pId = document.getElementById('pedidoIdProduto').value; const qtd = parseFloat(document.getElementById('pedidoQtd').value); const un = document.getElementById('pedidoUnidade').value; 
-        if(!qtd || qtd <= 0) return alert("Inválido."); 
-        
-        // Entra como Rascunho
-        db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId }); 
-        salvarBanco(); fecharModal('modalFazerPedido'); renderizarLista(); 
-    }
-    
     function abrirModalEditarPedido(paId) { 
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); 
-        document.getElementById('editPedidoId').value = paId; document.getElementById('editPedidoQtd').value = pa.qtd; 
+        document.getElementById('editPedidoId').value = paId; document.getElementById('editPedidoQtd').value = pa.qtd; document.getElementById('editPedidoObs').value = pa.obs || '';
         const selUn = document.getElementById('editPedidoUnidade'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); 
-        document.getElementById('modalEditarPedido').style.display = 'flex'; 
+        document.getElementById('modalEditarPedido').style.display = 'flex'; setTimeout(()=> document.getElementById('editPedidoQtd').focus(), 100);
     }
     
     function salvarEdicaoPedido() { 
@@ -649,9 +556,8 @@
         if(!qtd || qtd <= 0) return alert("Inválido."); 
         let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
         if(pa) { 
-            pa.qtd = qtd; pa.unidade = document.getElementById('editPedidoUnidade').value; 
-            pa.historico = pa.historico || [];
-            pa.historico.push({ data: new Date().toLocaleString(), msg: `Editado para: ${qtd} ${pa.unidade}` });
+            pa.qtd = qtd; pa.unidade = document.getElementById('editPedidoUnidade').value; pa.obs = document.getElementById('editPedidoObs').value;
+            pa.historico = pa.historico || []; pa.historico.push({ data: new Date().toLocaleString(), msg: `Editado para: ${qtd} ${pa.unidade}` });
             salvarBanco(); 
         } 
         fecharModal('modalEditarPedido'); renderizarLista(); 
@@ -660,45 +566,27 @@
     function excluirRascunho() { 
         const paId = document.getElementById('editPedidoId').value; 
         let pa = db.pedidosAtivos.find(x => x.idUnico === paId);
-        if(pa) {
-            pa.excluido = true; pa.dataExclusao = Date.now();
-        }
+        if(pa && pa.status === 'rascunho') { db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== paId); }
         salvarBanco(); fecharModal('modalEditarPedido'); renderizarLista(); 
     }
 
     function enviarPedidosParaCompras() {
         let rascunhos = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido);
-        rascunhos.forEach(pa => {
-            pa.status = 'pendente';
-        });
-        salvarBanco();
-        alert("Pedidos enviados para compras com sucesso!");
-        renderizarLista();
+        rascunhos.forEach(pa => { pa.status = 'pendente'; }); salvarBanco(); alert("Pedidos enviados com sucesso!"); renderizarLista();
     }
 
     /* =========================================================================
        HISTÓRICO NO MODO COMPRAS
        ========================================================================= */
     function abrirHistoricoCompra(paId) {
-        const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return;
-        document.getElementById('histCompraId').value = paId;
-        let html = "<ul>";
-        if(pa.historico) pa.historico.forEach(h => { html += `<li>${h.data} - ${h.msg}</li>`; });
-        else html += "<li>Sem histórico</li>";
-        html += "</ul>";
-        document.getElementById('histCompraLista').innerHTML = html;
-        document.getElementById('modalHistoricoCompra').style.display = 'flex';
+        const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; document.getElementById('histCompraId').value = paId;
+        let html = "<ul>"; if(pa.historico) pa.historico.forEach(h => { html += `<li>${h.data} - ${h.msg}</li>`; }); else html += "<li>Sem histórico</li>"; html += "</ul>";
+        document.getElementById('histCompraLista').innerHTML = html; document.getElementById('modalHistoricoCompra').style.display = 'flex';
     }
 
     function excluirItemCompra() {
-        const paId = document.getElementById('histCompraId').value; 
-        let pa = db.pedidosAtivos.find(x => x.idUnico === paId);
-        if(pa) {
-            if(confirm("Excluir item definitivamente? Ele ficará riscado no Modo Pedido por 7 dias.")) {
-                pa.excluido = true; pa.dataExclusao = Date.now();
-                salvarBanco(); fecharModal('modalHistoricoCompra'); renderizarLista();
-            }
-        }
+        const paId = document.getElementById('histCompraId').value; let pa = db.pedidosAtivos.find(x => x.idUnico === paId);
+        if(pa) { if(confirm("Excluir item definitivamente? Ele ficará riscado nas Compras por 7 dias.")) { pa.excluido = true; pa.dataExclusao = Date.now(); salvarBanco(); fecharModal('modalHistoricoCompra'); renderizarLista(); } }
     }
 
     /* =========================================================================
@@ -706,7 +594,7 @@
        ========================================================================= */
     function abrirModalRelatorio() {
         if(itensSelecionadosRelatorio.size === 0) return alert("Selecione os itens marcando o botão ☑️ primeiro.");
-        const selForn = document.getElementById('relatFornecedor'); selForn.innerHTML = '<option value="">-- Todos --</option>'; db.fornecedores.forEach(f => selForn.innerHTML += `<option value="${f.id}">${f.nome} (Vend: ${f.vendedor})</option>`);
+        const selForn = document.getElementById('relatFornecedor'); selForn.innerHTML = '<option value="">-- Todos --</option>'; db.fornecedores.forEach(f => selForn.innerHTML += `<option value="${f.id}">${f.nome} (Vend: ${f.vendedor || 'N/A'})</option>`);
         const selColab = document.getElementById('relatColaborador'); selColab.innerHTML = ''; db.colaboradores.forEach(c => selColab.innerHTML += `<option value="${c.id}" ${c.id === db.configs.colabAtivoId ? 'selected' : ''}>${c.nome}</option>`);
         document.getElementById('modalRelatorio').style.display = 'flex'; gerarTextoRelatorio();
     }
@@ -719,14 +607,12 @@
         texto += `${forn ? '*' + forn.nome.toUpperCase() + '*\n\n' : ''}*Itens para cotação:*\n\n`;
 
         Array.from(itensSelecionadosRelatorio).forEach(idUnico => {
-            const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(!pa) return;
-            const p = db.produtos.find(x => x.id === pa.produtoId); if(!p) return;
-            texto += `• ${p.nome} - Qtd: ${pa.qtd} ${pa.unidade}\n`;
+            const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); if(!p) return;
+            texto += `• ${p.nome} - Qtd: ${pa.qtd} ${pa.unidade}${pa.obs ? ' ('+pa.obs+')' : ''}\n`;
         });
         document.getElementById('relatTexto').value = texto;
         
-        const btnZap = document.querySelector('.btn-zap');
-        if(forn && forn.telefone) { btnZap.dataset.tel = forn.telefone; } else { btnZap.dataset.tel = ""; }
+        const btnZap = document.querySelector('.btn-zap'); if(forn && forn.telefone) { btnZap.dataset.tel = forn.telefone; } else { btnZap.dataset.tel = ""; }
     }
     function enviarWhatsAppAPI() {
         const texto = document.getElementById('relatTexto').value; const tel = document.querySelector('.btn-zap').dataset.tel;
@@ -737,12 +623,10 @@
     /* =========================================================================
        ADMIN & CRUDS
        ========================================================================= */
+    function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
     function abrirAdmin() { document.getElementById('inputSenhaAdmin').value = ''; document.getElementById('modalSenhaAdmin').style.display = 'flex'; setTimeout(() => document.getElementById('inputSenhaAdmin').focus(), 100); }
     document.getElementById('inputSenhaAdmin').addEventListener('input', function(e) { if(this.value === db.configs.senhaAdmin) { this.blur(); this.value = ''; fecharModal('modalSenhaAdmin'); document.getElementById('modalPainelUnificado').style.display = 'flex'; } });
-    function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
-    function voltarParaPainel() { fecharModal('modalListagem'); document.getElementById('modalPainelUnificado').style.display = 'flex'; }
-    function fecharForm(formId, tipo) { fecharModal(formId); abrirGerenciar(tipo); }
-
+    
     function abrirGerenciar(tipo) {
         fecharModal('modalPainelUnificado');
         const lista = document.getElementById('conteudoListagem'); const btnNovo = document.getElementById('btnNovoListagem'); const titulo = document.getElementById('tituloListagem'); lista.innerHTML = '';
@@ -757,39 +641,42 @@
         else if (tipo === 'fornecedores') { titulo.innerText = "Fornecedores"; btnNovo.onclick = () => abrirFormFornecedor(null); db.fornecedores.forEach((f) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${f.nome}</strong><br><span style="color:#666">${f.telefone}</span></div><div class="gerenciar-actions"><button onclick="abrirFormFornecedor('${f.id}')">✏️</button><button onclick="excluirItem('fornecedores', '${f.id}')">🗑️</button></div></div>`; }); }
         document.getElementById('modalListagem').style.display = 'flex';
     }
-    function excluirItem(tipo, id) { if(confirm("Tem certeza?")) { db[tipo] = db[tipo].filter(x => x.id !== id); salvarBanco(); abrirGerenciar(tipo); } }
+    function excluirItem(tipo, id) { if(confirm("Tem certeza?")) { db[tipo] = db[tipo].filter(x => x.id !== id); salvarBanco(); abrirGerenciar(tipo); renderizarLista(); } }
 
     function salvarRestaurante() { db.restaurante.nome = document.getElementById('restNome').value; db.restaurante.cnpj = document.getElementById('restCNPJ').value; db.restaurante.rua = document.getElementById('restRua').value; db.restaurante.numero = document.getElementById('restNum').value; db.restaurante.bairro = document.getElementById('restBairro').value; db.restaurante.cidade = document.getElementById('restCidade').value; db.restaurante.uf = document.getElementById('restUF').value; db.restaurante.ponto = document.getElementById('restPonto').value; salvarBanco(); fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display = 'flex'; }
 
     function abrirFormProduto(id) {
         fecharModal('modalListagem'); const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
         if(id) {
-            const p = db.produtos.find(x => x.id === id); document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; 
+            const p = db.produtos.find(x => x.id === id); document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = p.qtdPadrao || '';
             if(p.historicoPrecos && p.historicoPrecos.length > 0) { const h = p.historicoPrecos[p.historicoPrecos.length-1]; document.getElementById('prodPreco').value = h.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2}); document.getElementById('prodPrecoData').value = h.data; } else { document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); }
-        } else { document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodUnidades').value = 'un'; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); }
+        } else { document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodUnidades').value = 'un'; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodPreco').value = ''; document.getElementById('prodQtdPadrao').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); }
         document.getElementById('modalFormProduto').style.display = 'flex';
     }
     function salvarProduto() {
-        const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value;
-        const novo = { id: id, nome: document.getElementById('prodNome').value, categoria: document.getElementById('prodCategoria').value, unidades: unArr.length>0 ? unArr : ['un'], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: [{ data: pData, preco: pVal }] };
+        const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; const qtdPadrao = parseFloat(document.getElementById('prodQtdPadrao').value) || null;
+        const novo = { id: id, nome: document.getElementById('prodNome').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : ['un'], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: [{ data: pData, preco: pVal }] };
         const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo);
-        salvarBanco(); fecharForm('modalFormProduto', 'produtos');
+        salvarBanco(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista();
     }
 
     function abrirFormCategoria(id) { fecharModal('modalListagem'); if(id) { const c = db.categorias.find(x => x.id === id); document.getElementById('catId').value = id; document.getElementById('catNome').value = c.nome; document.getElementById('catCor').value = c.cor; document.getElementById('catCorTexto').value = c.corTexto; } else { document.getElementById('catId').value = ''; document.getElementById('catNome').value = ''; document.getElementById('catCor').value = '#1565C0'; document.getElementById('catCorTexto').value = '#ffffff'; } document.getElementById('modalFormCategoria').style.display = 'flex'; }
-    function salvarCategoria() { const id = document.getElementById('catId').value || 'c_'+Date.now(); const novo = { id: id, nome: document.getElementById('catNome').value, cor: document.getElementById('catCor').value, corTexto: document.getElementById('catCorTexto').value }; const idx = db.categorias.findIndex(x => x.id === id); if(idx >= 0) db.categorias[idx] = novo; else db.categorias.push(novo); salvarBanco(); fecharForm('modalFormCategoria', 'categorias'); }
+    function salvarCategoria() { const id = document.getElementById('catId').value || 'c_'+Date.now(); const novo = { id: id, nome: document.getElementById('catNome').value, cor: document.getElementById('catCor').value, corTexto: document.getElementById('catCorTexto').value }; const idx = db.categorias.findIndex(x => x.id === id); if(idx >= 0) db.categorias[idx] = novo; else db.categorias.push(novo); salvarBanco(); fecharModal('modalFormCategoria'); abrirGerenciar('categorias'); renderizarLista(); }
 
     function abrirFormColaborador(id) {
         fecharModal('modalListagem'); const box = document.getElementById('colabCategoriasBox'); box.innerHTML = ''; const c = id ? db.colaboradores.find(x => x.id === id) : null;
-        db.categorias.forEach(cat => { const chk = (!c || (c.catsPermitidas && c.catsPermitidas.includes(cat.id))) ? 'checked' : ''; box.innerHTML += `<label style="display:block; margin-bottom:5px;"><input type="checkbox" value="${cat.id}" class="chk-cat-colab" ${chk}> ${cat.nome}</label>`; });
+        db.categorias.forEach(cat => { 
+            const chk = (!c || (c.catsPermitidas && c.catsPermitidas.includes(cat.id))) ? 'checked' : ''; 
+            box.innerHTML += `<div style="display:flex; align-items:center; margin-bottom:8px;"><label class="switch"><input type="checkbox" value="${cat.id}" class="chk-cat-colab" ${chk}><span class="slider"></span></label><span style="font-weight:bold;">${cat.nome}</span></div>`; 
+        });
         document.getElementById('colabId').value = id || ''; document.getElementById('colabNome').value = c ? c.nome : ''; document.getElementById('colabSenha').value = c ? c.senha : ''; document.getElementById('modalFormColaborador').style.display = 'flex';
     }
-    function salvarColaborador() { const id = document.getElementById('colabId').value || 'col_'+Date.now(); const cats = Array.from(document.querySelectorAll('.chk-cat-colab:checked')).map(el => el.value); const s = document.getElementById('colabSenha').value || "123"; const novo = { id: id, nome: document.getElementById('colabNome').value, telefone: "", senha: s, catsPermitidas: cats }; const idx = db.colaboradores.findIndex(x => x.id === id); if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo); salvarBanco(); fecharForm('modalFormColaborador', 'colaboradores'); }
+    function salvarColaborador() { const id = document.getElementById('colabId').value || 'col_'+Date.now(); const cats = Array.from(document.querySelectorAll('.chk-cat-colab:checked')).map(el => el.value); const s = document.getElementById('colabSenha').value || "123"; const novo = { id: id, nome: document.getElementById('colabNome').value, telefone: "", senha: s, catsPermitidas: cats }; const idx = db.colaboradores.findIndex(x => x.id === id); if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo); salvarBanco(); fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores'); }
 
     function abrirFormFornecedor(id) {
-        fecharModal('modalListagem'); if(id) { const f = db.fornecedores.find(x => x.id === id); document.getElementById('fornId').value = id; document.getElementById('fornNome').value = f.nome; document.getElementById('fornVendedor').value = f.vendedor || ''; document.getElementById('fornTel').value = f.telefone || ''; document.getElementById('fornTelGerente').value = f.telGerente || ''; document.getElementById('fornTelEmpresa').value = f.telEmpresa || ''; } else { document.getElementById('fornId').value = ''; document.getElementById('fornNome').value = ''; document.getElementById('fornVendedor').value = ''; document.getElementById('fornTel').value = ''; document.getElementById('fornTelGerente').value = ''; document.getElementById('fornTelEmpresa').value = ''; } document.getElementById('modalFormFornecedor').style.display = 'flex';
+        fecharModal('modalListagem'); if(id) { const f = db.fornecedores.find(x => x.id === id); document.getElementById('fornId').value = id; document.getElementById('fornNome').value = f.nome; document.getElementById('fornVendedor').value = f.vendedor || ''; document.getElementById('fornTel').value = f.telefone || ''; document.getElementById('fornNomeGerente').value = f.nomeGerente || ''; document.getElementById('fornTelGerente').value = f.telGerente || ''; document.getElementById('fornTelEmpresa').value = f.telEmpresa || ''; } else { document.getElementById('fornId').value = ''; document.getElementById('fornNome').value = ''; document.getElementById('fornVendedor').value = ''; document.getElementById('fornTel').value = ''; document.getElementById('fornNomeGerente').value = ''; document.getElementById('fornTelGerente').value = ''; document.getElementById('fornTelEmpresa').value = ''; } document.getElementById('modalFormFornecedor').style.display = 'flex';
     }
-    function salvarFornecedor() { const id = document.getElementById('fornId').value || 'f_'+Date.now(); const novo = { id: id, nome: document.getElementById('fornNome').value, vendedor: document.getElementById('fornVendedor').value, telefone: document.getElementById('fornTel').value, telGerente: document.getElementById('fornTelGerente').value, telEmpresa: document.getElementById('fornTelEmpresa').value }; const idx = db.fornecedores.findIndex(x => x.id === id); if(idx >= 0) db.fornecedores[idx] = novo; else db.fornecedores.push(novo); salvarBanco(); fecharForm('modalFormFornecedor', 'fornecedores'); }
+    function salvarFornecedor() { const id = document.getElementById('fornId').value || 'f_'+Date.now(); const novo = { id: id, nome: document.getElementById('fornNome').value, vendedor: document.getElementById('fornVendedor').value, telefone: document.getElementById('fornTel').value, nomeGerente: document.getElementById('fornNomeGerente').value, telGerente: document.getElementById('fornTelGerente').value, telEmpresa: document.getElementById('fornTelEmpresa').value }; const idx = db.fornecedores.findIndex(x => x.id === id); if(idx >= 0) db.fornecedores[idx] = novo; else db.fornecedores.push(novo); salvarBanco(); fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores'); }
 </script>
 </body>
 </html>
