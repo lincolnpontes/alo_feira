@@ -342,13 +342,13 @@
         <div class="form-group"><label>Categoria:</label><select id="prodCategoria"></select></div>
         
         <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex: 1.6;">
-                <label style="white-space: nowrap;">Qtd Padrão (Opcional):</label>
+            <div class="form-group" style="flex: 1;">
+                <label style="white-space: nowrap;">Qtd Padrão (opc):</label>
                 <input type="text" inputmode="decimal" id="prodQtdPadrao" placeholder="">
             </div>
-            <div class="form-group" style="flex: 1;">
+            <div class="form-group" style="flex: 1.5;">
                 <label>Unidades (vírgula):</label>
-                <input type="text" id="prodUnidades" placeholder="ex: kg, cx">
+                <input type="text" id="prodUnidades" placeholder="ex: kg, cx" autocapitalize="none">
             </div>
         </div>
         
@@ -451,10 +451,16 @@
         if(!ts) return ""; let d = new Date(ts);
         return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} às ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
+    
     function tempoRelativo(ts) {
-        if(!ts) return ""; let hoje = new Date(); hoje.setHours(0,0,0,0); let d = new Date(ts); d.setHours(0,0,0,0);
-        let diff = (hoje - d) / (1000 * 60 * 60 * 24);
-        if(diff === 0) return "Hoje"; if(diff === 1) return "Ontem"; return `Há ${diff} dias`;
+        if(!ts) return ""; 
+        let hoje = new Date(); hoje.setHours(0,0,0,0); 
+        let d = new Date(ts); d.setHours(0,0,0,0);
+        let diff = Math.floor((hoje - d) / (1000 * 60 * 60 * 24));
+        if(diff === 0) return "hoje"; 
+        if(diff === 1) return "ontem"; 
+        if(diff < 0) return "hoje"; 
+        return `há ${diff} dias`;
     }
 
     /* =========================================================================
@@ -694,14 +700,26 @@
                 
                 let qtdNum = pa.qtd !== '' ? pa.qtd : '-';
                 let tituloItem = `${p.nome} - ${qtdNum} ${pa.unidade}`;
-                let tempoTxt = ""; if((pa.status === 'comprado' || pa.status === 'entregue') && pa.dataConclusao) { tempoTxt = ` (${tempoRelativo(pa.dataConclusao)})`; }
-                let statusText = pa.status === 'pedido_forn' ? 'Pedido ao Fornecedor' : pa.status;
-                statusText += tempoTxt;
+                
+                // Lógica de tempo amigável (sem uppercase forçado)
+                let tsReferencia = pa.dataStatus || pa.dataConclusao || pa.dataExclusao || parseInt(pa.idUnico.split('_')[1]);
+                let tempoTxt = tsReferencia ? ` ${tempoRelativo(tsReferencia)}` : "";
+                
+                let nomeStatus = "";
+                switch(pa.status) {
+                    case 'pendente': nomeStatus = 'Pendente'; break;
+                    case 'comprado': nomeStatus = 'Comprado'; break;
+                    case 'pedido_forn': nomeStatus = 'Pedido ao Forn.'; break;
+                    case 'entregue': nomeStatus = 'Entregue'; break;
+                    case 'excluido': nomeStatus = 'Excluído'; break;
+                }
+                
+                let statusText = nomeStatus + tempoTxt; // Ex: "Pendente hoje", "Comprado ontem"
 
                 let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado')) ? ' <span style="font-size:10px; color:#d32f2f; font-weight:bold;">(Editado)</span>' : '';
                 let obsVisual = pa.obs ? `<br><span style="color:#000; font-weight:bold;">Obs: ${pa.obs}</span>` : "";
                 
-                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''} ${pa.excluido ? 'riscado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info"><div class="item-title">${tituloItem}${editIndicador}</div><div class="item-subtitle"><b style="text-transform: uppercase;">Status: ${statusText}</b>${obsVisual}</div></div></li>`;
+                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''} ${pa.excluido ? 'riscado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info"><div class="item-title">${tituloItem}${editIndicador}</div><div class="item-subtitle"><b style="color:#444;">Status: ${statusText}</b>${obsVisual}</div></div></li>`;
                 itensMostrados++;
             });
         }
@@ -720,7 +738,8 @@
             status: pa.status,
             excluido: pa.excluido,
             dataConclusao: pa.dataConclusao,
-            dataExclusao: pa.dataExclusao
+            dataExclusao: pa.dataExclusao,
+            dataStatus: pa.dataStatus
         });
         atualizarBotaoDesfazer();
     }
@@ -734,6 +753,7 @@
             pa.excluido = last.excluido;
             pa.dataConclusao = last.dataConclusao;
             pa.dataExclusao = last.dataExclusao;
+            pa.dataStatus = last.dataStatus;
             salvarBanco();
             renderizarLista();
         }
@@ -772,7 +792,6 @@
         let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
         let diffX = Math.abs(e.changedTouches[0].screenX - touchStartX);
         
-        // Se mover mais de 15px, entendemos que o usuário está rolando ou arrastando, aborta a "segurada" longa
         if (diffY > 15 || diffX > 15) {
             isScrolling = true;
             clearTimeout(pressTimer); 
@@ -786,7 +805,6 @@
         let diffX = e.changedTouches[0].screenX - touchStartX; 
         let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
 
-        // PROTEÇÃO DE ROLAGEM: Se moveu o dedo mais de 15px para cima/baixo, é rolagem da tela. Ignora tudo.
         if (diffY > 15 || isScrolling && Math.abs(diffX) < 40) return;
 
         if (Math.abs(diffX) < 20) {
@@ -808,7 +826,7 @@
                 const p = db.produtos.find(x => x.id === pId); if(!p) return;
                 let qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; 
                 let un = p.unidades[0] || ''; let obsPad = p.obsPadrao || '';
-                db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
+                db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco(); renderizarLista();
             } 
         } 
@@ -822,7 +840,7 @@
                 let qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; 
                 let un = p.unidades[0] || ''; let obsPad = p.obsPadrao || '';
                 pedId = 'pa_' + Date.now();
-                db.pedidosAtivos.push({ idUnico: pedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
+                db.pedidosAtivos.push({ idUnico: pedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco();
             }
             abrirModalEditarPedido(pedId); 
@@ -836,11 +854,11 @@
     
     function acaoSegurar(el) { 
         if(db.configs.modo === 'compras') { 
-            if (getPermissaoColab()) return; // ApenasReceber bloqueia isso
+            if (getPermissaoColab()) return; 
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
             if(pa && !pa.excluido) { 
                 registrarDesfazer(pa);
-                pa.status = 'pedido_forn'; delete pa.dataConclusao; salvarBanco(); renderizarLista(); 
+                pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); 
             } 
         } 
     }
@@ -852,13 +870,13 @@
             if(pa) {
                 if(pa.excluido) {
                     if (apenasReceber) return alert("Seu perfil não permite alterar itens excluídos.");
-                    if(confirm("Desfazer exclusão do item e voltar à lista?")) { registrarDesfazer(pa); pa.excluido = false; pa.status = 'pendente'; salvarBanco(); renderizarLista(); }
+                    if(confirm("Desfazer exclusão do item e voltar à lista?")) { registrarDesfazer(pa); pa.excluido = false; pa.status = 'pendente'; pa.dataStatus = Date.now(); salvarBanco(); renderizarLista(); }
                 } else {
                     if (apenasReceber && pa.status !== 'pedido_forn') {
                         return alert("Seu perfil só permite dar recebido em itens marcados como 'Pedido ao Fornecedor'.");
                     }
                     registrarDesfazer(pa);
-                    if (pa.status === 'pendente') { pa.status = 'comprado'; pa.dataConclusao = Date.now(); } else if (pa.status === 'pedido_forn') { pa.status = 'entregue'; pa.dataConclusao = Date.now(); }
+                    if (pa.status === 'pendente') { pa.status = 'comprado'; pa.dataConclusao = Date.now(); pa.dataStatus = Date.now(); } else if (pa.status === 'pedido_forn') { pa.status = 'entregue'; pa.dataConclusao = Date.now(); pa.dataStatus = Date.now(); }
                     salvarBanco(); renderizarLista();
                 }
             }
@@ -879,14 +897,14 @@
             if(pa && !pa.excluido) { 
                 registrarDesfazer(pa);
                 if(pa.status === 'entregue') { 
-                    if(confirm("Deseja voltar este item para 'Pedido ao Fornecedor'?")) { pa.status = 'pedido_forn'; delete pa.dataConclusao; salvarBanco(); renderizarLista(); } 
+                    if(confirm("Deseja voltar este item para 'Pedido ao Fornecedor'?")) { pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); } 
                 }
                 else if (pa.status === 'pedido_forn' || pa.status === 'comprado') { 
-                    if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; delete pa.dataConclusao; salvarBanco(); renderizarLista(); } 
+                    if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); } 
                 }
                 else if (pa.status === 'pendente') {
                     if(confirm("Deseja excluir o item? Ele ficará riscado nas Compras por 7 dias.")) { 
-                        pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); delete pa.dataConclusao;
+                        pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); delete pa.dataConclusao;
                         salvarBanco(); renderizarLista(); 
                     }
                 }
@@ -915,7 +933,12 @@
         fecharModal('modalEditarPedido'); renderizarLista(); 
     }
     
-    function enviarPedidosParaCompras() { let rascunhos = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido); rascunhos.forEach(pa => { pa.status = 'pendente'; }); salvarBanco(); alert("Pedidos enviados com sucesso!"); renderizarLista(); }
+    function enviarPedidosParaCompras() { 
+        let rascunhos = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido); 
+        let agora = Date.now();
+        rascunhos.forEach(pa => { pa.status = 'pendente'; pa.dataStatus = agora; }); 
+        salvarBanco(); alert("Pedidos enviados com sucesso!"); renderizarLista(); 
+    }
 
     function abrirHistoricoCompra(paId) {
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(prod => prod.id === pa.produtoId);
@@ -1170,7 +1193,6 @@
         let qtdStr = document.getElementById('prodQtdPadrao').value.trim();
         const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : '';
         
-        // Se preencheu os campos soltos de preço, adiciona no histórico antes de salvar
         if(pVal > 0) {
             tempPrecosProduto.push({ data: pData, preco: pVal });
         }
