@@ -177,9 +177,10 @@
         <div class="modal-title">Identificação</div>
         <div class="form-group"><label>Quem está operando o sistema?</label><select id="selectColabInicial"></select></div>
         <div class="form-group"><label>Senha do Perfil:</label><input type="password" id="inputSenhaColab" placeholder="Deixe em branco se não houver" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
-        <div class="modal-actions">
-            <button class="btn-cancel" id="btnCancelColab" style="display:none;" onclick="fecharModal('modalColaboradorObrigatorio')">Cancelar</button>
-            <button class="btn-action" onclick="definirColaboradorAtivo()">Entrar no Sistema</button>
+        <div class="modal-actions" style="display: flex; gap: 8px;">
+            <button class="btn-danger" id="btnSairSistema" style="display:none; flex: 1;" onclick="sairDoSistema()">Sair do Sistema</button>
+            <button class="btn-cancel" id="btnCancelColab" style="display:none; flex: 1;" onclick="fecharModal('modalColaboradorObrigatorio')">Cancelar</button>
+            <button class="btn-action" style="flex: 2;" onclick="definirColaboradorAtivo()">Entrar</button>
         </div>
     </div>
 </div>
@@ -419,7 +420,7 @@
         </div>
 
         <div class="form-group"><label>Categorias Permitidas:</label>
-            <div id="colabCategoriasBox" style="font-size:14px; max-height:150px; overflow-y:auto; border:1px solid #ccc; padding:10px; border-radius:4px; background:#fafafa;"></div>
+            <div id="colabCategoriasBox" style="font-size:14px; max-height:220px; overflow-y:auto; border:1px solid #ccc; padding:10px; border-radius:4px; background:#fafafa;"></div>
         </div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores');">Cancelar</button><button class="btn-action" onclick="salvarColaborador()">Salvar</button></div>
     </div>
@@ -465,8 +466,16 @@
         if(!salvo) salvo = localStorage.getItem('gc_v100'); 
         return salvo ? JSON.parse(salvo) : base;
     }
+    
     function salvarBanco() { localStorage.setItem('alofeira_v1', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+    // Função de extração das categorias permitidas dependendo do Modo do app
+    function getCatsPermitidas(colabLogado) {
+        if(!colabLogado) return null;
+        let cats = db.configs.modo === 'pedido' ? colabLogado.catsPermitidasPedido : colabLogado.catsPermitidasCompras;
+        return cats !== undefined ? cats : colabLogado.catsPermitidas; // Fallback para versões antigas
+    }
 
     function formatarDataHora(ts) {
         if(!ts) return ""; let d = new Date(ts);
@@ -496,7 +505,21 @@
     /* =========================================================================
        NUVEM E ZONA DE RISCO
        ========================================================================= */
-    function solicitarAcessoAvancado() { fecharModal('modalPainelUnificado'); document.getElementById('senhaAvancada').value = ''; document.getElementById('modalSenhaAvancada').style.display = 'flex'; setTimeout(()=>document.getElementById('senhaAvancada').focus(), 100); }
+    function solicitarAcessoAvancado() { 
+        let colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
+        let hasAdminInSystem = db.colaboradores.some(c => c.isAdmin);
+        
+        // Só bloqueia se houver algum admin cadastrado no sistema e o usuário atual não for ele
+        if (hasAdminInSystem && (!colab || !colab.isAdmin)) {
+            return alert("⚠️ Acesso Negado: Apenas o Administrador do Sistema pode acessar a Zona de Risco.");
+        }
+
+        fecharModal('modalPainelUnificado'); 
+        document.getElementById('senhaAvancada').value = ''; 
+        document.getElementById('modalSenhaAvancada').style.display = 'flex'; 
+        setTimeout(()=>document.getElementById('senhaAvancada').focus(), 100); 
+    }
+    
     document.getElementById('senhaAvancada').addEventListener('input', function(e) { if(this.value === "1999") { this.blur(); this.value = ''; fecharModal('modalSenhaAvancada'); document.getElementById('configUrlApp').value = db.configs.url || ''; document.getElementById('modalConfigAvancadas').style.display = 'flex'; } });
 
     function salvarURL() { const inputUrl = document.getElementById('configUrlApp').value.trim(); if(!inputUrl) return alert("Digite a URL!"); db.configs.url = inputUrl; salvarBanco(); puxarDaNuvem(true); }
@@ -541,10 +564,8 @@
         }, 1500); 
 
         if (db.configs.exigirColaborador) { 
-            // Força a tela de identificação na abertura
             abrirSelecaoColaboradorInicial(false); 
         } else { 
-            // Procura o perfil de Administrador para entrar automaticamente
             let admin = db.colaboradores.find(c => c.isAdmin);
             if (admin) {
                 db.configs.colabAtivoId = admin.id;
@@ -563,7 +584,7 @@
 
     function abrirSelecaoColaboradorInicial(isTroca = false) { 
         if (db.colaboradores.length === 0 && db.configs.exigirColaborador) {
-            alert("Nenhum colaborador cadastrado. Acesso liberado como Administrador Padrão para configurações.");
+            alert("Nenhum colaborador cadastrado. Acesso liberado para configurações iniciais.");
             db.configs.exigirColaborador = false;
             salvarBanco();
             iniciarApp();
@@ -573,10 +594,15 @@
         const sel = document.getElementById('selectColabInicial'); 
         sel.innerHTML = '<option value="">-- Selecione o Perfil --</option>'; 
         let colabOrdem = [...db.colaboradores].sort((a,b) => a.nome.localeCompare(b.nome));
-        colabOrdem.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nome}</option>`); 
+        
+        colabOrdem.forEach(c => {
+            let selected = (c.id === db.configs.colabAtivoId) ? 'selected' : '';
+            sel.innerHTML += `<option value="${c.id}" ${selected}>${c.nome}</option>`;
+        }); 
         
         document.getElementById('inputSenhaColab').value = '';
         document.getElementById('btnCancelColab').style.display = isTroca ? 'block' : 'none';
+        document.getElementById('btnSairSistema').style.display = isTroca ? 'block' : 'none';
         document.getElementById('modalColaboradorObrigatorio').style.display = 'flex'; 
     }
 
@@ -595,6 +621,16 @@
         salvarBanco(); 
         fecharModal('modalColaboradorObrigatorio'); 
         iniciarApp(); 
+    }
+    
+    function sairDoSistema() {
+        db.configs.colabAtivoId = null;
+        salvarBanco();
+        fecharModal('modalColaboradorObrigatorio');
+        // Reabre o splash screen para mascarar o reload e garantir a limpeza do DOM na mente do usuário
+        document.getElementById('splashScreen').style.opacity = '1';
+        document.getElementById('splashScreen').style.display = 'flex';
+        setTimeout(() => location.reload(), 300);
     }
 
     function toggleExigirColab() { 
@@ -622,9 +658,15 @@
     }
 
     function renderizarFiltros() {
-        let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = colabLogado && colabLogado.catsPermitidas && colabLogado.catsPermitidas.length > 0 ? colabLogado.catsPermitidas : null;
+        let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); 
+        let catsPermitidas = getCatsPermitidas(colabLogado);
+        
         let html = `<div class="chip ${categoriaAtual === null ? 'active' : ''}" onclick="filtrarCat(null)">TODOS</div>`;
-        db.categorias.forEach(cat => { if(catsPermitidas && !catsPermitidas.includes(cat.id)) return; const isActive = categoriaAtual === cat.id; html += `<div class="chip ${isActive ? 'active' : ''}" style="background-color: ${cat.cor}; color: ${cat.corTexto};" onclick="filtrarCat('${cat.id}')">${cat.nome}</div>`; });
+        db.categorias.forEach(cat => { 
+            if(catsPermitidas && !catsPermitidas.includes(cat.id)) return; 
+            const isActive = categoriaAtual === cat.id; 
+            html += `<div class="chip ${isActive ? 'active' : ''}" style="background-color: ${cat.cor}; color: ${cat.corTexto};" onclick="filtrarCat('${cat.id}')">${cat.nome}</div>`; 
+        });
         document.getElementById('containerFiltros').innerHTML = html;
     }
     
@@ -641,9 +683,10 @@
 
     function renderizarLista() {
         const lista = document.getElementById('listaPrincipal'); lista.innerHTML = ''; let itensMostrados = 0;
-        let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = colabLogado && colabLogado.catsPermitidas && colabLogado.catsPermitidas.length > 0 ? colabLogado.catsPermitidas : null;
+        let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); 
+        let catsPermitidas = getCatsPermitidas(colabLogado);
+        
         let temRascunho = false; let agora = Date.now();
-
         let produtosOrdenados = [...db.produtos];
 
         // ORDENAÇÃO NATIVA (CATEGORIA -> ALFABÉTICA)
@@ -662,7 +705,8 @@
             let lastCatHeader = "";
 
             produtosOrdenados.forEach(p => {
-                if(categoriaAtual && p.categoria !== categoriaAtual) return; if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
+                if(categoriaAtual && p.categoria !== categoriaAtual) return; 
+                if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 
                 // Cabeçalho de Categoria no modo Todos
                 if (categoriaAtual === null) {
@@ -757,7 +801,8 @@
             comprasParaMostrar.forEach(pa => {
                 if(pa.excluido) { const diffDays = (agora - pa.dataExclusao) / (1000 * 60 * 60 * 24); if(diffDays >= 7) return; }
 
-                const p = db.produtos.find(prod => prod.id === pa.produtoId); if(!p) return; if(categoriaAtual && p.categoria !== categoriaAtual) return;
+                const p = db.produtos.find(prod => prod.id === pa.produtoId); if(!p) return; 
+                if(categoriaAtual && p.categoria !== categoriaAtual) return;
                 
                 if (agrupamentoCompradoAtivo) {
                     let currentGroup = pa.status === 'pendente' ? '⏳ PENDENTES' : (pa.status === 'pedido_forn' ? '📦 PEDIDOS AO FORNECEDOR' : '✅ COMPRADOS / ENTREGUES');
@@ -840,13 +885,15 @@
                 else if(pa.status === 'entregue') statusNome = 'Entregue ✅';
 
                 let acoes = '';
-                if(pa.status === 'pendente' || pa.status === 'pedido_forn') {
+                // Bloqueia a edição caso já tenha sido acionado pelo fornecedor ou comprado
+                if(pa.status === 'pendente') {
                     acoes = `
                         <button onclick="prepararEdicaoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px;">✏️</button>
                         <button onclick="excluirPedidoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px; color:#d32f2f;">🗑️</button>
                     `;
                 } else {
-                    acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${statusNome.split(' ')[0]})</span>`;
+                    let textLimpo = statusNome.replace(/ ✅| 📦| ⏳/g, '');
+                    acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${textLimpo})</span>`;
                 }
 
                 let obsVisual = pa.obs ? `<br><span style="font-size:11px; color:#666;">Obs: ${pa.obs}</span>` : '';
@@ -876,7 +923,6 @@
 
     function excluirPedidoHoje(idUnico) {
         if(confirm("Deseja apagar definitivamente este pedido feito hoje?")) {
-            // Exclusão real e definitiva (na raiz)
             db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== idUnico);
             salvarBanco();
             abrirPedidosHoje();
@@ -1082,7 +1128,6 @@
         let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
         if(pa) { 
             pa.qtd = qtd; pa.unidade = document.getElementById('editPedidoUnidade').value; pa.obs = document.getElementById('editPedidoObs').value;
-            // Modificação na raiz não gera mais tag de histórico visual.
             salvarBanco(); 
         } 
         fecharModal('modalEditarPedido'); 
@@ -1366,28 +1411,66 @@
     function salvarCategoria() { const id = document.getElementById('catId').value || 'c_'+Date.now(); const novo = { id: id, nome: document.getElementById('catNome').value, cor: document.getElementById('catCor').value, corTexto: document.getElementById('catCorTexto').value }; const idx = db.categorias.findIndex(x => x.id === id); if(idx >= 0) db.categorias[idx] = novo; else db.categorias.push(novo); salvarBanco(); fecharModal('modalFormCategoria'); abrirGerenciar('categorias'); renderizarLista(); }
 
     function abrirFormColaborador(id) {
-        fecharModal('modalListagem'); const box = document.getElementById('colabCategoriasBox'); box.innerHTML = ''; const c = id ? db.colaboradores.find(x => x.id === id) : null;
+        fecharModal('modalListagem'); 
+        const box = document.getElementById('colabCategoriasBox'); 
+        box.innerHTML = ''; 
+        const c = id ? db.colaboradores.find(x => x.id === id) : null;
         
         document.getElementById('colabIsAdmin').checked = c ? (c.isAdmin || false) : false;
         document.getElementById('colabApenasReceber').checked = c ? (c.apenasReceber || false) : false;
 
         db.categorias.forEach(cat => { 
-            const chk = (!c || (c.catsPermitidas && c.catsPermitidas.includes(cat.id))) ? 'checked' : ''; 
-            box.innerHTML += `<div style="display:flex; align-items:center; margin-bottom:8px;"><label class="switch"><input type="checkbox" value="${cat.id}" class="chk-cat-colab" ${chk}><span class="slider"></span></label><span style="font-weight:bold;">${cat.nome}</span></div>`; 
+            let checkPed = (!c || (c.catsPermitidasPedido !== undefined ? c.catsPermitidasPedido.includes(cat.id) : (c.catsPermitidas ? c.catsPermitidas.includes(cat.id) : true))) ? 'checked' : '';
+            let checkComp = (!c || (c.catsPermitidasCompras !== undefined ? c.catsPermitidasCompras.includes(cat.id) : (c.catsPermitidas ? c.catsPermitidas.includes(cat.id) : true))) ? 'checked' : '';
+            
+            box.innerHTML += `
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #ddd; padding-bottom:6px;">
+                    <span style="font-weight:bold; font-size:12px; flex:1; color:#333;">${cat.nome}</span>
+                    <div style="display:flex; gap:15px;">
+                        <label style="display:flex; flex-direction:column; align-items:center; font-size:9px; color:#555; gap:2px;">
+                            <div class="switch" style="margin:0;"><input type="checkbox" value="${cat.id}" class="chk-cat-pedido" ${checkPed}><span class="slider"></span></div>
+                            Pedidos
+                        </label>
+                        <label style="display:flex; flex-direction:column; align-items:center; font-size:9px; color:#555; gap:2px;">
+                            <div class="switch" style="margin:0;"><input type="checkbox" value="${cat.id}" class="chk-cat-compras" ${checkComp}><span class="slider"></span></div>
+                            Compras
+                        </label>
+                    </div>
+                </div>`; 
         });
-        document.getElementById('colabId').value = id || ''; document.getElementById('colabNome').value = c ? c.nome : ''; document.getElementById('colabSenha').value = c ? c.senha : ''; document.getElementById('modalFormColaborador').style.display = 'flex';
+        document.getElementById('colabId').value = id || ''; 
+        document.getElementById('colabNome').value = c ? c.nome : ''; 
+        document.getElementById('colabSenha').value = c ? c.senha : ''; 
+        document.getElementById('modalFormColaborador').style.display = 'flex';
     }
     
     function salvarColaborador() { 
         const id = document.getElementById('colabId').value || 'col_'+Date.now(); 
-        const cats = Array.from(document.querySelectorAll('.chk-cat-colab:checked')).map(el => el.value); 
+        
+        const catsPed = Array.from(document.querySelectorAll('.chk-cat-pedido:checked')).map(el => el.value);
+        const catsComp = Array.from(document.querySelectorAll('.chk-cat-compras:checked')).map(el => el.value);
+        
         const s = document.getElementById('colabSenha').value; 
         const isAdmin = document.getElementById('colabIsAdmin').checked;
         const apenasReceber = document.getElementById('colabApenasReceber').checked; 
-        const novo = { id: id, nome: document.getElementById('colabNome').value, telefone: "", senha: s, isAdmin: isAdmin, apenasReceber: apenasReceber, catsPermitidas: cats }; 
+        
+        const novo = { 
+            id: id, 
+            nome: document.getElementById('colabNome').value, 
+            telefone: "", 
+            senha: s, 
+            isAdmin: isAdmin, 
+            apenasReceber: apenasReceber, 
+            catsPermitidasPedido: catsPed,
+            catsPermitidasCompras: catsComp,
+            catsPermitidas: [] // Limpo para forçar o uso dos novos arrays daqui pra frente
+        }; 
+        
         const idx = db.colaboradores.findIndex(x => x.id === id); 
         if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo); 
-        salvarBanco(); fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores'); 
+        salvarBanco(); 
+        fecharModal('modalFormColaborador'); 
+        abrirGerenciar('colaboradores'); 
     }
 
     function abrirFormFornecedor(id) {
