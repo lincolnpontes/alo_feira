@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Gestor de Compras v5.0</title>
+    <title>Gestor de Compras v6.0</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -73,7 +73,7 @@
         .btn-danger { background: #d32f2f; color: white; }
         .btn-outline { background: transparent; border: 1px solid #1565C0; color: #1565C0; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 8px; text-align: left; }
         
-        /* TOGGLE SWITCHES (Elipse com bola) */
+        /* TOGGLE SWITCHES */
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; margin-right: 10px; vertical-align: middle; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px; }
@@ -129,23 +129,15 @@
 <div class="modal-overlay" id="modalColaboradorObrigatorio">
     <div class="modal">
         <div class="modal-title">Bem-vindo</div>
-        <div class="form-group">
-            <label>Quem está operando o sistema agora?</label>
-            <select id="selectColabInicial"></select>
-        </div>
-        <div class="modal-actions">
-            <button class="btn-action" onclick="definirColaboradorAtivo()">Entrar</button>
-        </div>
+        <div class="form-group"><label>Quem está operando o sistema agora?</label><select id="selectColabInicial"></select></div>
+        <div class="modal-actions"><button class="btn-action" onclick="definirColaboradorAtivo()">Entrar</button></div>
     </div>
 </div>
 
 <div class="modal-overlay" id="modalSenhaAdmin">
     <div class="modal">
         <div class="modal-title">Admin</div>
-        <div class="form-group">
-            <label>Senha:</label>
-            <input type="password" id="inputSenhaAdmin" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-        </div>
+        <div class="form-group"><label>Senha:</label><input type="password" id="inputSenhaAdmin" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAdmin')">Cancelar</button></div>
     </div>
 </div>
@@ -153,10 +145,7 @@
 <div class="modal-overlay" id="modalSenhaAvancada">
     <div class="modal">
         <div class="modal-title" style="color:#d32f2f;">Acesso Restrito</div>
-        <div class="form-group">
-            <label>Senha Avançada:</label>
-            <input type="password" id="senhaAvancada" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-        </div>
+        <div class="form-group"><label>Senha Avançada:</label><input type="password" id="senhaAvancada" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAvancada')">Cancelar</button></div>
     </div>
 </div>
@@ -166,19 +155,10 @@
         <div class="modal-title">Detalhes do Pedido</div>
         <input type="hidden" id="editPedidoId">
         <div style="display: flex; gap:10px;">
-            <div class="form-group" style="flex:1;">
-                <label>Quantidade:</label>
-                <input type="number" id="editPedidoQtd" step="0.01">
-            </div>
-            <div class="form-group" style="flex:1;">
-                <label>Unidade:</label>
-                <select id="editPedidoUnidade"></select>
-            </div>
+            <div class="form-group" style="flex:1;"><label>Quantidade:</label><input type="number" id="editPedidoQtd" step="0.01"></div>
+            <div class="form-group" style="flex:1;"><label>Unidade:</label><select id="editPedidoUnidade"></select></div>
         </div>
-        <div class="form-group">
-            <label>Observação (Opcional):</label>
-            <input type="text" id="editPedidoObs" placeholder="Ex: maduro, marca tal...">
-        </div>
+        <div class="form-group"><label>Observação (Opcional):</label><input type="text" id="editPedidoObs" placeholder="Ex: maduro, marca tal..."></div>
         <div class="modal-actions">
             <button class="btn-danger" onclick="excluirRascunho()">🗑️ Desmarcar</button>
             <button class="btn-cancel" onclick="fecharModal('modalEditarPedido')">Cancelar</button>
@@ -191,7 +171,13 @@
     <div class="modal">
         <div class="modal-title">Detalhes da Compra</div>
         <input type="hidden" id="histCompraId">
-        <div id="histCompraLista" style="font-size:13px; margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px; max-height: 150px; overflow-y: auto;"></div>
+        
+        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Edições</h4>
+        <div id="histCompraLista" style="font-size:13px; margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px; max-height: 100px; overflow-y: auto;"></div>
+        
+        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Preços</h4>
+        <div id="histPrecosLista" style="font-size:13px; margin-bottom:15px; background:#e8f5e9; padding:10px; border-radius:5px; max-height: 100px; overflow-y: auto;"></div>
+
         <div class="modal-actions">
             <button class="btn-danger" onclick="excluirItemCompra()">🗑️ Excluir Item</button>
             <button class="btn-cancel" onclick="fecharModal('modalHistoricoCompra')">Voltar</button>
@@ -202,20 +188,12 @@
 <div class="modal-overlay" id="modalRelatorio">
     <div class="modal">
         <div class="modal-title" style="border-color:#25d366;">Relatório p/ Fornecedor</div>
-        <div class="form-group">
-            <label>Responsável (Colaborador):</label>
-            <select id="relatColaborador" onchange="gerarTextoRelatorio()"></select>
-        </div>
-        <div class="form-group">
-            <label>Fornecedor (Destino):</label>
-            <select id="relatFornecedor" onchange="gerarTextoRelatorio()"></select>
-        </div>
-        <div class="form-group">
-            <textarea id="relatTexto" rows="9" style="font-size: 12px; background: #f9f9f9;"></textarea>
-        </div>
+        <div class="form-group"><label>Responsável (Colaborador):</label><select id="relatColaborador" onchange="gerarTextoRelatorio()"></select></div>
+        <div class="form-group"><label>Fornecedor (Destino):</label><select id="relatFornecedor" onchange="gerarTextoRelatorio()"></select></div>
+        <div class="form-group"><textarea id="relatTexto" rows="9" style="font-size: 12px; background: #f9f9f9;"></textarea></div>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="fecharModal('modalRelatorio')">Voltar</button>
-            <button class="btn-action" style="background:#25d366; color:white;" onclick="enviarWhatsAppAPI()">💬 Enviar Whatsapp</button>
+            <button class="btn-action" style="background:#25d366; color:white; font-size:16px;" onclick="enviarWhatsAppAPI()">📞 Enviar Whatsapp</button>
         </div>
     </div>
 </div>
@@ -351,14 +329,15 @@
 
     function carregarBanco() {
         let base = {
+            app_id: "gestor_compras", // Carimbo de identificação do App
             restaurante: { nome: "", cnpj: "", rua: "", numero: "", bairro: "", cidade: "", uf: "PB", ponto: "" },
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
             configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false }
         };
-        let salvo = localStorage.getItem('gc_v50');
+        let salvo = localStorage.getItem('gc_v60');
         return salvo ? JSON.parse(salvo) : base;
     }
-    function salvarBanco() { localStorage.setItem('gc_v50', JSON.stringify(db)); }
+    function salvarBanco() { localStorage.setItem('gc_v60', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
     /* =========================================================================
@@ -370,7 +349,7 @@
     function parseMoeda(str) { if(!str) return 0; return parseFloat(str.replace(/\./g, "").replace(",", ".")); }
 
     /* =========================================================================
-       NUVEM / ZONA DE RISCO
+       NUVEM / ZONA DE RISCO E PROTEÇÃO ANTI ALÔ COZINHA
        ========================================================================= */
     function solicitarAcessoAvancado() { fecharModal('modalPainelUnificado'); document.getElementById('senhaAvancada').value = ''; document.getElementById('modalSenhaAvancada').style.display = 'flex'; setTimeout(()=>document.getElementById('senhaAvancada').focus(), 100); }
     document.getElementById('senhaAvancada').addEventListener('input', function(e) { if(this.value === "1999") { this.blur(); this.value = ''; fecharModal('modalSenhaAvancada'); document.getElementById('configUrlApp').value = db.configs.url || ''; document.getElementById('modalConfigAvancadas').style.display = 'flex'; } });
@@ -379,14 +358,39 @@
     async function sincronizarSalvarNuvem() {
         if(!db.configs.url) return alert("Configure a URL primeiro!");
         if(!db.configs.dadosBaixados) { if(!confirm("Você não puxou dados da nuvem. Salvar apagará a nuvem. Forçar?")) return; }
-        try { const btn = document.getElementById('btnSalvarNuvem'); if(btn) btn.innerText = "Salvando..."; await fetch(db.configs.url, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'salvar_banco', dados: db }) }); db.configs.dadosBaixados = true; salvarBanco(); alert("Salvo na nuvem!"); if(btn) btn.innerText = "⬆️ Salvar na Nuvem"; } catch(e) { alert("Erro ao salvar."); }
+        try { 
+            const btn = document.getElementById('btnSalvarNuvem'); if(btn) btn.innerText = "Salvando..."; 
+            db.app_id = "gestor_compras"; // Garante o carimbo
+            await fetch(db.configs.url, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'salvar_banco', dados: db }) }); 
+            db.configs.dadosBaixados = true; salvarBanco(); alert("Salvo na nuvem!"); if(btn) btn.innerText = "⬆️ Salvar na Nuvem"; 
+        } catch(e) { alert("Erro ao salvar."); }
     }
+    
     async function puxarDaNuvem(pedirConfirmacao = true) {
         if(!db.configs.url) return;
-        try { let res = await fetch(db.configs.url, { redirect: "follow" }); let nuvemDB = await res.json(); if(nuvemDB && nuvemDB.produtos) { let modoAtual = db.configs.modo; db = nuvemDB; db.configs.modo = modoAtual; db.configs.dadosBaixados = true; salvarBanco(); if(pedirConfirmacao) { alert("Sucesso! Banco puxado da nuvem."); location.reload(); } } else { if(pedirConfirmacao) alert("A nuvem está vazia. Salve seus dados nela primeiro."); } } catch(e) { if(pedirConfirmacao) alert("Erro ao puxar da nuvem. Verifique a URL."); }
+        try { 
+            let res = await fetch(db.configs.url, { redirect: "follow" }); 
+            let nuvemDB = await res.json(); 
+            
+            // FILTRO DE SEGURANÇA: Bloqueia se identificar estrutura do Alô Cozinha
+            if(nuvemDB && nuvemDB.mesas !== undefined) {
+                alert("❌ ERRO CRÍTICO:\nEsta URL pertence ao sistema Alô Cozinha (Salão)! Operação bloqueada para proteger seus dados. Use uma URL do Google Sheets limpa para o Compras.");
+                return;
+            }
+
+            if(nuvemDB && (nuvemDB.produtos || nuvemDB.fornecedores)) { 
+                let modoAtual = db.configs.modo; db = nuvemDB; db.configs.modo = modoAtual; db.configs.dadosBaixados = true; 
+                db.app_id = "gestor_compras"; // Carimba o banco
+                salvarBanco(); 
+                if(pedirConfirmacao) { alert("Sucesso! Banco puxado da nuvem."); location.reload(); } 
+            } else { 
+                if(pedirConfirmacao) alert("A nuvem está vazia ou o link é inválido. Salve seus dados nela primeiro."); 
+            } 
+        } catch(e) { if(pedirConfirmacao) alert("Erro ao puxar da nuvem. Verifique a URL."); }
     }
+    
     function excluirTodoHistorico() { let frase = document.getElementById('inputExcluirTudo').value; if(frase === "quero excluir todo o histórico") { db.pedidosAtivos = []; salvarBanco(); alert("Histórico apagado localmente."); document.getElementById('inputExcluirTudo').value = ''; renderizarLista(); } else { alert("Frase incorreta."); } }
-    function forcarAtualizacao() { localStorage.removeItem('gc_v50'); window.location.reload(true); }
+    function forcarAtualizacao() { localStorage.removeItem('gc_v60'); window.location.reload(true); }
 
     /* =========================================================================
        INICIALIZAÇÃO E UI
@@ -404,7 +408,7 @@
         document.getElementById('fabContainer').style.display = modo === 'compras' ? 'flex' : 'none';
         
         let dicas = document.getElementById('dicasCabecalho');
-        if(modo === 'pedido') { dicas.innerHTML = "👆 Toque: Pedir Padrão<br>👈 Deslize: Desmarcar<br>✌️ 2 Toques: Editar/Obs"; } else { dicas.innerHTML = "👉 Status | ⏳ Segurar: Fornecedor<br>✌️ 2 toques: Excluir/Desriscar"; }
+        if(modo === 'pedido') { dicas.innerHTML = "👆 Toque: Pedir Padrão<br>👈 Deslize: Desmarcar<br>✌️ 2 Toques: Editar/Obs"; } else { dicas.innerHTML = "👉 Mudar Status | ⏳ Segurar: Fornecedor<br>✌️ 2 toques: Histórico/Excluir"; }
         salvarBanco(); renderizarFiltros(); renderizarLista();
     }
 
@@ -419,40 +423,50 @@
     function renderizarLista() {
         const lista = document.getElementById('listaPrincipal'); lista.innerHTML = ''; let itensMostrados = 0;
         let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = colabLogado && colabLogado.catsPermitidas && colabLogado.catsPermitidas.length > 0 ? colabLogado.catsPermitidas : null;
-        let temRascunho = false;
-        let agora = Date.now();
+        let temRascunho = false; let agora = Date.now();
 
         if (db.configs.modo === 'pedido') {
             db.produtos.forEach(p => {
                 if(categoriaAtual && p.categoria !== categoriaAtual) return; if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
                 
-                const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id && !pa.excluido && pa.status !== 'entregue');
-                const pedidoAtivo = pedidosDeste[0];
+                const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id && !pa.excluido);
+                
+                // Pedido que pode ser editado (não concluído)
+                const pedidoEditavel = pedidosDeste.find(pa => ['rascunho','pendente','pedido_forn'].includes(pa.status));
+                // Apenas o pedido mais recente para mostrar o status
+                const ultimoPedido = pedidosDeste[pedidosDeste.length-1];
                 
                 let classesExtra = ""; let infoDireita = "";
                 let padraoTexto = p.qtdPadrao ? ` (Padrão: ${p.qtdPadrao})` : "";
                 let subtitulo = `Unidades: ${p.unidades.join(', ')}${padraoTexto}`;
                 
-                if (pedidoAtivo) { 
-                    if(pedidoAtivo.status === 'rascunho') { classesExtra += "item-pedido-rascunho"; temRascunho = true; } else { classesExtra += "item-pedido-ativo"; }
-                    let obsVisual = pedidoAtivo.obs ? `<br><span style="color:#d32f2f; font-size:11px;">Obs: ${pedidoAtivo.obs}</span>` : "";
-                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><span style="font-size: 10px; color: #1565C0; margin-bottom: 2px;">Há pedido(s) ativo(s)</span><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${pedidoAtivo.qtd} ${pedidoAtivo.unidade}</span>${obsVisual}</div>`;
+                if (ultimoPedido) { 
+                    if(pedidoEditavel) {
+                        if(pedidoEditavel.status === 'rascunho') { classesExtra += "item-pedido-rascunho"; temRascunho = true; } else { classesExtra += "item-pedido-ativo"; }
+                    } else { classesExtra += "item-pedido-ativo"; }
+
+                    let statusName = "";
+                    switch(ultimoPedido.status) {
+                        case 'rascunho': statusName = 'Rascunho'; break;
+                        case 'pendente': statusName = 'Pendente'; break;
+                        case 'pedido_forn': statusName = 'Pedido Fornecedor'; break;
+                        case 'comprado': statusName = 'Comprado'; break;
+                        case 'entregue': statusName = 'Entregue'; break;
+                    }
+
+                    let obsVisual = ultimoPedido.obs ? `<br><span style="color:#d32f2f; font-size:11px;">Obs: ${ultimoPedido.obs}</span>` : "";
+                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><span style="font-size: 10px; color: #1565C0; margin-bottom: 2px;">Status: <b>${statusName}</b></span><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${ultimoPedido.qtd} ${ultimoPedido.unidade}</span>${obsVisual}</div>`;
                 }
 
-                lista.innerHTML += `<li class="item ${classesExtra}" data-id="${p.id}" data-pedid="${pedidoAtivo ? pedidoAtivo.idUnico : ''}" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)"><div style="display: flex; align-items: center; flex: 1;"><div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${p.nome.charAt(0)}</div><div class="item-info"><div class="item-title">${p.nome}</div><div class="item-subtitle">${subtitulo}</div></div></div>${infoDireita}</li>`;
+                lista.innerHTML += `<li class="item ${classesExtra}" data-id="${p.id}" data-pedid="${pedidoEditavel ? pedidoEditavel.idUnico : ''}" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)"><div style="display: flex; align-items: center; flex: 1;"><div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${p.nome.charAt(0)}</div><div class="item-info"><div class="item-title">${p.nome}</div><div class="item-subtitle">${subtitulo}</div></div></div>${infoDireita}</li>`;
                 itensMostrados++;
             });
             document.getElementById('btnEnviarPedidos').style.display = temRascunho ? 'block' : 'none';
 
         } else {
-            // MODO COMPRAS
             db.pedidosAtivos.filter(pa => pa.status !== 'rascunho').forEach(pa => {
-                // Filtro 7 dias se excluído
-                if(pa.excluido) {
-                    const diffDays = (agora - pa.dataExclusao) / (1000 * 60 * 60 * 24);
-                    if(diffDays >= 7) return; 
-                }
+                if(pa.excluido) { const diffDays = (agora - pa.dataExclusao) / (1000 * 60 * 60 * 24); if(diffDays >= 7) return; }
 
                 const p = db.produtos.find(prod => prod.id === pa.produtoId); if(!p) return; if(categoriaAtual && p.categoria !== categoriaAtual) return;
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
@@ -495,7 +509,7 @@
         if(db.configs.modo === 'pedido') { 
             const pId = el.getAttribute('data-id'); const pedId = el.getAttribute('data-pedid'); 
             if(!pedId) {
-                // Adiciona direto com Qtd Padrão
+                // Se não tem pedId editável (ou seja, tá limpo ou só tem comprado/entregue), CRIA NOVO
                 const p = db.produtos.find(x => x.id === pId); if(!p) return;
                 let qtd = p.qtdPadrao || 1; let un = p.unidades[0] || 'un';
                 db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, obs: '', status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
@@ -508,10 +522,7 @@
         if(db.configs.modo === 'pedido') { const pedId = el.getAttribute('data-pedid'); if(pedId) abrirModalEditarPedido(pedId); } 
         else {
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
-            if(pa) {
-                if(pa.excluido) { if(confirm("Desfazer exclusão?")) { pa.excluido = false; salvarBanco(); renderizarLista(); } }
-                else { abrirHistoricoCompra(paId); }
-            }
+            if(pa) { if(pa.excluido) { if(confirm("Desfazer exclusão?")) { pa.excluido = false; salvarBanco(); renderizarLista(); } } else { abrirHistoricoCompra(paId); } }
         }
     }
     
@@ -521,7 +532,7 @@
         if(db.configs.modo === 'compras') {
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
             if(pa && !pa.excluido) {
-                if (pa.status === 'pendente') { pa.status = 'comprado'; } else if (pa.status === 'pedido_forn') { pa.status = 'entregue'; pa.excluido = true; pa.dataExclusao = Date.now(); }
+                if (pa.status === 'pendente') { pa.status = 'comprado'; } else if (pa.status === 'pedido_forn') { pa.status = 'entregue'; }
                 salvarBanco(); renderizarLista();
             }
         }
@@ -537,12 +548,15 @@
         } 
         else { 
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
-            if(pa && !pa.excluido) { pa.status = 'pendente'; salvarBanco(); renderizarLista(); } 
+            if(pa && !pa.excluido) { 
+                if(pa.status === 'comprado') { if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; salvarBanco(); renderizarLista(); } }
+                else if (pa.status === 'entregue') { if(confirm("Deseja voltar este item para 'Pedido Fornecedor'?")) { pa.status = 'pedido_forn'; salvarBanco(); renderizarLista(); } }
+            } 
         }
     }
 
     /* =========================================================================
-       OPERAÇÕES DE PEDIDO (RASCUNHO -> COMPRAS)
+       OPERAÇÕES DE PEDIDO
        ========================================================================= */
     function abrirModalEditarPedido(paId) { 
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); 
@@ -557,31 +571,35 @@
         let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
         if(pa) { 
             pa.qtd = qtd; pa.unidade = document.getElementById('editPedidoUnidade').value; pa.obs = document.getElementById('editPedidoObs').value;
-            pa.historico = pa.historico || []; pa.historico.push({ data: new Date().toLocaleString(), msg: `Editado para: ${qtd} ${pa.unidade}` });
+            pa.historico = pa.historico || []; pa.historico.push({ data: new Date().toLocaleString(), msg: `Editado: ${qtd} ${pa.unidade}` });
             salvarBanco(); 
         } 
         fecharModal('modalEditarPedido'); renderizarLista(); 
     }
     
-    function excluirRascunho() { 
-        const paId = document.getElementById('editPedidoId').value; 
-        let pa = db.pedidosAtivos.find(x => x.idUnico === paId);
-        if(pa && pa.status === 'rascunho') { db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== paId); }
-        salvarBanco(); fecharModal('modalEditarPedido'); renderizarLista(); 
-    }
+    function excluirRascunho() { const paId = document.getElementById('editPedidoId').value; let pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && pa.status === 'rascunho') { db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== paId); } salvarBanco(); fecharModal('modalEditarPedido'); renderizarLista(); }
 
-    function enviarPedidosParaCompras() {
-        let rascunhos = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido);
-        rascunhos.forEach(pa => { pa.status = 'pendente'; }); salvarBanco(); alert("Pedidos enviados com sucesso!"); renderizarLista();
-    }
+    function enviarPedidosParaCompras() { let rascunhos = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido); rascunhos.forEach(pa => { pa.status = 'pendente'; }); salvarBanco(); alert("Pedidos enviados com sucesso!"); renderizarLista(); }
 
     /* =========================================================================
        HISTÓRICO NO MODO COMPRAS
        ========================================================================= */
     function abrirHistoricoCompra(paId) {
-        const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; document.getElementById('histCompraId').value = paId;
-        let html = "<ul>"; if(pa.historico) pa.historico.forEach(h => { html += `<li>${h.data} - ${h.msg}</li>`; }); else html += "<li>Sem histórico</li>"; html += "</ul>";
-        document.getElementById('histCompraLista').innerHTML = html; document.getElementById('modalHistoricoCompra').style.display = 'flex';
+        const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(prod => prod.id === pa.produtoId);
+        document.getElementById('histCompraId').value = paId;
+        
+        let htmlEdicao = "<ul>"; if(pa.historico) pa.historico.forEach(h => { htmlEdicao += `<li>${h.data} - ${h.msg}</li>`; }); else htmlEdicao += "<li>Sem histórico</li>"; htmlEdicao += "</ul>";
+        document.getElementById('histCompraLista').innerHTML = htmlEdicao;
+
+        let htmlPrecos = "<ul>";
+        if(p && p.historicoPrecos && p.historicoPrecos.length > 0) {
+            let rev = [...p.historicoPrecos].reverse();
+            rev.forEach(h => { htmlPrecos += `<li>${h.data}: R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</li>`; });
+        } else { htmlPrecos += "<li>Sem histórico</li>"; }
+        htmlPrecos += "</ul>";
+        document.getElementById('histPrecosLista').innerHTML = htmlPrecos;
+
+        document.getElementById('modalHistoricoCompra').style.display = 'flex';
     }
 
     function excluirItemCompra() {
@@ -608,16 +626,27 @@
 
         Array.from(itensSelecionadosRelatorio).forEach(idUnico => {
             const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); if(!p) return;
-            texto += `• ${p.nome} - Qtd: ${pa.qtd} ${pa.unidade}${pa.obs ? ' ('+pa.obs+')' : ''}\n`;
+            texto += `▪ ${p.nome} - Qtd: ${pa.qtd} ${pa.unidade}${pa.obs ? ' *(obs.: ' + pa.obs + ')*' : ''}\n`;
         });
         document.getElementById('relatTexto').value = texto;
-        
-        const btnZap = document.querySelector('.btn-zap'); if(forn && forn.telefone) { btnZap.dataset.tel = forn.telefone; } else { btnZap.dataset.tel = ""; }
     }
+    
     function enviarWhatsAppAPI() {
-        const texto = document.getElementById('relatTexto').value; const tel = document.querySelector('.btn-zap').dataset.tel;
-        if(tel) { window.open(`https://wa.me/55${tel.replace(/\D/g,'')}?text=${encodeURIComponent(texto)}`, '_blank'); } 
-        else { const txtArea = document.getElementById('relatTexto'); txtArea.select(); document.execCommand('copy'); alert("Copiado! Selecione o contato."); window.open(`https://wa.me/`, '_blank'); }
+        const texto = document.getElementById('relatTexto').value; 
+        const fornId = document.getElementById('relatFornecedor').value; 
+        const forn = db.fornecedores.find(f => f.id === fornId);
+        const tel = forn ? forn.telefone : null;
+
+        if(tel) { 
+            let num = tel.replace(/\D/g,'');
+            if(num.length === 10 || num.length === 11) num = '55' + num;
+            window.open(`https://wa.me/${num}?text=${encodeURIComponent(texto)}`, '_blank'); 
+        } 
+        else { 
+            const txtArea = document.getElementById('relatTexto'); txtArea.select(); document.execCommand('copy'); 
+            alert("Copiado! Selecione o contato no WhatsApp manualmente."); 
+            window.open(`https://wa.me/`, '_blank'); 
+        }
     }
 
     /* =========================================================================
