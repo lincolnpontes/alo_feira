@@ -140,6 +140,7 @@
         </select>
         <div id="dicasCabecalho" class="dicas-cabecalho"></div>
         <div class="header-actions">
+            <button id="btnHistHoje" onclick="abrirPedidosHoje()" style="margin-right: 12px; font-size: 22px;">📋</button>
             <button onclick="abrirAdmin()">⚙️</button>
         </div>
     </div>
@@ -157,6 +158,16 @@
         <button class="fab fab-undo" onclick="desfazerAcao()" id="btnDesfazer">↩️</button>
         <button class="fab fab-select" onclick="toggleModoSelecao()" id="btnModoSelecao">☑️</button>
         <button class="fab fab-zap" onclick="abrirModalRelatorio()">📄</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalPedidosHoje">
+    <div class="modal">
+        <div class="modal-title">Pedidos Enviados Hoje</div>
+        <div id="listaPedidosHoje" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="fecharModal('modalPedidosHoje')" style="width: 100%;">Fechar</button>
+        </div>
     </div>
 </div>
 
@@ -533,10 +544,12 @@
         if(modo === 'pedido') { 
             dicas.innerHTML = "<div>👆 Toque: Pedir</div><div>👈 Deslize: Desmarcar</div><div>✌️ 2 Toques: Editar</div>"; 
             document.getElementById('fabContainer').style.display = 'none';
+            document.getElementById('btnHistHoje').style.display = 'inline-block';
         } else { 
             dicas.innerHTML = "<div>👉 Deslize: Mudar Status</div><div>👈 Deslize: Voltar Status</div><div>👆 Segure: Pedido ao Forn.</div><div>✌️ 2 Toques: Detalhes</div>"; 
             document.getElementById('fabContainer').style.display = 'flex';
             document.getElementById('btnEnviarPedidos').style.display = 'none';
+            document.getElementById('btnHistHoje').style.display = 'none';
         }
         document.getElementById('btnModoSelecao').style.backgroundColor = '#ab47bc';
         salvarBanco(); atualizarBotaoDesfazer(); renderizarFiltros(); renderizarLista();
@@ -714,7 +727,7 @@
                     case 'excluido': nomeStatus = 'Excluído'; break;
                 }
                 
-                let statusText = nomeStatus + tempoTxt; // Ex: "Pendente hoje", "Comprado ontem"
+                let statusText = nomeStatus + tempoTxt; 
 
                 let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado')) ? ' <span style="font-size:10px; color:#d32f2f; font-weight:bold;">(Editado)</span>' : '';
                 let obsVisual = pa.obs ? `<br><span style="color:#000; font-weight:bold;">Obs: ${pa.obs}</span>` : "";
@@ -728,6 +741,86 @@
 
     function toggleModoSelecao() { modoSelecaoAtivo = !modoSelecaoAtivo; document.getElementById('btnModoSelecao').style.backgroundColor = modoSelecaoAtivo ? '#6a1b9a' : '#ab47bc'; if(!modoSelecaoAtivo) itensSelecionadosRelatorio.clear(); renderizarLista(); }
     function cliqueItemCompra(idUnico) { if(modoSelecaoAtivo) { if(itensSelecionadosRelatorio.has(idUnico)) itensSelecionadosRelatorio.delete(idUnico); else itensSelecionadosRelatorio.add(idUnico); renderizarLista(); } }
+
+    /* =========================================================================
+       PEDIDOS DO DIA (HISTÓRICO)
+       ========================================================================= */
+    function abrirPedidosHoje() {
+        const modal = document.getElementById('modalPedidosHoje');
+        const lista = document.getElementById('listaPedidosHoje');
+        lista.innerHTML = '';
+        
+        let hoje = new Date().setHours(0,0,0,0);
+        let itensHoje = db.pedidosAtivos.filter(pa => {
+            if(pa.status === 'rascunho' || pa.excluido) return false;
+            let dataPa = pa.dataStatus ? new Date(pa.dataStatus).setHours(0,0,0,0) : 0;
+            return dataPa === hoje;
+        });
+
+        itensHoje.sort((a,b) => (b.dataStatus || 0) - (a.dataStatus || 0));
+
+        if(itensHoje.length === 0) {
+            lista.innerHTML = '<div style="padding:20px; text-align:center; color:#666; font-size:14px;">Nenhum pedido enviado hoje.</div>';
+        } else {
+            itensHoje.forEach(pa => {
+                const p = db.produtos.find(x => x.id === pa.produtoId);
+                if(!p) return;
+                
+                let statusNome = pa.status;
+                if(pa.status === 'pendente') statusNome = 'Pendente ⏳';
+                else if(pa.status === 'pedido_forn') statusNome = 'No Fornecedor 📦';
+                else if(pa.status === 'comprado') statusNome = 'Comprado ✅';
+                else if(pa.status === 'entregue') statusNome = 'Entregue ✅';
+
+                let acoes = '';
+                if(pa.status === 'pendente' || pa.status === 'pedido_forn') {
+                    acoes = `
+                        <button onclick="prepararEdicaoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px;">✏️</button>
+                        <button onclick="excluirPedidoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px; color:#d32f2f;">🗑️</button>
+                    `;
+                } else {
+                    acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${statusNome.split(' ')[0]})</span>`;
+                }
+
+                let obsVisual = pa.obs ? `<br><span style="font-size:11px; color:#666;">Obs: ${pa.obs}</span>` : '';
+                let qtdNum = pa.qtd !== '' ? pa.qtd : '-';
+
+                lista.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #eee;">
+                        <div style="flex:1;">
+                            <strong style="font-size:14px; color:#333;">${p.nome}</strong><br>
+                            <span style="font-size:13px; color:#1565C0; font-weight:bold;">${qtdNum} ${pa.unidade}</span>
+                            <span style="font-size:11px; color:#666; margin-left:5px;">- ${statusNome}</span>
+                            ${obsVisual}
+                        </div>
+                        <div style="display:flex; gap:5px; align-items:center;">
+                            ${acoes}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        modal.style.display = 'flex';
+    }
+
+    function prepararEdicaoHoje(idUnico) {
+        abrirModalEditarPedido(idUnico);
+    }
+
+    function excluirPedidoHoje(idUnico) {
+        if(confirm("Deseja cancelar e excluir este item pedido hoje?")) {
+            let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico);
+            if(pa) {
+                pa.excluido = true;
+                pa.status = 'excluido';
+                pa.dataExclusao = Date.now();
+                salvarBanco();
+                abrirPedidosHoje();
+                renderizarLista();
+            }
+        }
+    }
+
 
     /* =========================================================================
        SISTEMA DE DESFAZER (UNDO)
@@ -930,7 +1023,12 @@
             pa.historico = pa.historico || []; pa.historico.push({ data: new Date().toLocaleString(), msg: `Editado: ${qtd} ${pa.unidade}` });
             salvarBanco(); 
         } 
-        fecharModal('modalEditarPedido'); renderizarLista(); 
+        fecharModal('modalEditarPedido'); 
+        renderizarLista(); 
+        
+        if(document.getElementById('modalPedidosHoje').style.display === 'flex') {
+            abrirPedidosHoje();
+        }
     }
     
     function enviarPedidosParaCompras() { 
