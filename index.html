@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Gestor de Compras v9.0</title>
+    <title>Gestor de Compras v10.0</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -77,7 +77,10 @@
         .form-group label { display: block; margin-bottom: 4px; color: #555; font-weight: bold; font-size: 12px; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
         
-        .input-cor { height: 40px; padding: 0; border: none; cursor: pointer; width: 100%; border-radius: 5px; }
+        /* CAIXAS DE COR GRANDES */
+        .input-cor { height: 55px; padding: 0; border: 1px solid #ddd; cursor: pointer; width: 100%; border-radius: 8px; appearance: none; -webkit-appearance: none; }
+        .input-cor::-webkit-color-swatch-wrapper { padding: 0; }
+        .input-cor::-webkit-color-swatch { border: none; border-radius: 8px; }
 
         .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
         .btn-cancel, .btn-action, .btn-danger { padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; flex: 1; text-align: center; border: none; font-size: 14px; }
@@ -95,9 +98,9 @@
         input:checked + .slider:before { transform: translateX(20px); }
 
         .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 90; }
-        .fab { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; color: white; border: none; }
+        .fab { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; color: white; border: none; transition: background-color 0.3s; }
         .fab-zap { background-color: #25d366; }
-        .fab-select { background-color: #ff9800; }
+        .fab-select { background-color: #ab47bc; } /* Roxo claro */
         
         .btn-enviar-pedidos { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 15px; background-color: #1565C0; color: white; font-weight: bold; font-size: 16px; border: none; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 90; text-align: center; }
 
@@ -168,10 +171,14 @@
         <div class="modal-title">Detalhes do Pedido</div>
         <input type="hidden" id="editPedidoId">
         <div style="display: flex; gap:10px;">
-            <div class="form-group" style="flex:1;"><label>Quantidade:</label><input type="number" autocomplete="off" name="qtd_nofill_1" id="editPedidoQtd" step="0.01" onfocus="this.select()"></div>
+            <div class="form-group" style="flex:1;"><label>Quantidade:</label>
+                <input type="text" inputmode="decimal" autocomplete="new-password" name="xyz_qtd_01" id="editPedidoQtd" readonly ontouchstart="this.removeAttribute('readonly');" onfocus="this.removeAttribute('readonly'); this.select();">
+            </div>
             <div class="form-group" style="flex:1;"><label>Unidade:</label><select id="editPedidoUnidade"></select></div>
         </div>
-        <div class="form-group"><label>Observação (Opcional):</label><input type="text" autocomplete="off" name="obs_nofill_1" id="editPedidoObs" placeholder="Ex: maduro, marca tal..." onfocus="this.select()"></div>
+        <div class="form-group"><label>Observação (Opcional):</label>
+            <input type="text" autocomplete="new-password" name="xyz_obs_01" id="editPedidoObs" placeholder="Ex: maduro, marca tal..." readonly ontouchstart="this.removeAttribute('readonly');" onfocus="this.removeAttribute('readonly'); this.select();">
+        </div>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="fecharModal('modalEditarPedido')">Cancelar</button>
             <button class="btn-action" onclick="salvarEdicaoPedido()">Salvar</button>
@@ -188,10 +195,14 @@
 
         <div style="background:#f1f8e9; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #c5e1a5;">
             <div style="display:flex; gap:10px; margin-bottom:5px;">
-                <div class="form-group" style="flex:1; margin-bottom:0;"><label>Qtd:</label><input type="number" id="histCompraQtd" autocomplete="off" name="qtd_nofill_2" onfocus="this.select()"></div>
+                <div class="form-group" style="flex:1; margin-bottom:0;"><label>Qtd:</label>
+                    <input type="text" inputmode="decimal" id="histCompraQtd" autocomplete="new-password" name="xyz_qtd_02" readonly ontouchstart="this.removeAttribute('readonly');" onfocus="this.removeAttribute('readonly'); this.select();">
+                </div>
                 <div class="form-group" style="flex:1; margin-bottom:0;"><label>Und:</label><select id="histCompraUnd"></select></div>
             </div>
-            <div class="form-group" style="margin-bottom:0;"><label>Obs:</label><input type="text" id="histCompraObs" autocomplete="off" name="obs_nofill_2" onfocus="this.select()"></div>
+            <div class="form-group" style="margin-bottom:0;"><label>Obs:</label>
+                <input type="text" id="histCompraObs" autocomplete="new-password" name="xyz_obs_02" readonly ontouchstart="this.removeAttribute('readonly');" onfocus="this.removeAttribute('readonly'); this.select();">
+            </div>
         </div>
 
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Marcas no Relatório</h4>
@@ -286,10 +297,11 @@
         <div class="modal-title">Produto</div>
         <input type="hidden" id="prodId">
         <div class="form-group"><label>Nome (Visão Interna):</label><input type="text" autocomplete="off" name="rnd_prod_1" id="prodNome"></div>
-        <div class="form-group"><label>Nome P/ Fornecedor (Opcional):</label><input type="text" autocomplete="off" name="rnd_prod_desc" id="prodDesc" placeholder="Ex: Alcatra Maturada Friboi 1953"></div>
+        <div class="form-group"><label>Nome para o Relatório (Opcional):</label><input type="text" autocomplete="off" name="rnd_prod_desc" id="prodDesc" placeholder="digite aqui"></div>
+        <div class="form-group"><label>Observação Padrão (Opcional):</label><input type="text" autocomplete="off" name="rnd_prod_obs" id="prodObsPadrao" placeholder="Ex: maduro, marca tal..."></div>
         <div class="form-group"><label>Categoria:</label><select id="prodCategoria"></select></div>
         <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex:1;"><label>Qtd Padrão:</label><input type="number" autocomplete="off" name="rnd_prod_2" id="prodQtdPadrao" step="0.01" placeholder="Ex: 6"></div>
+            <div class="form-group" style="flex:1;"><label>Qtd Padrão:</label><input type="text" inputmode="decimal" autocomplete="off" name="rnd_prod_2" id="prodQtdPadrao" placeholder="Ex: 6.5"></div>
             <div class="form-group" style="flex:2;"><label>Unidades (vírgula):</label><input type="text" autocomplete="off" name="rnd_prod_3" id="prodUnidades" placeholder="ex: kg, cx, pct"></div>
         </div>
         <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" autocomplete="off" name="rnd_prod_4" id="prodMarcasOk" placeholder="Ex: Sadia, Perdigão"></div>
@@ -360,10 +372,11 @@
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
             configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false }
         };
-        let salvo = localStorage.getItem('gc_v90');
+        let salvo = localStorage.getItem('gc_v100');
+        if(!salvo) salvo = localStorage.getItem('gc_v90'); // migração simples
         return salvo ? JSON.parse(salvo) : base;
     }
-    function salvarBanco() { localStorage.setItem('gc_v90', JSON.stringify(db)); }
+    function salvarBanco() { localStorage.setItem('gc_v100', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
     function formatarDataHora(ts) {
@@ -383,6 +396,8 @@
     function maskTelefone(el) { let v = el.value.replace(/\D/g,""); v = v.replace(/^(\d{2})(\d)/g,"($1) $2"); v = v.replace(/(\d)(\d{4})$/,"$1-$2"); el.value = v; }
     function maskMoeda(el) { let v = el.value.replace(/\D/g, ""); if(!v) { el.value = ""; return; } v = (parseFloat(v) / 100).toLocaleString('pt-BR', {minimumFractionDigits: 2}); el.value = v; }
     function parseMoeda(str) { if(!str) return 0; return parseFloat(str.replace(/\./g, "").replace(",", ".")); }
+    // Ajuda a converter virgula do input text decimal para ponto no JS
+    function parseFloatBr(str) { if(!str) return 0; return parseFloat(str.replace(',','.')); }
 
     /* =========================================================================
        NUVEM E ZONA DE RISCO
@@ -420,7 +435,7 @@
     }
     
     function excluirTodoHistorico() { let frase = document.getElementById('inputExcluirTudo').value; if(frase === "quero excluir todo o histórico") { db.pedidosAtivos = []; salvarBanco(); alert("Histórico apagado localmente."); document.getElementById('inputExcluirTudo').value = ''; renderizarLista(); } else { alert("Frase incorreta."); } }
-    function forcarAtualizacao() { localStorage.removeItem('gc_v90'); window.location.reload(true); }
+    function forcarAtualizacao() { localStorage.removeItem('gc_v100'); window.location.reload(true); }
 
     /* =========================================================================
        INICIALIZAÇÃO E UI
@@ -428,7 +443,12 @@
     window.onload = () => { setTimeout(() => { document.getElementById('splashScreen').style.display = 'none'; }, 1000); if(db.configs.exigirColaborador && !db.configs.colabAtivoId) { abrirSelecaoColaboradorInicial(); } else { iniciarApp(); } };
 
     function iniciarApp() { document.getElementById('seletorModo').value = db.configs.modo; document.getElementById('configExigirColab').checked = db.configs.exigirColaborador; alterarModo(db.configs.modo); }
-    function abrirSelecaoColaboradorInicial() { const sel = document.getElementById('selectColabInicial'); sel.innerHTML = '<option value="">-- Selecione --</option>'; db.colaboradores.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nome}</option>`); document.getElementById('modalColaboradorObrigatorio').style.display = 'flex'; }
+    function abrirSelecaoColaboradorInicial() { 
+        const sel = document.getElementById('selectColabInicial'); sel.innerHTML = '<option value="">-- Selecione --</option>'; 
+        let colabOrdem = [...db.colaboradores].sort((a,b) => a.nome.localeCompare(b.nome));
+        colabOrdem.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nome}</option>`); 
+        document.getElementById('modalColaboradorObrigatorio').style.display = 'flex'; 
+    }
     function definirColaboradorAtivo() { const id = document.getElementById('selectColabInicial').value; if(!id) return alert("Selecione."); db.configs.colabAtivoId = id; salvarBanco(); fecharModal('modalColaboradorObrigatorio'); iniciarApp(); }
     function toggleExigirColab() { db.configs.exigirColaborador = document.getElementById('configExigirColab').checked; salvarBanco(); }
 
@@ -445,6 +465,7 @@
             document.getElementById('fabContainer').style.display = 'flex';
             document.getElementById('btnEnviarPedidos').style.display = 'none';
         }
+        document.getElementById('btnModoSelecao').style.backgroundColor = '#ab47bc'; // Reseta cor fab
         salvarBanco(); renderizarFiltros(); renderizarLista();
     }
 
@@ -537,7 +558,7 @@
         if(itensMostrados === 0) lista.innerHTML = `<li style="padding: 20px; text-align: center; color: #999;">Nenhum item.</li>`;
     }
 
-    function toggleModoSelecao() { modoSelecaoAtivo = !modoSelecaoAtivo; document.getElementById('btnModoSelecao').style.backgroundColor = modoSelecaoAtivo ? '#6a1b9a' : '#ff9800'; if(!modoSelecaoAtivo) itensSelecionadosRelatorio.clear(); renderizarLista(); }
+    function toggleModoSelecao() { modoSelecaoAtivo = !modoSelecaoAtivo; document.getElementById('btnModoSelecao').style.backgroundColor = modoSelecaoAtivo ? '#6a1b9a' : '#ab47bc'; if(!modoSelecaoAtivo) itensSelecionadosRelatorio.clear(); renderizarLista(); }
     function cliqueItemCompra(idUnico) { if(modoSelecaoAtivo) { if(itensSelecionadosRelatorio.has(idUnico)) itensSelecionadosRelatorio.delete(idUnico); else itensSelecionadosRelatorio.add(idUnico); renderizarLista(); } }
 
     /* =========================================================================
@@ -562,8 +583,8 @@
             const pId = el.getAttribute('data-id'); const pedId = el.getAttribute('data-pedid'); 
             if(!pedId) {
                 const p = db.produtos.find(x => x.id === pId); if(!p) return;
-                let qtd = p.qtdPadrao || 1; let un = p.unidades[0] || 'un';
-                db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, obs: '', status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
+                let qtd = p.qtdPadrao || 1; let un = p.unidades[0] || 'un'; let obsPad = p.obsPadrao || '';
+                db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco(); renderizarLista();
             } 
         } 
@@ -574,9 +595,9 @@
             let pedId = el.getAttribute('data-pedid'); const pId = el.getAttribute('data-id');
             if(!pedId) {
                 const p = db.produtos.find(x => x.id === pId); if(!p) return;
-                let qtd = p.qtdPadrao || 1; let un = p.unidades[0] || 'un';
+                let qtd = p.qtdPadrao || 1; let un = p.unidades[0] || 'un'; let obsPad = p.obsPadrao || '';
                 pedId = 'pa_' + Date.now();
-                db.pedidosAtivos.push({ idUnico: pedId, produtoId: pId, qtd: qtd, unidade: un, obs: '', status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
+                db.pedidosAtivos.push({ idUnico: pedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco();
             }
             abrirModalEditarPedido(pedId); 
@@ -641,7 +662,7 @@
     }
     
     function salvarEdicaoPedido() { 
-        const paId = document.getElementById('editPedidoId').value; const qtd = parseFloat(document.getElementById('editPedidoQtd').value); 
+        const paId = document.getElementById('editPedidoId').value; const qtd = parseFloatBr(document.getElementById('editPedidoQtd').value); 
         if(!qtd || qtd <= 0) return alert("Inválido."); 
         let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
         if(pa) { 
@@ -703,7 +724,7 @@
     }
 
     function salvarDetalhesCompra() {
-        const paId = document.getElementById('histCompraId').value; const qtd = parseFloat(document.getElementById('histCompraQtd').value); 
+        const paId = document.getElementById('histCompraId').value; const qtd = parseFloatBr(document.getElementById('histCompraQtd').value); 
         if(!qtd || qtd <= 0) return alert("Inválido."); 
         let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
         if(pa) { 
@@ -719,8 +740,14 @@
        ========================================================================= */
     function abrirModalRelatorio() {
         if(itensSelecionadosRelatorio.size === 0) return alert("Selecione os itens marcando o botão ☑️ primeiro.");
-        const selForn = document.getElementById('relatFornecedor'); selForn.innerHTML = '<option value="">-- Todos --</option>'; db.fornecedores.forEach(f => selForn.innerHTML += `<option value="${f.id}">${f.nome} (Vend: ${f.vendedor || 'N/A'})</option>`);
-        const selColab = document.getElementById('relatColaborador'); selColab.innerHTML = ''; db.colaboradores.forEach(c => selColab.innerHTML += `<option value="${c.id}" ${c.id === db.configs.colabAtivoId ? 'selected' : ''}>${c.nome}</option>`);
+        const selForn = document.getElementById('relatFornecedor'); selForn.innerHTML = '<option value="">-- Todos --</option>'; 
+        let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome));
+        fornOrdem.forEach(f => selForn.innerHTML += `<option value="${f.id}">${f.nome} (Vend: ${f.vendedor || 'N/A'})</option>`);
+        
+        const selColab = document.getElementById('relatColaborador'); selColab.innerHTML = ''; 
+        let colabOrdem = [...db.colaboradores].sort((a,b) => a.nome.localeCompare(b.nome));
+        colabOrdem.forEach(c => selColab.innerHTML += `<option value="${c.id}" ${c.id === db.configs.colabAtivoId ? 'selected' : ''}>${c.nome}</option>`);
+        
         document.getElementById('modalRelatorio').style.display = 'flex'; gerarTextoRelatorio();
     }
     
@@ -788,8 +815,16 @@
                 lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><span class="color-preview" style="background:${c.cor}; color:${c.corTexto}; padding:2px 6px; border-radius:4px;">${c.nome}</span></div><div class="gerenciar-actions"><button onclick="moverCategoria(${index}, -1)">⬆️</button><button onclick="moverCategoria(${index}, 1)">⬇️</button><button onclick="abrirFormCategoria('${c.id}')">✏️</button><button onclick="excluirItem('categorias', '${c.id}')">🗑️</button></div></div>`; 
             }); 
         } 
-        else if (tipo === 'colaboradores') { titulo.innerText = "Colaboradores"; btnNovo.onclick = () => abrirFormColaborador(null); db.colaboradores.forEach((c) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${c.nome}</strong></div><div class="gerenciar-actions"><button onclick="abrirFormColaborador('${c.id}')">✏️</button><button onclick="excluirItem('colaboradores', '${c.id}')">🗑️</button></div></div>`; }); } 
-        else if (tipo === 'fornecedores') { titulo.innerText = "Fornecedores"; btnNovo.onclick = () => abrirFormFornecedor(null); db.fornecedores.forEach((f) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${f.nome}</strong><br><span style="color:#666">${f.telefone}</span></div><div class="gerenciar-actions"><button onclick="abrirFormFornecedor('${f.id}')">✏️</button><button onclick="excluirItem('fornecedores', '${f.id}')">🗑️</button></div></div>`; }); }
+        else if (tipo === 'colaboradores') { 
+            titulo.innerText = "Colaboradores"; btnNovo.onclick = () => abrirFormColaborador(null); 
+            let colabOrdem = [...db.colaboradores].sort((a,b) => a.nome.localeCompare(b.nome));
+            colabOrdem.forEach((c) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${c.nome}</strong></div><div class="gerenciar-actions"><button onclick="abrirFormColaborador('${c.id}')">✏️</button><button onclick="excluirItem('colaboradores', '${c.id}')">🗑️</button></div></div>`; }); 
+        } 
+        else if (tipo === 'fornecedores') { 
+            titulo.innerText = "Fornecedores"; btnNovo.onclick = () => abrirFormFornecedor(null); 
+            let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome));
+            fornOrdem.forEach((f) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${f.nome}</strong><br><span style="color:#666">${f.telefone}</span></div><div class="gerenciar-actions"><button onclick="abrirFormFornecedor('${f.id}')">✏️</button><button onclick="excluirItem('fornecedores', '${f.id}')">🗑️</button></div></div>`; }); 
+        }
         document.getElementById('modalListagem').style.display = 'flex';
     }
 
@@ -806,14 +841,14 @@
     function abrirFormProduto(id) {
         fecharModal('modalListagem'); const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
         if(id) {
-            const p = db.produtos.find(x => x.id === id); document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodDesc').value = p.descFornecedor || ''; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = p.qtdPadrao || '';
+            const p = db.produtos.find(x => x.id === id); document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodDesc').value = p.descFornecedor || ''; document.getElementById('prodObsPadrao').value = p.obsPadrao || ''; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = p.qtdPadrao || '';
             if(p.historicoPrecos && p.historicoPrecos.length > 0) { const h = p.historicoPrecos[p.historicoPrecos.length-1]; document.getElementById('prodPreco').value = h.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2}); document.getElementById('prodPrecoData').value = h.data; } else { document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); }
-        } else { document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodUnidades').value = 'un'; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodPreco').value = ''; document.getElementById('prodQtdPadrao').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); }
+        } else { document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = 'un'; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodPreco').value = ''; document.getElementById('prodQtdPadrao').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); }
         document.getElementById('modalFormProduto').style.display = 'flex';
     }
     function salvarProduto() {
-        const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; const qtdPadrao = parseFloat(document.getElementById('prodQtdPadrao').value) || null;
-        const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : ['un'], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: [{ data: pData, preco: pVal }] };
+        const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; const qtdPadrao = parseFloatBr(document.getElementById('prodQtdPadrao').value) || null;
+        const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : ['un'], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: [{ data: pData, preco: pVal }] };
         const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo);
         salvarBanco(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista();
     }
