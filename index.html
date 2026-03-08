@@ -17,7 +17,7 @@
         
         /* SPLASH SCREEN */
         #splashScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #1565C0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; transition: opacity 0.5s ease; }
-        .splash-logo { width: 90px; height: 90px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); background-color: white; object-fit: cover; }
+        .splash-logo { width: 90px; height: 90px; margin-bottom: 15px; object-fit: contain; background-color: transparent; }
         .splash-titulo { font-size: 28px; font-weight: bold; letter-spacing: 1px; }
         .splash-versao { font-size: 14px; margin-top: 5px; opacity: 0.8; }
         
@@ -42,13 +42,13 @@
         .chip { background-color: #e0e0e0; color: #333; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold; border: 2px solid transparent; }
         .chip.active { border-color: #333; opacity: 0.9; }
 
-        /* LISTAS & ITENS */
+        /* LISTAS & ITENS COMPACTOS */
         .list { padding: 0; margin: 0; list-style: none; }
-        .item { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #eee; position: relative; transition: background 0.2s; }
-        .item-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; flex-shrink: 0; color: white; font-size: 18px; }
+        .item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #eee; position: relative; transition: background 0.2s; }
+        .item-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px; flex-shrink: 0; color: white; font-size: 15px; }
         .item-info { flex: 1; pointer-events: none; display: flex; flex-direction: column; justify-content: center; }
-        .item-title { font-weight: bold; font-size: 16px; margin-bottom: 2px; }
-        .item-subtitle { color: #666; font-size: 12px; line-height: 1.4; }
+        .item-title { font-weight: bold; font-size: 14px; margin-bottom: 2px; }
+        .item-subtitle { color: #666; font-size: 11px; line-height: 1.3; }
         
         /* STATUS & CORES */
         .riscado { opacity: 0.5; }
@@ -61,7 +61,7 @@
         .item-pedido-rascunho { border-left: 4px solid #1565C0; background-color: #e3f2fd; }
 
         /* BADGES MODO PEDIDO */
-        .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; color: white; display: inline-block; }
+        .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; color: white; display: inline-block; }
         .bg-pendente { background-color: #f57f17; }
         .bg-pedido_forn { background-color: #9c27b0; }
         .bg-comprado { background-color: #1b5e20; }
@@ -81,7 +81,6 @@
         .form-group label { display: block; margin-bottom: 4px; color: #555; font-weight: bold; font-size: 12px; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
         
-        /* CAIXAS DE COR GRANDES */
         .input-cor { height: 55px; padding: 0; border: 1px solid #ddd; cursor: pointer; width: 100%; border-radius: 8px; appearance: none; -webkit-appearance: none; }
         .input-cor::-webkit-color-swatch-wrapper { padding: 0; }
         .input-cor::-webkit-color-swatch { border: none; border-radius: 8px; }
@@ -109,7 +108,7 @@
         .fab { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; color: white; border: none; transition: background-color 0.3s; }
         .fab-zap { background-color: #25d366; }
         .fab-select { background-color: #ab47bc; }
-        .fab-undo { background-color: #607d8b; display: none; } /* Botão Desfazer */
+        .fab-undo { background-color: #607d8b; display: none; }
         
         .btn-enviar-pedidos { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 15px; background-color: #1565C0; color: white; font-weight: bold; font-size: 16px; border: none; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 90; text-align: center; }
 
@@ -118,9 +117,11 @@
         .gerenciar-actions button { background: #eee; border: none; cursor: pointer; font-size: 14px; margin-left: 5px; padding: 6px; border-radius: 4px; }
         
         .marca-sistema { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; margin-bottom: 20px; }
-        .marca-sistema img { width: 65px; height: 65px; border-radius: 15px; margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); object-fit: cover; }
+        .marca-sistema img { width: 65px; height: 65px; border-radius: 15px; margin-bottom: 8px; object-fit: contain; background: transparent; }
         .marca-sistema .titulo { font-size: 22px; font-weight: bold; color: #1565C0; }
         .marca-sistema .versao { font-size: 12px; color: #666; }
+        
+        .cat-header { background: #e0e0e0; padding: 4px 15px; font-weight: bold; font-size: 11px; color: #555; text-transform: uppercase; border-bottom: 1px solid #ccc; display: flex; align-items: center; }
     </style>
 </head>
 <body class="theme-pedido" oncontextmenu="return false;">
@@ -285,7 +286,7 @@
         <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
         <div class="form-group" style="display:flex; align-items:center;">
             <label class="switch"><input type="checkbox" id="configExigirColab" onchange="toggleExigirColab()"><span class="slider"></span></label>
-            <span style="font-weight:bold; font-size:14px; color:#555; padding-top:2px;">Exigir Identificação de Colaborador</span>
+            <span style="font-weight:bold; font-size:14px; color:#555; padding-top:2px;">Exigir Identificação</span>
         </div>
         
         <h3 style="font-size: 16px; color: #d32f2f; margin-top: 25px; margin-bottom: 10px;">Avançado</h3>
@@ -340,16 +341,26 @@
         <div class="form-group"><label>Observação Padrão (Opcional):</label><input type="text" id="prodObsPadrao" placeholder="Ex: maduro, marca tal..."></div>
         <div class="form-group"><label>Categoria:</label><select id="prodCategoria"></select></div>
         <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex:1;"><label>Qtd Padrão:</label><input type="text" inputmode="decimal" id="prodQtdPadrao" placeholder="Ex: 6.5"></div>
+            <div class="form-group" style="flex:1;"><label>Qtd Padrão (Opcional):</label><input type="text" inputmode="decimal" id="prodQtdPadrao" placeholder=""></div>
             <div class="form-group" style="flex:2;"><label>Unidades (vírgula):</label><input type="text" id="prodUnidades" placeholder="ex: kg, cx, pct"></div>
         </div>
         <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" id="prodMarcasOk" placeholder="Ex: Sadia, Perdigão"></div>
         <div class="form-group"><label>Marcas Reprovadas:</label><input type="text" id="prodMarcasNok"></div>
-        <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex:1;"><label>Preço (R$):</label><input type="text" id="prodPreco" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00"></div>
-            <div class="form-group" style="flex:1;"><label>Data do Preço:</label><input type="date" id="prodPrecoData"></div>
+        
+        <div style="background:#fff3e0; padding:10px; border-radius:5px; margin-bottom:10px;">
+            <strong style="font-size:12px; display:block; margin-bottom:8px; color:#e65100;">Registrar Novo Preço</strong>
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex:1; margin-bottom:0;"><label>Preço (R$):</label><input type="text" id="prodPreco" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00"></div>
+                <div class="form-group" style="flex:1; margin-bottom:0;"><label>Data:</label><input type="date" id="prodPrecoData"></div>
+            </div>
         </div>
-        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormProduto'); abrirGerenciar('produtos');">Cancelar</button><button class="btn-action" onclick="salvarProduto()">Salvar</button></div>
+
+        <div id="boxHistoricoPrecos" style="font-size:12px; border:1px solid #ccc; border-radius:5px; padding:8px; max-height:120px; overflow-y:auto; background:#fafafa; margin-bottom:10px; display:none;">
+            <strong style="display:block; margin-bottom:5px;">Histórico Gravado:</strong>
+            <div id="listaPrecosProduto"></div>
+        </div>
+
+        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormProduto'); abrirGerenciar('produtos');">Cancelar</button><button class="btn-action" onclick="salvarProduto()">Salvar Produto</button></div>
     </div>
 </div>
 
@@ -372,6 +383,12 @@
         <input type="hidden" id="colabId">
         <div class="form-group"><label>Nome:</label><input type="text" id="colabNome"></div>
         <div class="form-group"><label>Senha:</label><input type="password" id="colabSenha" placeholder="Deixe em branco p/ 123"></div>
+        
+        <div class="form-group" style="background:#ffebee; padding:10px; border-radius:5px; margin-bottom:15px; display:flex; align-items:center;">
+            <label class="switch"><input type="checkbox" id="colabApenasReceber"><span class="slider"></span></label>
+            <span style="font-weight:bold; font-size:12px; color:#c62828;">Apenas Receber (Modo Compras)</span>
+        </div>
+
         <div class="form-group"><label>Categorias Permitidas:</label>
             <div id="colabCategoriasBox" style="font-size:14px; max-height:150px; overflow-y:auto; border:1px solid #ccc; padding:10px; border-radius:4px; background:#fafafa;"></div>
         </div>
@@ -404,7 +421,8 @@
     let modoSelecaoAtivo = false;
     let itensSelecionadosRelatorio = new Set();
     let agrupamentoCompradoAtivo = false;
-    let pilhaDesfazer = []; // Memória temporária para desfazer ações
+    let pilhaDesfazer = []; 
+    let tempPrecosProduto = [];
 
     function carregarBanco() {
         let base = {
@@ -413,7 +431,6 @@
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
             configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false }
         };
-        // Busca a versão nova, se não tiver, busca das antigas para migrar
         let salvo = localStorage.getItem('alofeira_v1');
         if(!salvo) salvo = localStorage.getItem('gc_v110'); 
         if(!salvo) salvo = localStorage.getItem('gc_v100'); 
@@ -439,7 +456,7 @@
     function maskTelefone(el) { let v = el.value.replace(/\D/g,""); v = v.replace(/^(\d{2})(\d)/g,"($1) $2"); v = v.replace(/(\d)(\d{4})$/,"$1-$2"); el.value = v; }
     function maskMoeda(el) { let v = el.value.replace(/\D/g, ""); if(!v) { el.value = ""; return; } v = (parseFloat(v) / 100).toLocaleString('pt-BR', {minimumFractionDigits: 2}); el.value = v; }
     function parseMoeda(str) { if(!str) return 0; return parseFloat(str.replace(/\./g, "").replace(",", ".")); }
-    function parseFloatBr(str) { if(!str) return 0; return parseFloat(str.replace(',','.')); }
+    function parseFloatBr(str) { if(str === '' || str === null || str === undefined) return ''; return parseFloat(String(str).replace(',','.')); }
 
     /* =========================================================================
        NUVEM E ZONA DE RISCO
@@ -534,11 +551,35 @@
         let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = colabLogado && colabLogado.catsPermitidas && colabLogado.catsPermitidas.length > 0 ? colabLogado.catsPermitidas : null;
         let temRascunho = false; let agora = Date.now();
 
-        let produtosOrdenados = [...db.produtos].sort((a, b) => a.nome.localeCompare(b.nome));
+        let produtosOrdenados = [...db.produtos];
+
+        // ORDENAÇÃO NATIVA (CATEGORIA -> ALFABÉTICA)
+        if (categoriaAtual === null) {
+            produtosOrdenados.sort((a, b) => {
+                let idxA = db.categorias.findIndex(c => c.id === a.categoria); if(idxA === -1) idxA = 999;
+                let idxB = db.categorias.findIndex(c => c.id === b.categoria); if(idxB === -1) idxB = 999;
+                if(idxA !== idxB) return idxA - idxB;
+                return a.nome.localeCompare(b.nome);
+            });
+        } else {
+            produtosOrdenados.sort((a, b) => a.nome.localeCompare(b.nome));
+        }
 
         if (db.configs.modo === 'pedido') {
+            let lastCatHeader = "";
+
             produtosOrdenados.forEach(p => {
                 if(categoriaAtual && p.categoria !== categoriaAtual) return; if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
+                
+                // Cabeçalho de Categoria no modo Todos
+                if (categoriaAtual === null) {
+                    let cObj = db.categorias.find(c => c.id === p.categoria); let catName = cObj ? cObj.nome : "Sem Categoria";
+                    if (catName !== lastCatHeader) {
+                        lista.innerHTML += `<li class="cat-header">🏷️ ${catName}</li>`;
+                        lastCatHeader = catName;
+                    }
+                }
+
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
                 
                 const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id);
@@ -547,8 +588,12 @@
                 
                 let classesExtra = ""; let infoDireita = "";
                 let defaultUn = p.unidades && p.unidades.length > 0 ? p.unidades[0] : 'un';
-                let padraoTexto = p.qtdPadrao ? `(Padrão: ${p.qtdPadrao} ${defaultUn})` : `(Padrão: 1 ${defaultUn})`;
-                if(p.obsPadrao) padraoTexto += `<br><span style="color:#000; font-size:11px;">Obs Padrão: ${p.obsPadrao}</span>`;
+                
+                let padraoTexto = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? `(Padrão: ${p.qtdPadrao} ${defaultUn})` : '';
+                if(p.obsPadrao) {
+                    let quebra = padraoTexto ? '<br>' : '';
+                    padraoTexto += `${quebra}<span style="color:#000; font-size:11px;">Obs Padrão: ${p.obsPadrao}</span>`;
+                }
                 
                 if (ultimoPedido) { 
                     let statusName = "Excluído"; let statusClass = "bg-excluido";
@@ -563,7 +608,8 @@
                     }
 
                     let obsVisual = ultimoPedido.obs ? `<br><span style="color:#000; font-size:11px;">Obs: ${ultimoPedido.obs}</span>` : "";
-                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${ultimoPedido.qtd} ${ultimoPedido.unidade}</span>${obsVisual}</div>`;
+                    let qtdNum = ultimoPedido.qtd !== '' ? ultimoPedido.qtd : '-';
+                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${qtdNum} ${ultimoPedido.unidade}</span>${obsVisual}</div>`;
                     
                     if(pedidoEditavel) {
                         classesExtra += (pedidoEditavel.status === 'rascunho') ? "item-pedido-rascunho " : "item-pedido-ativo ";
@@ -595,6 +641,16 @@
                     let nomeA = pA ? pA.nome : ""; let nomeB = pB ? pB.nome : "";
                     return nomeA.localeCompare(nomeB);
                 });
+            } else if (categoriaAtual === null) {
+                // Modo TODOS normal -> Categoria -> Alfabetica
+                comprasParaMostrar.sort((a, b) => {
+                    let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
+                    let getCatPrio = (prod) => { if(!prod) return 999; let idx = db.categorias.findIndex(c => c.id === prod.categoria); return idx >= 0 ? idx : 999; };
+                    let catPrioA = getCatPrio(pA); let catPrioB = getCatPrio(pB);
+                    if (catPrioA !== catPrioB) return catPrioA - catPrioB;
+                    let nomeA = pA ? pA.nome : ""; let nomeB = pB ? pB.nome : "";
+                    return nomeA.localeCompare(nomeB);
+                });
             } else {
                 comprasParaMostrar.sort((a, b) => {
                     let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
@@ -604,6 +660,7 @@
             }
 
             let lastGroup = "";
+            let lastCatHeader = "";
 
             comprasParaMostrar.forEach(pa => {
                 if(pa.excluido) { const diffDays = (agora - pa.dataExclusao) / (1000 * 60 * 60 * 24); if(diffDays >= 7) return; }
@@ -616,13 +673,20 @@
                         lista.innerHTML += `<li style="background:#e0e0e0; padding:8px 15px; font-weight:bold; font-size:12px; color:#333; text-transform:uppercase; border-bottom:1px solid #ccc;">${currentGroup}</li>`;
                         lastGroup = currentGroup;
                     }
+                } else if (categoriaAtual === null) {
+                    let cObj = db.categorias.find(c => c.id === p.categoria); let catName = cObj ? cObj.nome : "Sem Categoria";
+                    if (catName !== lastCatHeader) {
+                        lista.innerHTML += `<li class="cat-header">🏷️ ${catName}</li>`;
+                        lastCatHeader = catName;
+                    }
                 }
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
                 let emojiStatus = pa.status === 'pendente' ? '⏳' : (pa.status === 'comprado' ? '✅' : (pa.status === 'pedido_forn' ? '📦' : (pa.status === 'entregue' ? '✅' : '')));
                 let isSelected = itensSelecionadosRelatorio.has(pa.idUnico); let htmlSelecao = modoSelecaoAtivo ? `<div class="checkbox-selecao"></div>` : '';
                 
-                let tituloItem = `${p.nome} - ${pa.qtd} ${pa.unidade}`;
+                let qtdNum = pa.qtd !== '' ? pa.qtd : '-';
+                let tituloItem = `${p.nome} - ${qtdNum} ${pa.unidade}`;
                 let tempoTxt = ""; if((pa.status === 'comprado' || pa.status === 'entregue') && pa.dataConclusao) { tempoTxt = ` (${tempoRelativo(pa.dataConclusao)})`; }
                 let statusText = pa.status === 'pedido_forn' ? 'Pedido ao Fornecedor' : pa.status;
                 statusText += tempoTxt;
@@ -679,7 +743,7 @@
     }
 
     /* =========================================================================
-       GESTOS
+       GESTOS E RESTRIÇÕES
        ========================================================================= */
     let touchStartX = 0; let pressTimer; let isLongPress = false; let lastTap = 0; let tapTimer;
 
@@ -695,12 +759,18 @@
         else if (diffX < -80) { acaoDeslizarEsquerda(el); } else if (diffX > 80) { acaoDeslizarDireita(el); }
     }
 
+    function getPermissaoColab() {
+        let c = db.colaboradores.find(col => col.id === db.configs.colabAtivoId);
+        return c ? (c.apenasReceber || false) : false;
+    }
+
     function acaoToqueSimples(el) { 
         if(db.configs.modo === 'pedido') { 
             const pId = el.getAttribute('data-id'); const pedId = el.getAttribute('data-pedid'); 
             if(!pedId) {
                 const p = db.produtos.find(x => x.id === pId); if(!p) return;
-                let qtd = p.qtdPadrao || 1; let un = p.unidades[0] || 'un'; let obsPad = p.obsPadrao || '';
+                let qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; 
+                let un = p.unidades[0] || 'un'; let obsPad = p.obsPadrao || '';
                 db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco(); renderizarLista();
             } 
@@ -712,7 +782,8 @@
             let pedId = el.getAttribute('data-pedid'); const pId = el.getAttribute('data-id');
             if(!pedId) {
                 const p = db.produtos.find(x => x.id === pId); if(!p) return;
-                let qtd = p.qtdPadrao || 1; let un = p.unidades[0] || 'un'; let obsPad = p.obsPadrao || '';
+                let qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; 
+                let un = p.unidades[0] || 'un'; let obsPad = p.obsPadrao || '';
                 pedId = 'pa_' + Date.now();
                 db.pedidosAtivos.push({ idUnico: pedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco();
@@ -720,6 +791,7 @@
             abrirModalEditarPedido(pedId); 
         } 
         else {
+            if (getPermissaoColab()) return alert("Seu perfil não permite editar os detalhes das compras.");
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
             if(pa && !pa.excluido) { abrirHistoricoCompra(paId); }
         }
@@ -727,6 +799,7 @@
     
     function acaoSegurar(el) { 
         if(db.configs.modo === 'compras') { 
+            if (getPermissaoColab()) return; // ApenasReceber bloqueia isso
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
             if(pa && !pa.excluido) { 
                 registrarDesfazer(pa);
@@ -737,12 +810,17 @@
     
     function acaoDeslizarDireita(el) {
         if(db.configs.modo === 'compras') {
+            const apenasReceber = getPermissaoColab();
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
             if(pa) {
-                registrarDesfazer(pa);
                 if(pa.excluido) {
-                    if(confirm("Desfazer exclusão do item e voltar à lista?")) { pa.excluido = false; pa.status = 'pendente'; salvarBanco(); renderizarLista(); }
+                    if (apenasReceber) return alert("Seu perfil não permite alterar itens excluídos.");
+                    if(confirm("Desfazer exclusão do item e voltar à lista?")) { registrarDesfazer(pa); pa.excluido = false; pa.status = 'pendente'; salvarBanco(); renderizarLista(); }
                 } else {
+                    if (apenasReceber && pa.status !== 'pedido_forn') {
+                        return alert("Seu perfil só permite dar recebido em itens marcados como 'Pedido ao Fornecedor'.");
+                    }
+                    registrarDesfazer(pa);
                     if (pa.status === 'pendente') { pa.status = 'comprado'; pa.dataConclusao = Date.now(); } else if (pa.status === 'pedido_forn') { pa.status = 'entregue'; pa.dataConclusao = Date.now(); }
                     salvarBanco(); renderizarLista();
                 }
@@ -759,6 +837,7 @@
             } 
         } 
         else { 
+            if (getPermissaoColab()) return alert("Seu perfil não permite cancelar ou voltar o status.");
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
             if(pa && !pa.excluido) { 
                 registrarDesfazer(pa);
@@ -790,7 +869,6 @@
     
     function salvarEdicaoPedido() { 
         const paId = document.getElementById('editPedidoId').value; const qtd = parseFloatBr(document.getElementById('editPedidoQtd').value); 
-        if(!qtd || qtd <= 0) return alert("Inválido."); 
         let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
         if(pa) { 
             pa.qtd = qtd; pa.unidade = document.getElementById('editPedidoUnidade').value; pa.obs = document.getElementById('editPedidoObs').value;
@@ -806,7 +884,6 @@
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(prod => prod.id === pa.produtoId);
         document.getElementById('histCompraId').value = paId;
         
-        // Povoa Edição Rápida
         document.getElementById('histCompraQtd').value = pa.qtd; document.getElementById('histCompraObs').value = pa.obs || '';
         const selUn = document.getElementById('histCompraUnd'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); 
 
@@ -847,12 +924,11 @@
         if(!pa.marcasSelecionadas) pa.marcasSelecionadas = [];
         if(isChecked) { if(!pa.marcasSelecionadas.includes(marca)) pa.marcasSelecionadas.push(marca); } 
         else { pa.marcasSelecionadas = pa.marcasSelecionadas.filter(m => m !== marca); }
-        salvarBanco(); renderizarLista(); // Já salva mas não fecha a tela
+        salvarBanco(); renderizarLista(); 
     }
 
     function salvarDetalhesCompra() {
         const paId = document.getElementById('histCompraId').value; const qtd = parseFloatBr(document.getElementById('histCompraQtd').value); 
-        if(!qtd || qtd <= 0) return alert("Inválido."); 
         let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
         if(pa) { 
             pa.qtd = qtd; pa.unidade = document.getElementById('histCompraUnd').value; pa.obs = document.getElementById('histCompraObs').value;
@@ -906,7 +982,8 @@
             let nomeItem = p.descFornecedor ? p.descFornecedor : p.nome;
             let marcasStr = (pa.marcasSelecionadas && pa.marcasSelecionadas.length > 0) ? ` - Marca: ${pa.marcasSelecionadas.join(', ')}` : '';
             let obsStr = pa.obs ? ` *(obs.: ${pa.obs})*` : '';
-            texto += `▪ ${nomeItem}${marcasStr} - Qtd: ${pa.qtd} ${pa.unidade}${obsStr}\n`;
+            let qtdStr = pa.qtd !== '' ? pa.qtd : '-';
+            texto += `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${pa.unidade}${obsStr}\n`;
         });
         document.getElementById('relatTexto').value = texto;
         
@@ -979,17 +1056,89 @@
 
     function salvarRestaurante() { db.restaurante.nome = document.getElementById('restNome').value; db.restaurante.cnpj = document.getElementById('restCNPJ').value; db.restaurante.rua = document.getElementById('restRua').value; db.restaurante.numero = document.getElementById('restNum').value; db.restaurante.bairro = document.getElementById('restBairro').value; db.restaurante.cidade = document.getElementById('restCidade').value; db.restaurante.uf = document.getElementById('restUF').value; db.restaurante.ponto = document.getElementById('restPonto').value; salvarBanco(); fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display = 'flex'; }
 
+    /* LÓGICA DE PREÇOS PRODUTO */
+    function renderizarPrecosTemporarios() {
+        const box = document.getElementById('boxHistoricoPrecos');
+        const list = document.getElementById('listaPrecosProduto');
+        list.innerHTML = '';
+        if(tempPrecosProduto.length === 0) {
+            box.style.display = 'none';
+        } else {
+            box.style.display = 'block';
+            [...tempPrecosProduto].reverse().forEach((p, realIdxReverso) => {
+                let realIdx = tempPrecosProduto.length - 1 - realIdxReverso;
+                list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:4px 0;">
+                    <span>${p.data}: <b>R$ ${p.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</b></span>
+                    <div>
+                        <button onclick="editarPrecoProduto(${realIdx})" style="background:none;border:none;cursor:pointer;font-size:14px;">✏️</button>
+                        <button onclick="excluirPrecoProduto(${realIdx})" style="background:none;border:none;cursor:pointer;font-size:14px;">🗑️</button>
+                    </div>
+                </div>`;
+            });
+        }
+    }
+    function editarPrecoProduto(idx) {
+        let nval = prompt("Editar Preço (apenas números e vírgula):", tempPrecosProduto[idx].preco.toLocaleString('pt-BR', {minimumFractionDigits: 2}));
+        if(nval !== null && nval.trim() !== "") {
+            tempPrecosProduto[idx].preco = parseFloatBr(nval);
+            renderizarPrecosTemporarios();
+        }
+    }
+    function excluirPrecoProduto(idx) {
+        if(confirm("Excluir este preço do histórico?")) {
+            tempPrecosProduto.splice(idx, 1);
+            renderizarPrecosTemporarios();
+        }
+    }
+
     function abrirFormProduto(id) {
         fecharModal('modalListagem'); const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
+        
+        document.getElementById('prodPreco').value = '';
+        document.getElementById('prodPrecoData').value = getHojeSTR();
+
         if(id) {
-            const p = db.produtos.find(x => x.id === id); document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodDesc').value = p.descFornecedor || ''; document.getElementById('prodObsPadrao').value = p.obsPadrao || ''; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = p.qtdPadrao || '';
-            if(p.historicoPrecos && p.historicoPrecos.length > 0) { const h = p.historicoPrecos[p.historicoPrecos.length-1]; document.getElementById('prodPreco').value = h.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2}); document.getElementById('prodPrecoData').value = h.data; } else { document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); }
-        } else { document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = 'un'; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodPreco').value = ''; document.getElementById('prodQtdPadrao').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); }
+            const p = db.produtos.find(x => x.id === id); 
+            document.getElementById('prodId').value = id; 
+            document.getElementById('prodNome').value = p.nome; 
+            document.getElementById('prodDesc').value = p.descFornecedor || ''; 
+            document.getElementById('prodObsPadrao').value = p.obsPadrao || ''; 
+            document.getElementById('prodCategoria').value = p.categoria; 
+            document.getElementById('prodUnidades').value = p.unidades.join(', '); 
+            document.getElementById('prodMarcasOk').value = p.marcasAprovadas; 
+            document.getElementById('prodMarcasNok').value = p.marcasReprovadas; 
+            document.getElementById('prodQtdPadrao').value = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : '';
+            
+            tempPrecosProduto = p.historicoPrecos ? JSON.parse(JSON.stringify(p.historicoPrecos)) : [];
+        } else { 
+            document.getElementById('prodId').value = ''; 
+            document.getElementById('prodNome').value = ''; 
+            document.getElementById('prodDesc').value = ''; 
+            document.getElementById('prodObsPadrao').value = ''; 
+            document.getElementById('prodUnidades').value = 'un'; 
+            document.getElementById('prodMarcasOk').value = ''; 
+            document.getElementById('prodMarcasNok').value = ''; 
+            document.getElementById('prodQtdPadrao').value = ''; 
+            tempPrecosProduto = [];
+        }
+        renderizarPrecosTemporarios();
         document.getElementById('modalFormProduto').style.display = 'flex';
     }
+    
     function salvarProduto() {
-        const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; const qtdPadrao = parseFloatBr(document.getElementById('prodQtdPadrao').value) || null;
-        const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : ['un'], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: [{ data: pData, preco: pVal }] };
+        const id = document.getElementById('prodId').value || 'p_'+Date.now(); 
+        const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); 
+        const pVal = parseMoeda(document.getElementById('prodPreco').value); 
+        const pData = document.getElementById('prodPrecoData').value; 
+        let qtdStr = document.getElementById('prodQtdPadrao').value.trim();
+        const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : '';
+        
+        // Se preencheu os campos soltos de preço, adiciona no histórico antes de salvar
+        if(pVal > 0) {
+            tempPrecosProduto.push({ data: pData, preco: pVal });
+        }
+
+        const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : ['un'], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto };
         const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo);
         salvarBanco(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista();
     }
@@ -999,13 +1148,16 @@
 
     function abrirFormColaborador(id) {
         fecharModal('modalListagem'); const box = document.getElementById('colabCategoriasBox'); box.innerHTML = ''; const c = id ? db.colaboradores.find(x => x.id === id) : null;
+        
+        document.getElementById('colabApenasReceber').checked = c ? (c.apenasReceber || false) : false;
+
         db.categorias.forEach(cat => { 
             const chk = (!c || (c.catsPermitidas && c.catsPermitidas.includes(cat.id))) ? 'checked' : ''; 
             box.innerHTML += `<div style="display:flex; align-items:center; margin-bottom:8px;"><label class="switch"><input type="checkbox" value="${cat.id}" class="chk-cat-colab" ${chk}><span class="slider"></span></label><span style="font-weight:bold;">${cat.nome}</span></div>`; 
         });
         document.getElementById('colabId').value = id || ''; document.getElementById('colabNome').value = c ? c.nome : ''; document.getElementById('colabSenha').value = c ? c.senha : ''; document.getElementById('modalFormColaborador').style.display = 'flex';
     }
-    function salvarColaborador() { const id = document.getElementById('colabId').value || 'col_'+Date.now(); const cats = Array.from(document.querySelectorAll('.chk-cat-colab:checked')).map(el => el.value); const s = document.getElementById('colabSenha').value || "123"; const novo = { id: id, nome: document.getElementById('colabNome').value, telefone: "", senha: s, catsPermitidas: cats }; const idx = db.colaboradores.findIndex(x => x.id === id); if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo); salvarBanco(); fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores'); }
+    function salvarColaborador() { const id = document.getElementById('colabId').value || 'col_'+Date.now(); const cats = Array.from(document.querySelectorAll('.chk-cat-colab:checked')).map(el => el.value); const s = document.getElementById('colabSenha').value || "123"; const apenasReceber = document.getElementById('colabApenasReceber').checked; const novo = { id: id, nome: document.getElementById('colabNome').value, telefone: "", senha: s, apenasReceber: apenasReceber, catsPermitidas: cats }; const idx = db.colaboradores.findIndex(x => x.id === id); if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo); salvarBanco(); fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores'); }
 
     function abrirFormFornecedor(id) {
         fecharModal('modalListagem'); if(id) { const f = db.fornecedores.find(x => x.id === id); document.getElementById('fornId').value = id; document.getElementById('fornNome').value = f.nome; document.getElementById('fornVendedor').value = f.vendedor || ''; document.getElementById('fornTel').value = f.telefone || ''; document.getElementById('fornNomeGerente').value = f.nomeGerente || ''; document.getElementById('fornTelGerente').value = f.telGerente || ''; document.getElementById('fornTelEmpresa').value = f.telEmpresa || ''; } else { document.getElementById('fornId').value = ''; document.getElementById('fornNome').value = ''; document.getElementById('fornVendedor').value = ''; document.getElementById('fornTel').value = ''; document.getElementById('fornNomeGerente').value = ''; document.getElementById('fornTelGerente').value = ''; document.getElementById('fornTelEmpresa').value = ''; } document.getElementById('modalFormFornecedor').style.display = 'flex';
