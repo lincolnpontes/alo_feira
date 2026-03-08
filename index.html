@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Gestor de Compras v8.0</title>
+    <title>Gestor de Compras v9.0</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -21,7 +21,10 @@
         .header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; color: white; transition: background-color 0.3s; }
         .header-select { background: transparent; color: white; border: none; font-size: 18px; font-weight: bold; outline: none; -webkit-appearance: none; appearance: none; }
         .header-select option { color: black; font-size: 16px; }
-        .dicas-cabecalho { font-size: 11px; line-height: 1.3; text-align: right; flex: 1; opacity: 0.95; margin-right: 10px; margin-left: 10px; }
+        
+        .dicas-cabecalho { font-size: 10px; line-height: 1.3; text-align: left; flex: 1; opacity: 0.95; margin-right: 10px; margin-left: 10px; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
+        .dicas-cabecalho div { margin-bottom: 2px; }
+
         .header-actions button { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; }
         
         body.theme-pedido .header { background-color: #1565C0 !important; }
@@ -51,8 +54,16 @@
         .status-comprado { border-left: 6px solid #81c784; background-color: #e8f5e9; } 
         .status-pedido_forn { border-left: 6px solid #9c27b0; background-color: #f3e5f5; } 
         .status-entregue { border-left: 6px solid #1b5e20; background-color: #c8e6c9; } 
-        
         .item-pedido-rascunho { border-left: 4px solid #1565C0; background-color: #e3f2fd; }
+
+        /* BADGES MODO PEDIDO */
+        .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; color: white; display: inline-block; }
+        .bg-pendente { background-color: #f57f17; }
+        .bg-pedido_forn { background-color: #9c27b0; }
+        .bg-comprado { background-color: #1b5e20; }
+        .bg-entregue { background-color: #1b5e20; }
+        .bg-excluido { background-color: #d32f2f; }
+        .bg-rascunho { background-color: transparent; color: #1565C0; border: 1px solid #1565C0; padding: 1px 5px; }
 
         .checkbox-selecao { width: 22px; height: 22px; border: 2px solid #6a1b9a; border-radius: 4px; display: inline-block; vertical-align: middle; margin-right: 10px; position: relative; pointer-events: none; }
         .item.selecionado .checkbox-selecao::after { content: '✓'; color: #6a1b9a; position: absolute; font-size: 18px; top: -2px; left: 3px; font-weight: bold; }
@@ -66,6 +77,8 @@
         .form-group label { display: block; margin-bottom: 4px; color: #555; font-weight: bold; font-size: 12px; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
         
+        .input-cor { height: 40px; padding: 0; border: none; cursor: pointer; width: 100%; border-radius: 5px; }
+
         .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
         .btn-cancel, .btn-action, .btn-danger { padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; flex: 1; text-align: center; border: none; font-size: 14px; }
         .btn-cancel { background: #eee; color: #333; }
@@ -137,7 +150,7 @@
 <div class="modal-overlay" id="modalSenhaAdmin">
     <div class="modal">
         <div class="modal-title">Admin</div>
-        <div class="form-group"><label>Senha:</label><input type="password" autocomplete="off" id="inputSenhaAdmin" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
+        <div class="form-group"><label>Senha:</label><input type="password" autocomplete="new-password" name="pwd_admin_nofill" id="inputSenhaAdmin" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAdmin')">Cancelar</button></div>
     </div>
 </div>
@@ -145,7 +158,7 @@
 <div class="modal-overlay" id="modalSenhaAvancada">
     <div class="modal">
         <div class="modal-title" style="color:#d32f2f;">Acesso Restrito</div>
-        <div class="form-group"><label>Senha Avançada:</label><input type="password" autocomplete="off" id="senhaAvancada" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
+        <div class="form-group"><label>Senha Avançada:</label><input type="password" autocomplete="new-password" name="pwd_avanc_nofill" id="senhaAvancada" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAvancada')">Cancelar</button></div>
     </div>
 </div>
@@ -155,10 +168,10 @@
         <div class="modal-title">Detalhes do Pedido</div>
         <input type="hidden" id="editPedidoId">
         <div style="display: flex; gap:10px;">
-            <div class="form-group" style="flex:1;"><label>Quantidade:</label><input type="number" autocomplete="off" id="editPedidoQtd" step="0.01"></div>
+            <div class="form-group" style="flex:1;"><label>Quantidade:</label><input type="number" autocomplete="off" name="qtd_nofill_1" id="editPedidoQtd" step="0.01" onfocus="this.select()"></div>
             <div class="form-group" style="flex:1;"><label>Unidade:</label><select id="editPedidoUnidade"></select></div>
         </div>
-        <div class="form-group"><label>Observação (Opcional):</label><input type="text" autocomplete="off" id="editPedidoObs" placeholder="Ex: maduro, marca tal..."></div>
+        <div class="form-group"><label>Observação (Opcional):</label><input type="text" autocomplete="off" name="obs_nofill_1" id="editPedidoObs" placeholder="Ex: maduro, marca tal..." onfocus="this.select()"></div>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="fecharModal('modalEditarPedido')">Cancelar</button>
             <button class="btn-action" onclick="salvarEdicaoPedido()">Salvar</button>
@@ -173,17 +186,26 @@
         
         <div id="histCompraDataConclusao"></div>
 
+        <div style="background:#f1f8e9; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #c5e1a5;">
+            <div style="display:flex; gap:10px; margin-bottom:5px;">
+                <div class="form-group" style="flex:1; margin-bottom:0;"><label>Qtd:</label><input type="number" id="histCompraQtd" autocomplete="off" name="qtd_nofill_2" onfocus="this.select()"></div>
+                <div class="form-group" style="flex:1; margin-bottom:0;"><label>Und:</label><select id="histCompraUnd"></select></div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;"><label>Obs:</label><input type="text" id="histCompraObs" autocomplete="off" name="obs_nofill_2" onfocus="this.select()"></div>
+        </div>
+
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Marcas no Relatório</h4>
         <div id="histMarcasLista" style="font-size:13px; margin-bottom:15px; background:#e3f2fd; padding:10px; border-radius:5px;"></div>
 
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Edições</h4>
-        <div id="histCompraLista" style="font-size:13px; margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px; max-height: 90px; overflow-y: auto;"></div>
+        <div id="histCompraLista" style="font-size:13px; margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px; max-height: 80px; overflow-y: auto;"></div>
         
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Preços</h4>
-        <div id="histPrecosLista" style="font-size:13px; margin-bottom:15px; background:#e8f5e9; padding:10px; border-radius:5px; max-height: 90px; overflow-y: auto;"></div>
+        <div id="histPrecosLista" style="font-size:13px; margin-bottom:15px; background:#fff3e0; padding:10px; border-radius:5px; max-height: 80px; overflow-y: auto;"></div>
 
         <div class="modal-actions">
-            <button class="btn-cancel" style="width:100%" onclick="fecharModal('modalHistoricoCompra')">Voltar e Salvar</button>
+            <button class="btn-cancel" onclick="fecharModal('modalHistoricoCompra')">Cancelar</button>
+            <button class="btn-action" onclick="salvarDetalhesCompra()">Salvar Alterações</button>
         </div>
     </div>
 </div>
@@ -193,7 +215,7 @@
         <div class="modal-title" style="border-color:#25d366;">Relatório p/ Fornecedor</div>
         <div class="form-group"><label>Responsável (Colaborador):</label><select id="relatColaborador" onchange="gerarTextoRelatorio()"></select></div>
         <div class="form-group"><label>Fornecedor (Destino):</label><select id="relatFornecedor" onchange="gerarTextoRelatorio()"></select></div>
-        <div class="form-group"><textarea autocomplete="off" id="relatTexto" rows="9" style="font-size: 12px; background: #f9f9f9;"></textarea></div>
+        <div class="form-group"><textarea autocomplete="off" name="txt_nofill_1" id="relatTexto" rows="9" style="font-size: 12px; background: #f9f9f9;"></textarea></div>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="fecharModal('modalRelatorio')">Voltar</button>
             <button class="btn-action" style="background:#25d366; color:white; font-size:16px;" onclick="enviarWhatsAppAPI()">📞 Enviar Whatsapp</button>
@@ -226,11 +248,11 @@
 <div class="modal-overlay" id="modalConfigAvancadas">
     <div class="modal" style="max-height: 90vh; overflow-y: auto;">
         <div class="modal-title" style="color:#d32f2f;">Zona de Risco</div>
-        <div class="form-group"><label>URL Google Script:</label><input type="text" autocomplete="off" id="configUrlApp" placeholder="https://script.google.com/macros/s/..."><button class="btn-action" style="width: 100%; margin-top: 10px; background-color: #4CAF50;" onclick="salvarURL()">💾 Salvar URL e Puxar Dados</button></div>
+        <div class="form-group"><label>URL Google Script:</label><input type="text" autocomplete="off" name="url_nofill_1" id="configUrlApp" placeholder="https://script.google.com/macros/s/..."><button class="btn-action" style="width: 100%; margin-top: 10px; background-color: #4CAF50;" onclick="salvarURL()">💾 Salvar URL e Puxar Dados</button></div>
         <div style="display: flex; gap: 10px; margin-bottom: 20px;"><button id="btnSalvarNuvem" class="btn-outline" style="margin: 0; flex: 1; justify-content: center; font-size: 13px; border-color:#2e7d32; color:#2e7d32;" onclick="sincronizarSalvarNuvem()">⬆️ Salvar na Nuvem</button></div>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
         <p style="font-size: 13px; color: #555; margin-bottom: 5px;">Atenção: A ação abaixo é irreversível.</p>
-        <div class="form-group"><label>Para apagar todos os pedidos, digite: <b>quero excluir todo o histórico</b></label><input type="text" autocomplete="off" id="inputExcluirTudo" placeholder="digite a frase exata"><button class="btn-danger" style="margin-top: 10px; width: 100%;" onclick="excluirTodoHistorico()">🗑️ Apagar Todo o Histórico</button></div>
+        <div class="form-group"><label>Para apagar todos os pedidos, digite: <b>quero excluir todo o histórico</b></label><input type="text" autocomplete="off" name="delete_nofill_1" id="inputExcluirTudo" placeholder="digite a frase exata"><button class="btn-danger" style="margin-top: 10px; width: 100%;" onclick="excluirTodoHistorico()">🗑️ Apagar Todo o Histórico</button></div>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
         <div class="form-group"><label>Problemas de Cache ou Atualização?</label><button class="btn-outline" style="border-color:#fbc02d; color:#fbc02d; width: 100%;" onclick="forcarAtualizacao()">🔄 Forçar Atualização (Limpar Cache)</button></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalConfigAvancadas'); document.getElementById('modalPainelUnificado').style.display='flex';">Voltar</button></div>
@@ -249,12 +271,12 @@
 <div class="modal-overlay" id="modalFormRestaurante">
     <div class="modal">
         <div class="modal-title">Restaurante</div>
-        <div class="form-group"><label>Nome Fantasia:</label><input type="text" autocomplete="off" id="restNome"></div>
-        <div class="form-group"><label>CNPJ:</label><input type="text" autocomplete="off" id="restCNPJ" inputmode="numeric" oninput="maskCNPJ(this)" maxlength="18"></div>
-        <div class="form-group"><label>Rua:</label><input type="text" autocomplete="off" id="restRua"></div>
-        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:1;"><label>Número:</label><input type="text" autocomplete="off" id="restNum" inputmode="numeric"></div><div class="form-group" style="flex:3;"><label>Bairro:</label><input type="text" autocomplete="off" id="restBairro"></div></div>
-        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:2;"><label>Cidade:</label><input type="text" autocomplete="off" id="restCidade"></div><div class="form-group" style="flex:1;"><label>UF:</label><select id="restUF"><option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select></div></div>
-        <div class="form-group"><label>Ponto de Referência (Opcional):</label><input type="text" autocomplete="off" id="restPonto"></div>
+        <div class="form-group"><label>Nome Fantasia:</label><input type="text" autocomplete="off" name="rnd_rest_1" id="restNome"></div>
+        <div class="form-group"><label>CNPJ:</label><input type="text" autocomplete="off" name="rnd_rest_2" id="restCNPJ" inputmode="numeric" oninput="maskCNPJ(this)" maxlength="18"></div>
+        <div class="form-group"><label>Rua:</label><input type="text" autocomplete="off" name="rnd_rest_3" id="restRua"></div>
+        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:1;"><label>Número:</label><input type="text" autocomplete="off" name="rnd_rest_4" id="restNum" inputmode="numeric"></div><div class="form-group" style="flex:3;"><label>Bairro:</label><input type="text" autocomplete="off" name="rnd_rest_5" id="restBairro"></div></div>
+        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:2;"><label>Cidade:</label><input type="text" autocomplete="off" name="rnd_rest_6" id="restCidade"></div><div class="form-group" style="flex:1;"><label>UF:</label><select id="restUF"><option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select></div></div>
+        <div class="form-group"><label>Ponto de Referência (Opcional):</label><input type="text" autocomplete="off" name="rnd_rest_7" id="restPonto"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display='flex';">Cancelar</button><button class="btn-action" onclick="salvarRestaurante()">Salvar</button></div>
     </div>
 </div>
@@ -263,16 +285,17 @@
     <div class="modal">
         <div class="modal-title">Produto</div>
         <input type="hidden" id="prodId">
-        <div class="form-group"><label>Nome:</label><input type="text" autocomplete="off" id="prodNome"></div>
+        <div class="form-group"><label>Nome (Visão Interna):</label><input type="text" autocomplete="off" name="rnd_prod_1" id="prodNome"></div>
+        <div class="form-group"><label>Nome P/ Fornecedor (Opcional):</label><input type="text" autocomplete="off" name="rnd_prod_desc" id="prodDesc" placeholder="Ex: Alcatra Maturada Friboi 1953"></div>
         <div class="form-group"><label>Categoria:</label><select id="prodCategoria"></select></div>
         <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex:1;"><label>Qtd Padrão:</label><input type="number" autocomplete="off" id="prodQtdPadrao" step="0.01" placeholder="Ex: 6"></div>
-            <div class="form-group" style="flex:2;"><label>Unidades (vírgula):</label><input type="text" autocomplete="off" id="prodUnidades" placeholder="ex: kg, cx, pct"></div>
+            <div class="form-group" style="flex:1;"><label>Qtd Padrão:</label><input type="number" autocomplete="off" name="rnd_prod_2" id="prodQtdPadrao" step="0.01" placeholder="Ex: 6"></div>
+            <div class="form-group" style="flex:2;"><label>Unidades (vírgula):</label><input type="text" autocomplete="off" name="rnd_prod_3" id="prodUnidades" placeholder="ex: kg, cx, pct"></div>
         </div>
-        <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" autocomplete="off" id="prodMarcasOk" placeholder="Ex: Sadia, Perdigão"></div>
-        <div class="form-group"><label>Marcas Reprovadas:</label><input type="text" autocomplete="off" id="prodMarcasNok"></div>
+        <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" autocomplete="off" name="rnd_prod_4" id="prodMarcasOk" placeholder="Ex: Sadia, Perdigão"></div>
+        <div class="form-group"><label>Marcas Reprovadas:</label><input type="text" autocomplete="off" name="rnd_prod_5" id="prodMarcasNok"></div>
         <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex:1;"><label>Preço (R$):</label><input type="text" autocomplete="off" id="prodPreco" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00"></div>
+            <div class="form-group" style="flex:1;"><label>Preço (R$):</label><input type="text" autocomplete="off" name="rnd_prod_6" id="prodPreco" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00"></div>
             <div class="form-group" style="flex:1;"><label>Data do Preço:</label><input type="date" id="prodPrecoData"></div>
         </div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormProduto'); abrirGerenciar('produtos');">Cancelar</button><button class="btn-action" onclick="salvarProduto()">Salvar</button></div>
@@ -283,10 +306,10 @@
     <div class="modal">
         <div class="modal-title">Categoria</div>
         <input type="hidden" id="catId">
-        <div class="form-group"><label>Nome:</label><input type="text" autocomplete="off" id="catNome"></div>
+        <div class="form-group"><label>Nome:</label><input type="text" autocomplete="off" name="rnd_cat_1" id="catNome"></div>
         <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex:1;"><label>Cor Fundo:</label><input type="color" id="catCor"></div>
-            <div class="form-group" style="flex:1;"><label>Cor Texto:</label><input type="color" id="catCorTexto"></div>
+            <div class="form-group" style="flex:1;"><label>Cor Fundo:</label><input type="color" class="input-cor" id="catCor"></div>
+            <div class="form-group" style="flex:1;"><label>Cor Texto:</label><input type="color" class="input-cor" id="catCorTexto"></div>
         </div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormCategoria'); abrirGerenciar('categorias');">Cancelar</button><button class="btn-action" onclick="salvarCategoria()">Salvar</button></div>
     </div>
@@ -296,8 +319,8 @@
     <div class="modal">
         <div class="modal-title">Colaborador</div>
         <input type="hidden" id="colabId">
-        <div class="form-group"><label>Nome:</label><input type="text" autocomplete="off" id="colabNome"></div>
-        <div class="form-group"><label>Senha:</label><input type="password" autocomplete="off" id="colabSenha" placeholder="Deixe em branco p/ 123"></div>
+        <div class="form-group"><label>Nome:</label><input type="text" autocomplete="off" name="rnd_colab_1" id="colabNome"></div>
+        <div class="form-group"><label>Senha:</label><input type="password" autocomplete="new-password" name="rnd_colab_2" id="colabSenha" placeholder="Deixe em branco p/ 123"></div>
         <div class="form-group"><label>Categorias Permitidas:</label>
             <div id="colabCategoriasBox" style="font-size:14px; max-height:150px; overflow-y:auto; border:1px solid #ccc; padding:10px; border-radius:4px; background:#fafafa;"></div>
         </div>
@@ -309,13 +332,13 @@
     <div class="modal">
         <div class="modal-title">Fornecedor</div>
         <input type="hidden" id="fornId">
-        <div class="form-group"><label>Nome da Empresa:</label><input type="text" autocomplete="off" id="fornNome"></div>
-        <div class="form-group"><label>Nome do Vendedor (Opcional):</label><input type="text" autocomplete="off" id="fornVendedor"></div>
-        <div class="form-group"><label>WhatsApp Vendedor:</label><input type="text" autocomplete="off" id="fornTel" inputmode="numeric" oninput="maskTelefone(this)" placeholder="(00) 00000-0000" maxlength="15"></div>
-        <div class="form-group"><label>Nome do Gerente (Opcional):</label><input type="text" autocomplete="off" id="fornNomeGerente"></div>
+        <div class="form-group"><label>Nome da Empresa:</label><input type="text" autocomplete="off" name="rnd_forn_1" id="fornNome"></div>
+        <div class="form-group"><label>Nome do Vendedor (Opcional):</label><input type="text" autocomplete="off" name="rnd_forn_2" id="fornVendedor"></div>
+        <div class="form-group"><label>WhatsApp Vendedor:</label><input type="text" autocomplete="off" name="rnd_forn_3" id="fornTel" inputmode="numeric" oninput="maskTelefone(this)" placeholder="(00) 00000-0000" maxlength="15"></div>
+        <div class="form-group"><label>Nome do Gerente (Opcional):</label><input type="text" autocomplete="off" name="rnd_forn_4" id="fornNomeGerente"></div>
         <div style="display:flex; gap:10px;">
-            <div class="form-group" style="flex:1;"><label>Tel. Gerente (Opcional):</label><input type="text" autocomplete="off" id="fornTelGerente" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
-            <div class="form-group" style="flex:1;"><label>Tel. Empresa (Opcional):</label><input type="text" autocomplete="off" id="fornTelEmpresa" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
+            <div class="form-group" style="flex:1;"><label>Tel. Gerente (Opcional):</label><input type="text" autocomplete="off" name="rnd_forn_5" id="fornTelGerente" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
+            <div class="form-group" style="flex:1;"><label>Tel. Empresa (Opcional):</label><input type="text" autocomplete="off" name="rnd_forn_6" id="fornTelEmpresa" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
         </div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores');">Cancelar</button><button class="btn-action" onclick="salvarFornecedor()">Salvar</button></div>
     </div>
@@ -337,10 +360,10 @@
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
             configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false }
         };
-        let salvo = localStorage.getItem('gc_v80');
+        let salvo = localStorage.getItem('gc_v90');
         return salvo ? JSON.parse(salvo) : base;
     }
-    function salvarBanco() { localStorage.setItem('gc_v80', JSON.stringify(db)); }
+    function salvarBanco() { localStorage.setItem('gc_v90', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
     function formatarDataHora(ts) {
@@ -397,7 +420,7 @@
     }
     
     function excluirTodoHistorico() { let frase = document.getElementById('inputExcluirTudo').value; if(frase === "quero excluir todo o histórico") { db.pedidosAtivos = []; salvarBanco(); alert("Histórico apagado localmente."); document.getElementById('inputExcluirTudo').value = ''; renderizarLista(); } else { alert("Frase incorreta."); } }
-    function forcarAtualizacao() { localStorage.removeItem('gc_v80'); window.location.reload(true); }
+    function forcarAtualizacao() { localStorage.removeItem('gc_v90'); window.location.reload(true); }
 
     /* =========================================================================
        INICIALIZAÇÃO E UI
@@ -415,10 +438,10 @@
         
         let dicas = document.getElementById('dicasCabecalho');
         if(modo === 'pedido') { 
-            dicas.innerHTML = "👆 Toque: Pedir | 👈 Deslize: Desmarcar<br>✌️ 2 Toques: Editar"; 
+            dicas.innerHTML = "<div>👆 Toque: Pedir</div><div>👈 Deslize: Desmarcar</div><div>✌️ 2 Toques: Editar</div>"; 
             document.getElementById('fabContainer').style.display = 'none';
         } else { 
-            dicas.innerHTML = "👉 Deslize: Mudar Status | 👈 Deslize: Voltar Status<br>👆 Segure: Pedido ao Forn. | ✌️ 2 toques: Detalhes"; 
+            dicas.innerHTML = "<div>👉 Deslize: Mudar Status</div><div>👈 Deslize: Voltar Status</div><div>👆 Segure: Pedido ao Forn.</div><div>✌️ 2 Toques: Detalhes</div>"; 
             document.getElementById('fabContainer').style.display = 'flex';
             document.getElementById('btnEnviarPedidos').style.display = 'none';
         }
@@ -438,8 +461,11 @@
         let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = colabLogado && colabLogado.catsPermitidas && colabLogado.catsPermitidas.length > 0 ? colabLogado.catsPermitidas : null;
         let temRascunho = false; let agora = Date.now();
 
+        // Ordenar produtos alfabeticamente
+        let produtosOrdenados = [...db.produtos].sort((a, b) => a.nome.localeCompare(b.nome));
+
         if (db.configs.modo === 'pedido') {
-            db.produtos.forEach(p => {
+            produtosOrdenados.forEach(p => {
                 if(categoriaAtual && p.categoria !== categoriaAtual) return; if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
                 
@@ -452,19 +478,19 @@
                 let padraoTexto = p.qtdPadrao ? `(Padrão: ${p.qtdPadrao} ${defaultUn})` : `(Padrão: 1 ${defaultUn})`;
                 
                 if (ultimoPedido) { 
-                    let statusName = "Excluído"; let statusColor = "#d32f2f";
+                    let statusName = "Excluído"; let statusClass = "bg-excluido";
                     if(!ultimoPedido.excluido) {
                         switch(ultimoPedido.status) {
-                            case 'rascunho': statusName = 'Rascunho'; statusColor = "#1565C0"; break;
-                            case 'pendente': statusName = 'Pendente'; statusColor = "#f57f17"; break;
-                            case 'pedido_forn': statusName = 'Pedido Forn.'; statusColor = "#9c27b0"; break;
-                            case 'comprado': statusName = 'Comprado'; statusColor = "#1b5e20"; break;
-                            case 'entregue': statusName = 'Entregue'; statusColor = "#1b5e20"; break;
+                            case 'rascunho': statusName = 'Rascunho'; statusClass = 'bg-rascunho'; break;
+                            case 'pendente': statusName = 'Pendente'; statusClass = 'bg-pendente'; break;
+                            case 'pedido_forn': statusName = 'Pedido Forn.'; statusClass = 'bg-pedido_forn'; break;
+                            case 'comprado': statusName = 'Comprado'; statusClass = 'bg-comprado'; break;
+                            case 'entregue': statusName = 'Entregue'; statusClass = 'bg-entregue'; break;
                         }
                     }
 
                     let obsVisual = ultimoPedido.obs ? `<br><span style="color:#d32f2f; font-size:11px;">Obs: ${ultimoPedido.obs}</span>` : "";
-                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><span style="font-size: 11px; color: ${statusColor}; margin-bottom: 2px;"><b>${statusName}</b></span><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${ultimoPedido.qtd} ${ultimoPedido.unidade}</span>${obsVisual}</div>`;
+                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${ultimoPedido.qtd} ${ultimoPedido.unidade}</span>${obsVisual}</div>`;
                     
                     if(pedidoEditavel) {
                         classesExtra += (pedidoEditavel.status === 'rascunho') ? "item-pedido-rascunho " : "item-pedido-ativo ";
@@ -480,7 +506,15 @@
             document.getElementById('btnEnviarPedidos').style.display = temRascunho ? 'block' : 'none';
 
         } else {
-            db.pedidosAtivos.filter(pa => pa.status !== 'rascunho').forEach(pa => {
+            // Ordenar Compras alfabeticamente pelo nome do produto
+            let comprasParaMostrar = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho');
+            comprasParaMostrar.sort((a, b) => {
+                let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
+                let nomeA = pA ? pA.nome : ""; let nomeB = pB ? pB.nome : "";
+                return nomeA.localeCompare(nomeB);
+            });
+
+            comprasParaMostrar.forEach(pa => {
                 if(pa.excluido) { const diffDays = (agora - pa.dataExclusao) / (1000 * 60 * 60 * 24); if(diffDays >= 7) return; }
 
                 const p = db.produtos.find(prod => prod.id === pa.produtoId); if(!p) return; if(categoriaAtual && p.categoria !== categoriaAtual) return;
@@ -604,7 +638,6 @@
         document.getElementById('editPedidoId').value = paId; document.getElementById('editPedidoQtd').value = pa.qtd; document.getElementById('editPedidoObs').value = pa.obs || '';
         const selUn = document.getElementById('editPedidoUnidade'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); 
         document.getElementById('modalEditarPedido').style.display = 'flex'; 
-        setTimeout(()=> { document.getElementById('editPedidoQtd').focus(); document.getElementById('editPedidoQtd').select(); }, 150);
     }
     
     function salvarEdicaoPedido() { 
@@ -625,6 +658,10 @@
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(prod => prod.id === pa.produtoId);
         document.getElementById('histCompraId').value = paId;
         
+        // Povoa Edição Rápida
+        document.getElementById('histCompraQtd').value = pa.qtd; document.getElementById('histCompraObs').value = pa.obs || '';
+        const selUn = document.getElementById('histCompraUnd'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); 
+
         let htmlDataConclusao = "";
         if((pa.status === 'comprado' || pa.status === 'entregue') && pa.dataConclusao) {
             htmlDataConclusao = `<p style="color:#1b5e20; font-weight:bold; margin-top:0; font-size:13px;">✅ Marcado como ${pa.status} em: ${formatarDataHora(pa.dataConclusao)}</p>`;
@@ -662,7 +699,19 @@
         if(!pa.marcasSelecionadas) pa.marcasSelecionadas = [];
         if(isChecked) { if(!pa.marcasSelecionadas.includes(marca)) pa.marcasSelecionadas.push(marca); } 
         else { pa.marcasSelecionadas = pa.marcasSelecionadas.filter(m => m !== marca); }
-        salvarBanco(); renderizarLista();
+        salvarBanco(); renderizarLista(); // Já salva mas não fecha a tela
+    }
+
+    function salvarDetalhesCompra() {
+        const paId = document.getElementById('histCompraId').value; const qtd = parseFloat(document.getElementById('histCompraQtd').value); 
+        if(!qtd || qtd <= 0) return alert("Inválido."); 
+        let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
+        if(pa) { 
+            pa.qtd = qtd; pa.unidade = document.getElementById('histCompraUnd').value; pa.obs = document.getElementById('histCompraObs').value;
+            pa.historico = pa.historico || []; pa.historico.push({ data: new Date().toLocaleString(), msg: `Editado em compras: ${qtd} ${pa.unidade}` });
+            salvarBanco(); 
+        } 
+        fecharModal('modalHistoricoCompra'); renderizarLista(); 
     }
 
     /* =========================================================================
@@ -686,9 +735,10 @@
         Array.from(itensSelecionadosRelatorio).forEach(idUnico => {
             const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); if(!p) return;
             
+            let nomeItem = p.descFornecedor ? p.descFornecedor : p.nome;
             let marcasStr = (pa.marcasSelecionadas && pa.marcasSelecionadas.length > 0) ? ` - Marca: ${pa.marcasSelecionadas.join(', ')}` : '';
             let obsStr = pa.obs ? ` *(obs.: ${pa.obs})*` : '';
-            texto += `▪ ${p.nome}${marcasStr} - Qtd: ${pa.qtd} ${pa.unidade}${obsStr}\n`;
+            texto += `▪ ${nomeItem}${marcasStr} - Qtd: ${pa.qtd} ${pa.unidade}${obsStr}\n`;
         });
         document.getElementById('relatTexto').value = texto;
         
@@ -727,12 +777,28 @@
             document.getElementById('restNome').value = db.restaurante.nome; document.getElementById('restCNPJ').value = db.restaurante.cnpj; document.getElementById('restRua').value = db.restaurante.rua; document.getElementById('restNum').value = db.restaurante.numero; document.getElementById('restBairro').value = db.restaurante.bairro; document.getElementById('restCidade').value = db.restaurante.cidade; document.getElementById('restUF').value = db.restaurante.uf || 'PB'; document.getElementById('restPonto').value = db.restaurante.ponto;
             document.getElementById('modalFormRestaurante').style.display = 'flex'; return;
         }
-        if(tipo === 'produtos') { titulo.innerText = "Produtos"; btnNovo.onclick = () => abrirFormProduto(null); db.produtos.forEach((p) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span></div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; }); } 
-        else if (tipo === 'categorias') { titulo.innerText = "Categorias"; btnNovo.onclick = () => abrirFormCategoria(null); db.categorias.forEach((c) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><span class="color-preview" style="background:${c.cor}; color:${c.corTexto}">${c.nome}</span></div><div class="gerenciar-actions"><button onclick="abrirFormCategoria('${c.id}')">✏️</button><button onclick="excluirItem('categorias', '${c.id}')">🗑️</button></div></div>`; }); } 
+        if(tipo === 'produtos') { 
+            titulo.innerText = "Produtos"; btnNovo.onclick = () => abrirFormProduto(null); 
+            let prodOrdem = [...db.produtos].sort((a,b) => a.nome.localeCompare(b.nome));
+            prodOrdem.forEach((p) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span></div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; }); 
+        } 
+        else if (tipo === 'categorias') { 
+            titulo.innerText = "Categorias"; btnNovo.onclick = () => abrirFormCategoria(null); 
+            db.categorias.forEach((c, index) => { 
+                lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><span class="color-preview" style="background:${c.cor}; color:${c.corTexto}; padding:2px 6px; border-radius:4px;">${c.nome}</span></div><div class="gerenciar-actions"><button onclick="moverCategoria(${index}, -1)">⬆️</button><button onclick="moverCategoria(${index}, 1)">⬇️</button><button onclick="abrirFormCategoria('${c.id}')">✏️</button><button onclick="excluirItem('categorias', '${c.id}')">🗑️</button></div></div>`; 
+            }); 
+        } 
         else if (tipo === 'colaboradores') { titulo.innerText = "Colaboradores"; btnNovo.onclick = () => abrirFormColaborador(null); db.colaboradores.forEach((c) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${c.nome}</strong></div><div class="gerenciar-actions"><button onclick="abrirFormColaborador('${c.id}')">✏️</button><button onclick="excluirItem('colaboradores', '${c.id}')">🗑️</button></div></div>`; }); } 
         else if (tipo === 'fornecedores') { titulo.innerText = "Fornecedores"; btnNovo.onclick = () => abrirFormFornecedor(null); db.fornecedores.forEach((f) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${f.nome}</strong><br><span style="color:#666">${f.telefone}</span></div><div class="gerenciar-actions"><button onclick="abrirFormFornecedor('${f.id}')">✏️</button><button onclick="excluirItem('fornecedores', '${f.id}')">🗑️</button></div></div>`; }); }
         document.getElementById('modalListagem').style.display = 'flex';
     }
+
+    function moverCategoria(index, direcao) {
+        if (direcao === -1 && index > 0) { let temp = db.categorias[index]; db.categorias[index] = db.categorias[index - 1]; db.categorias[index - 1] = temp; } 
+        else if (direcao === 1 && index < db.categorias.length - 1) { let temp = db.categorias[index]; db.categorias[index] = db.categorias[index + 1]; db.categorias[index + 1] = temp; }
+        salvarBanco(); abrirGerenciar('categorias');
+    }
+
     function excluirItem(tipo, id) { if(confirm("Tem certeza?")) { db[tipo] = db[tipo].filter(x => x.id !== id); salvarBanco(); abrirGerenciar(tipo); renderizarLista(); } }
 
     function salvarRestaurante() { db.restaurante.nome = document.getElementById('restNome').value; db.restaurante.cnpj = document.getElementById('restCNPJ').value; db.restaurante.rua = document.getElementById('restRua').value; db.restaurante.numero = document.getElementById('restNum').value; db.restaurante.bairro = document.getElementById('restBairro').value; db.restaurante.cidade = document.getElementById('restCidade').value; db.restaurante.uf = document.getElementById('restUF').value; db.restaurante.ponto = document.getElementById('restPonto').value; salvarBanco(); fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display = 'flex'; }
@@ -740,14 +806,14 @@
     function abrirFormProduto(id) {
         fecharModal('modalListagem'); const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
         if(id) {
-            const p = db.produtos.find(x => x.id === id); document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = p.qtdPadrao || '';
+            const p = db.produtos.find(x => x.id === id); document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodDesc').value = p.descFornecedor || ''; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = p.qtdPadrao || '';
             if(p.historicoPrecos && p.historicoPrecos.length > 0) { const h = p.historicoPrecos[p.historicoPrecos.length-1]; document.getElementById('prodPreco').value = h.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2}); document.getElementById('prodPrecoData').value = h.data; } else { document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); }
-        } else { document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodUnidades').value = 'un'; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodPreco').value = ''; document.getElementById('prodQtdPadrao').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); }
+        } else { document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodUnidades').value = 'un'; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodPreco').value = ''; document.getElementById('prodQtdPadrao').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); }
         document.getElementById('modalFormProduto').style.display = 'flex';
     }
     function salvarProduto() {
         const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; const qtdPadrao = parseFloat(document.getElementById('prodQtdPadrao').value) || null;
-        const novo = { id: id, nome: document.getElementById('prodNome').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : ['un'], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: [{ data: pData, preco: pVal }] };
+        const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : ['un'], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: [{ data: pData, preco: pVal }] };
         const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo);
         salvarBanco(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista();
     }
