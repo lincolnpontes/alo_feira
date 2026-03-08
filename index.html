@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Gestor de Compras v10.0</title>
+    <title>Gestor de Compras v11.0</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -153,7 +153,7 @@
 <div class="modal-overlay" id="modalSenhaAdmin">
     <div class="modal">
         <div class="modal-title">Admin</div>
-        <div class="form-group"><label>Senha:</label><input type="password" autocomplete="new-password" name="pwd_admin_nofill" id="inputSenhaAdmin" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
+        <div class="form-group"><label>Senha:</label><input type="password" id="inputSenhaAdmin" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAdmin')">Cancelar</button></div>
     </div>
 </div>
@@ -161,7 +161,7 @@
 <div class="modal-overlay" id="modalSenhaAvancada">
     <div class="modal">
         <div class="modal-title" style="color:#d32f2f;">Acesso Restrito</div>
-        <div class="form-group"><label>Senha Avançada:</label><input type="password" autocomplete="new-password" name="pwd_avanc_nofill" id="senhaAvancada" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
+        <div class="form-group"><label>Senha Avançada:</label><input type="password" id="senhaAvancada" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAvancada')">Cancelar</button></div>
     </div>
 </div>
@@ -172,12 +172,12 @@
         <input type="hidden" id="editPedidoId">
         <div style="display: flex; gap:10px;">
             <div class="form-group" style="flex:1;"><label>Quantidade:</label>
-                <input type="text" inputmode="decimal" autocomplete="new-password" name="xyz_qtd_01" id="editPedidoQtd" readonly ontouchstart="this.removeAttribute('readonly');" onfocus="this.removeAttribute('readonly'); this.select();">
+                <input type="text" inputmode="decimal" id="editPedidoQtd" onfocus="this.select();">
             </div>
             <div class="form-group" style="flex:1;"><label>Unidade:</label><select id="editPedidoUnidade"></select></div>
         </div>
         <div class="form-group"><label>Observação (Opcional):</label>
-            <input type="text" autocomplete="new-password" name="xyz_obs_01" id="editPedidoObs" placeholder="Ex: maduro, marca tal..." readonly ontouchstart="this.removeAttribute('readonly');" onfocus="this.removeAttribute('readonly'); this.select();">
+            <input type="text" id="editPedidoObs" placeholder="Ex: maduro, marca tal..." onfocus="this.select();">
         </div>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="fecharModal('modalEditarPedido')">Cancelar</button>
@@ -196,12 +196,12 @@
         <div style="background:#f1f8e9; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #c5e1a5;">
             <div style="display:flex; gap:10px; margin-bottom:5px;">
                 <div class="form-group" style="flex:1; margin-bottom:0;"><label>Qtd:</label>
-                    <input type="text" inputmode="decimal" id="histCompraQtd" autocomplete="new-password" name="xyz_qtd_02" readonly ontouchstart="this.removeAttribute('readonly');" onfocus="this.removeAttribute('readonly'); this.select();">
+                    <input type="text" inputmode="decimal" id="histCompraQtd" onfocus="this.select();">
                 </div>
                 <div class="form-group" style="flex:1; margin-bottom:0;"><label>Und:</label><select id="histCompraUnd"></select></div>
             </div>
             <div class="form-group" style="margin-bottom:0;"><label>Obs:</label>
-                <input type="text" id="histCompraObs" autocomplete="new-password" name="xyz_obs_02" readonly ontouchstart="this.removeAttribute('readonly');" onfocus="this.removeAttribute('readonly'); this.select();">
+                <input type="text" id="histCompraObs" onfocus="this.select();">
             </div>
         </div>
 
@@ -226,7 +226,7 @@
         <div class="modal-title" style="border-color:#25d366;">Relatório p/ Fornecedor</div>
         <div class="form-group"><label>Responsável (Colaborador):</label><select id="relatColaborador" onchange="gerarTextoRelatorio()"></select></div>
         <div class="form-group"><label>Fornecedor (Destino):</label><select id="relatFornecedor" onchange="gerarTextoRelatorio()"></select></div>
-        <div class="form-group"><textarea autocomplete="off" name="txt_nofill_1" id="relatTexto" rows="9" style="font-size: 12px; background: #f9f9f9;"></textarea></div>
+        <div class="form-group"><textarea id="relatTexto" rows="9" style="font-size: 12px; background: #f9f9f9;"></textarea></div>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="fecharModal('modalRelatorio')">Voltar</button>
             <button class="btn-action" style="background:#25d366; color:white; font-size:16px;" onclick="enviarWhatsAppAPI()">📞 Enviar Whatsapp</button>
@@ -259,11 +259,11 @@
 <div class="modal-overlay" id="modalConfigAvancadas">
     <div class="modal" style="max-height: 90vh; overflow-y: auto;">
         <div class="modal-title" style="color:#d32f2f;">Zona de Risco</div>
-        <div class="form-group"><label>URL Google Script:</label><input type="text" autocomplete="off" name="url_nofill_1" id="configUrlApp" placeholder="https://script.google.com/macros/s/..."><button class="btn-action" style="width: 100%; margin-top: 10px; background-color: #4CAF50;" onclick="salvarURL()">💾 Salvar URL e Puxar Dados</button></div>
+        <div class="form-group"><label>URL Google Script:</label><input type="text" id="configUrlApp" placeholder="https://script.google.com/macros/s/..."><button class="btn-action" style="width: 100%; margin-top: 10px; background-color: #4CAF50;" onclick="salvarURL()">💾 Salvar URL e Puxar Dados</button></div>
         <div style="display: flex; gap: 10px; margin-bottom: 20px;"><button id="btnSalvarNuvem" class="btn-outline" style="margin: 0; flex: 1; justify-content: center; font-size: 13px; border-color:#2e7d32; color:#2e7d32;" onclick="sincronizarSalvarNuvem()">⬆️ Salvar na Nuvem</button></div>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
         <p style="font-size: 13px; color: #555; margin-bottom: 5px;">Atenção: A ação abaixo é irreversível.</p>
-        <div class="form-group"><label>Para apagar todos os pedidos, digite: <b>quero excluir todo o histórico</b></label><input type="text" autocomplete="off" name="delete_nofill_1" id="inputExcluirTudo" placeholder="digite a frase exata"><button class="btn-danger" style="margin-top: 10px; width: 100%;" onclick="excluirTodoHistorico()">🗑️ Apagar Todo o Histórico</button></div>
+        <div class="form-group"><label>Para apagar todos os pedidos, digite: <b>quero excluir todo o histórico</b></label><input type="text" id="inputExcluirTudo" placeholder="digite a frase exata"><button class="btn-danger" style="margin-top: 10px; width: 100%;" onclick="excluirTodoHistorico()">🗑️ Apagar Todo o Histórico</button></div>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
         <div class="form-group"><label>Problemas de Cache ou Atualização?</label><button class="btn-outline" style="border-color:#fbc02d; color:#fbc02d; width: 100%;" onclick="forcarAtualizacao()">🔄 Forçar Atualização (Limpar Cache)</button></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalConfigAvancadas'); document.getElementById('modalPainelUnificado').style.display='flex';">Voltar</button></div>
@@ -282,12 +282,12 @@
 <div class="modal-overlay" id="modalFormRestaurante">
     <div class="modal">
         <div class="modal-title">Restaurante</div>
-        <div class="form-group"><label>Nome Fantasia:</label><input type="text" autocomplete="off" name="rnd_rest_1" id="restNome"></div>
-        <div class="form-group"><label>CNPJ:</label><input type="text" autocomplete="off" name="rnd_rest_2" id="restCNPJ" inputmode="numeric" oninput="maskCNPJ(this)" maxlength="18"></div>
-        <div class="form-group"><label>Rua:</label><input type="text" autocomplete="off" name="rnd_rest_3" id="restRua"></div>
-        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:1;"><label>Número:</label><input type="text" autocomplete="off" name="rnd_rest_4" id="restNum" inputmode="numeric"></div><div class="form-group" style="flex:3;"><label>Bairro:</label><input type="text" autocomplete="off" name="rnd_rest_5" id="restBairro"></div></div>
-        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:2;"><label>Cidade:</label><input type="text" autocomplete="off" name="rnd_rest_6" id="restCidade"></div><div class="form-group" style="flex:1;"><label>UF:</label><select id="restUF"><option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select></div></div>
-        <div class="form-group"><label>Ponto de Referência (Opcional):</label><input type="text" autocomplete="off" name="rnd_rest_7" id="restPonto"></div>
+        <div class="form-group"><label>Nome Fantasia:</label><input type="text" id="restNome"></div>
+        <div class="form-group"><label>CNPJ:</label><input type="text" id="restCNPJ" inputmode="numeric" oninput="maskCNPJ(this)" maxlength="18"></div>
+        <div class="form-group"><label>Rua:</label><input type="text" id="restRua"></div>
+        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:1;"><label>Número:</label><input type="text" id="restNum" inputmode="numeric"></div><div class="form-group" style="flex:3;"><label>Bairro:</label><input type="text" id="restBairro"></div></div>
+        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:2;"><label>Cidade:</label><input type="text" id="restCidade"></div><div class="form-group" style="flex:1;"><label>UF:</label><select id="restUF"><option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select></div></div>
+        <div class="form-group"><label>Ponto de Referência (Opcional):</label><input type="text" id="restPonto"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display='flex';">Cancelar</button><button class="btn-action" onclick="salvarRestaurante()">Salvar</button></div>
     </div>
 </div>
@@ -296,18 +296,18 @@
     <div class="modal">
         <div class="modal-title">Produto</div>
         <input type="hidden" id="prodId">
-        <div class="form-group"><label>Nome (Visão Interna):</label><input type="text" autocomplete="off" name="rnd_prod_1" id="prodNome"></div>
-        <div class="form-group"><label>Nome para o Relatório (Opcional):</label><input type="text" autocomplete="off" name="rnd_prod_desc" id="prodDesc" placeholder="digite aqui"></div>
-        <div class="form-group"><label>Observação Padrão (Opcional):</label><input type="text" autocomplete="off" name="rnd_prod_obs" id="prodObsPadrao" placeholder="Ex: maduro, marca tal..."></div>
+        <div class="form-group"><label>Nome (Visão Interna):</label><input type="text" id="prodNome"></div>
+        <div class="form-group"><label>Nome para o Relatório (Opcional):</label><input type="text" id="prodDesc"></div>
+        <div class="form-group"><label>Observação Padrão (Opcional):</label><input type="text" id="prodObsPadrao" placeholder="Ex: maduro, marca tal..."></div>
         <div class="form-group"><label>Categoria:</label><select id="prodCategoria"></select></div>
         <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex:1;"><label>Qtd Padrão:</label><input type="text" inputmode="decimal" autocomplete="off" name="rnd_prod_2" id="prodQtdPadrao" placeholder="Ex: 6.5"></div>
-            <div class="form-group" style="flex:2;"><label>Unidades (vírgula):</label><input type="text" autocomplete="off" name="rnd_prod_3" id="prodUnidades" placeholder="ex: kg, cx, pct"></div>
+            <div class="form-group" style="flex:1;"><label>Qtd Padrão:</label><input type="text" inputmode="decimal" id="prodQtdPadrao" placeholder="Ex: 6.5"></div>
+            <div class="form-group" style="flex:2;"><label>Unidades (vírgula):</label><input type="text" id="prodUnidades" placeholder="ex: kg, cx, pct"></div>
         </div>
-        <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" autocomplete="off" name="rnd_prod_4" id="prodMarcasOk" placeholder="Ex: Sadia, Perdigão"></div>
-        <div class="form-group"><label>Marcas Reprovadas:</label><input type="text" autocomplete="off" name="rnd_prod_5" id="prodMarcasNok"></div>
+        <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" id="prodMarcasOk" placeholder="Ex: Sadia, Perdigão"></div>
+        <div class="form-group"><label>Marcas Reprovadas:</label><input type="text" id="prodMarcasNok"></div>
         <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex:1;"><label>Preço (R$):</label><input type="text" autocomplete="off" name="rnd_prod_6" id="prodPreco" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00"></div>
+            <div class="form-group" style="flex:1;"><label>Preço (R$):</label><input type="text" id="prodPreco" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00"></div>
             <div class="form-group" style="flex:1;"><label>Data do Preço:</label><input type="date" id="prodPrecoData"></div>
         </div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormProduto'); abrirGerenciar('produtos');">Cancelar</button><button class="btn-action" onclick="salvarProduto()">Salvar</button></div>
@@ -318,7 +318,7 @@
     <div class="modal">
         <div class="modal-title">Categoria</div>
         <input type="hidden" id="catId">
-        <div class="form-group"><label>Nome:</label><input type="text" autocomplete="off" name="rnd_cat_1" id="catNome"></div>
+        <div class="form-group"><label>Nome:</label><input type="text" id="catNome"></div>
         <div style="display: flex; gap: 10px;">
             <div class="form-group" style="flex:1;"><label>Cor Fundo:</label><input type="color" class="input-cor" id="catCor"></div>
             <div class="form-group" style="flex:1;"><label>Cor Texto:</label><input type="color" class="input-cor" id="catCorTexto"></div>
@@ -331,8 +331,8 @@
     <div class="modal">
         <div class="modal-title">Colaborador</div>
         <input type="hidden" id="colabId">
-        <div class="form-group"><label>Nome:</label><input type="text" autocomplete="off" name="rnd_colab_1" id="colabNome"></div>
-        <div class="form-group"><label>Senha:</label><input type="password" autocomplete="new-password" name="rnd_colab_2" id="colabSenha" placeholder="Deixe em branco p/ 123"></div>
+        <div class="form-group"><label>Nome:</label><input type="text" id="colabNome"></div>
+        <div class="form-group"><label>Senha:</label><input type="password" id="colabSenha" placeholder="Deixe em branco p/ 123"></div>
         <div class="form-group"><label>Categorias Permitidas:</label>
             <div id="colabCategoriasBox" style="font-size:14px; max-height:150px; overflow-y:auto; border:1px solid #ccc; padding:10px; border-radius:4px; background:#fafafa;"></div>
         </div>
@@ -344,13 +344,13 @@
     <div class="modal">
         <div class="modal-title">Fornecedor</div>
         <input type="hidden" id="fornId">
-        <div class="form-group"><label>Nome da Empresa:</label><input type="text" autocomplete="off" name="rnd_forn_1" id="fornNome"></div>
-        <div class="form-group"><label>Nome do Vendedor (Opcional):</label><input type="text" autocomplete="off" name="rnd_forn_2" id="fornVendedor"></div>
-        <div class="form-group"><label>WhatsApp Vendedor:</label><input type="text" autocomplete="off" name="rnd_forn_3" id="fornTel" inputmode="numeric" oninput="maskTelefone(this)" placeholder="(00) 00000-0000" maxlength="15"></div>
-        <div class="form-group"><label>Nome do Gerente (Opcional):</label><input type="text" autocomplete="off" name="rnd_forn_4" id="fornNomeGerente"></div>
+        <div class="form-group"><label>Nome da Empresa:</label><input type="text" id="fornNome"></div>
+        <div class="form-group"><label>Nome do Vendedor (Opcional):</label><input type="text" id="fornVendedor"></div>
+        <div class="form-group"><label>WhatsApp Vendedor:</label><input type="text" id="fornTel" inputmode="numeric" oninput="maskTelefone(this)" placeholder="(00) 00000-0000" maxlength="15"></div>
+        <div class="form-group"><label>Nome do Gerente (Opcional):</label><input type="text" id="fornNomeGerente"></div>
         <div style="display:flex; gap:10px;">
-            <div class="form-group" style="flex:1;"><label>Tel. Gerente (Opcional):</label><input type="text" autocomplete="off" name="rnd_forn_5" id="fornTelGerente" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
-            <div class="form-group" style="flex:1;"><label>Tel. Empresa (Opcional):</label><input type="text" autocomplete="off" name="rnd_forn_6" id="fornTelEmpresa" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
+            <div class="form-group" style="flex:1;"><label>Tel. Gerente (Opcional):</label><input type="text" id="fornTelGerente" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
+            <div class="form-group" style="flex:1;"><label>Tel. Empresa (Opcional):</label><input type="text" id="fornTelEmpresa" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
         </div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores');">Cancelar</button><button class="btn-action" onclick="salvarFornecedor()">Salvar</button></div>
     </div>
@@ -364,6 +364,7 @@
     let categoriaAtual = null;
     let modoSelecaoAtivo = false;
     let itensSelecionadosRelatorio = new Set();
+    let agrupamentoCompradoAtivo = false;
 
     function carregarBanco() {
         let base = {
@@ -372,11 +373,11 @@
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
             configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false }
         };
-        let salvo = localStorage.getItem('gc_v100');
-        if(!salvo) salvo = localStorage.getItem('gc_v90'); // migração simples
+        let salvo = localStorage.getItem('gc_v110');
+        if(!salvo) salvo = localStorage.getItem('gc_v100'); // migração simples
         return salvo ? JSON.parse(salvo) : base;
     }
-    function salvarBanco() { localStorage.setItem('gc_v100', JSON.stringify(db)); }
+    function salvarBanco() { localStorage.setItem('gc_v110', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
     function formatarDataHora(ts) {
@@ -396,7 +397,6 @@
     function maskTelefone(el) { let v = el.value.replace(/\D/g,""); v = v.replace(/^(\d{2})(\d)/g,"($1) $2"); v = v.replace(/(\d)(\d{4})$/,"$1-$2"); el.value = v; }
     function maskMoeda(el) { let v = el.value.replace(/\D/g, ""); if(!v) { el.value = ""; return; } v = (parseFloat(v) / 100).toLocaleString('pt-BR', {minimumFractionDigits: 2}); el.value = v; }
     function parseMoeda(str) { if(!str) return 0; return parseFloat(str.replace(/\./g, "").replace(",", ".")); }
-    // Ajuda a converter virgula do input text decimal para ponto no JS
     function parseFloatBr(str) { if(!str) return 0; return parseFloat(str.replace(',','.')); }
 
     /* =========================================================================
@@ -435,7 +435,7 @@
     }
     
     function excluirTodoHistorico() { let frase = document.getElementById('inputExcluirTudo').value; if(frase === "quero excluir todo o histórico") { db.pedidosAtivos = []; salvarBanco(); alert("Histórico apagado localmente."); document.getElementById('inputExcluirTudo').value = ''; renderizarLista(); } else { alert("Frase incorreta."); } }
-    function forcarAtualizacao() { localStorage.removeItem('gc_v100'); window.location.reload(true); }
+    function forcarAtualizacao() { localStorage.removeItem('gc_v110'); window.location.reload(true); }
 
     /* =========================================================================
        INICIALIZAÇÃO E UI
@@ -453,7 +453,7 @@
     function toggleExigirColab() { db.configs.exigirColaborador = document.getElementById('configExigirColab').checked; salvarBanco(); }
 
     function alterarModo(modo) {
-        db.configs.modo = modo; modoSelecaoAtivo = false; itensSelecionadosRelatorio.clear();
+        db.configs.modo = modo; modoSelecaoAtivo = false; itensSelecionadosRelatorio.clear(); agrupamentoCompradoAtivo = false;
         document.body.className = `theme-${modo}`; document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#6a1b9a'; 
         
         let dicas = document.getElementById('dicasCabecalho');
@@ -465,7 +465,7 @@
             document.getElementById('fabContainer').style.display = 'flex';
             document.getElementById('btnEnviarPedidos').style.display = 'none';
         }
-        document.getElementById('btnModoSelecao').style.backgroundColor = '#ab47bc'; // Reseta cor fab
+        document.getElementById('btnModoSelecao').style.backgroundColor = '#ab47bc';
         salvarBanco(); renderizarFiltros(); renderizarLista();
     }
 
@@ -475,14 +475,23 @@
         db.categorias.forEach(cat => { if(catsPermitidas && !catsPermitidas.includes(cat.id)) return; const isActive = categoriaAtual === cat.id; html += `<div class="chip ${isActive ? 'active' : ''}" style="background-color: ${cat.cor}; color: ${cat.corTexto};" onclick="filtrarCat('${cat.id}')">${cat.nome}</div>`; });
         document.getElementById('containerFiltros').innerHTML = html;
     }
-    function filtrarCat(catId) { categoriaAtual = catId; renderizarFiltros(); renderizarLista(); }
+    
+    function filtrarCat(catId) { 
+        if (catId === null && categoriaAtual === null && db.configs.modo === 'compras') {
+            agrupamentoCompradoAtivo = !agrupamentoCompradoAtivo;
+        } else {
+            agrupamentoCompradoAtivo = false;
+            categoriaAtual = catId;
+        }
+        renderizarFiltros(); 
+        renderizarLista(); 
+    }
 
     function renderizarLista() {
         const lista = document.getElementById('listaPrincipal'); lista.innerHTML = ''; let itensMostrados = 0;
         let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = colabLogado && colabLogado.catsPermitidas && colabLogado.catsPermitidas.length > 0 ? colabLogado.catsPermitidas : null;
         let temRascunho = false; let agora = Date.now();
 
-        // Ordenar produtos alfabeticamente
         let produtosOrdenados = [...db.produtos].sort((a, b) => a.nome.localeCompare(b.nome));
 
         if (db.configs.modo === 'pedido') {
@@ -497,6 +506,7 @@
                 let classesExtra = ""; let infoDireita = "";
                 let defaultUn = p.unidades && p.unidades.length > 0 ? p.unidades[0] : 'un';
                 let padraoTexto = p.qtdPadrao ? `(Padrão: ${p.qtdPadrao} ${defaultUn})` : `(Padrão: 1 ${defaultUn})`;
+                if(p.obsPadrao) padraoTexto += `<br><span style="color:#000; font-size:11px;">Obs Padrão: ${p.obsPadrao}</span>`;
                 
                 if (ultimoPedido) { 
                     let statusName = "Excluído"; let statusClass = "bg-excluido";
@@ -510,7 +520,7 @@
                         }
                     }
 
-                    let obsVisual = ultimoPedido.obs ? `<br><span style="color:#d32f2f; font-size:11px;">Obs: ${ultimoPedido.obs}</span>` : "";
+                    let obsVisual = ultimoPedido.obs ? `<br><span style="color:#000; font-size:11px;">Obs: ${ultimoPedido.obs}</span>` : "";
                     infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${ultimoPedido.qtd} ${ultimoPedido.unidade}</span>${obsVisual}</div>`;
                     
                     if(pedidoEditavel) {
@@ -527,20 +537,47 @@
             document.getElementById('btnEnviarPedidos').style.display = temRascunho ? 'block' : 'none';
 
         } else {
-            // Ordenar Compras alfabeticamente pelo nome do produto
             let comprasParaMostrar = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho');
-            comprasParaMostrar.sort((a, b) => {
-                let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
-                let nomeA = pA ? pA.nome : ""; let nomeB = pB ? pB.nome : "";
-                return nomeA.localeCompare(nomeB);
-            });
+            
+            if(agrupamentoCompradoAtivo) {
+                comprasParaMostrar.sort((a, b) => {
+                    let getStatusPrio = (s) => s === 'pendente' ? 1 : (s === 'pedido_forn' ? 2 : 3);
+                    let prioA = getStatusPrio(a.status); let prioB = getStatusPrio(b.status);
+                    if (prioA !== prioB) return prioA - prioB;
+
+                    let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
+                    let getCatPrio = (prod) => { if(!prod) return 999; let idx = db.categorias.findIndex(c => c.id === prod.categoria); return idx >= 0 ? idx : 999; };
+                    let catPrioA = getCatPrio(pA); let catPrioB = getCatPrio(pB);
+                    if (catPrioA !== catPrioB) return catPrioA - catPrioB;
+
+                    let nomeA = pA ? pA.nome : ""; let nomeB = pB ? pB.nome : "";
+                    return nomeA.localeCompare(nomeB);
+                });
+            } else {
+                comprasParaMostrar.sort((a, b) => {
+                    let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
+                    let nomeA = pA ? pA.nome : ""; let nomeB = pB ? pB.nome : "";
+                    return nomeA.localeCompare(nomeB);
+                });
+            }
+
+            let lastGroup = "";
 
             comprasParaMostrar.forEach(pa => {
                 if(pa.excluido) { const diffDays = (agora - pa.dataExclusao) / (1000 * 60 * 60 * 24); if(diffDays >= 7) return; }
 
                 const p = db.produtos.find(prod => prod.id === pa.produtoId); if(!p) return; if(categoriaAtual && p.categoria !== categoriaAtual) return;
+                
+                if (agrupamentoCompradoAtivo) {
+                    let currentGroup = pa.status === 'pendente' ? '⏳ PENDENTES' : (pa.status === 'pedido_forn' ? '📦 PEDIDOS AO FORNECEDOR' : '✅ COMPRADOS / ENTREGUES');
+                    if (currentGroup !== lastGroup) {
+                        lista.innerHTML += `<li style="background:#e0e0e0; padding:8px 15px; font-weight:bold; font-size:12px; color:#333; text-transform:uppercase; border-bottom:1px solid #ccc;">${currentGroup}</li>`;
+                        lastGroup = currentGroup;
+                    }
+                }
+
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
-                let emojiStatus = pa.status === 'pendente' ? '⏳' : (pa.status === 'comprado' ? '✅' : (pa.status === 'pedido_forn' ? '📦' : (pa.status === 'entregue' ? '✔️' : '')));
+                let emojiStatus = pa.status === 'pendente' ? '⏳' : (pa.status === 'comprado' ? '✅' : (pa.status === 'pedido_forn' ? '📦' : (pa.status === 'entregue' ? '✅' : '')));
                 let isSelected = itensSelecionadosRelatorio.has(pa.idUnico); let htmlSelecao = modoSelecaoAtivo ? `<div class="checkbox-selecao"></div>` : '';
                 
                 let tituloItem = `${p.nome} - ${pa.qtd} ${pa.unidade}`;
@@ -549,7 +586,7 @@
                 statusText += tempoTxt;
 
                 let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado')) ? ' <span style="font-size:10px; color:#d32f2f; font-weight:bold;">(Editado)</span>' : '';
-                let obsVisual = pa.obs ? `<br><span style="color:#d32f2f; font-weight:bold;">Obs: ${pa.obs}</span>` : "";
+                let obsVisual = pa.obs ? `<br><span style="color:#000; font-weight:bold;">Obs: ${pa.obs}</span>` : "";
                 
                 lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''} ${pa.excluido ? 'riscado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info"><div class="item-title">${tituloItem}${editIndicador}</div><div class="item-subtitle"><b style="text-transform: uppercase;">Status: ${statusText}</b>${obsVisual}</div></div></li>`;
                 itensMostrados++;
