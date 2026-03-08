@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Gestor de Compras v11.0</title>
+    <title>Alô Feira v1.0</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -15,7 +15,11 @@
         input, select, textarea { user-select: auto; -webkit-user-select: auto; font-family: inherit; }
         .app-container { width: 100%; max-width: 100%; background-color: #ffffff; height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         
+        /* SPLASH SCREEN */
         #splashScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #1565C0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; transition: opacity 0.5s ease; }
+        .splash-logo { width: 90px; height: 90px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); background-color: white; object-fit: cover; }
+        .splash-titulo { font-size: 28px; font-weight: bold; letter-spacing: 1px; }
+        .splash-versao { font-size: 14px; margin-top: 5px; opacity: 0.8; }
         
         /* CABEÇALHO */
         .header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; color: white; transition: background-color 0.3s; }
@@ -83,36 +87,48 @@
         .input-cor::-webkit-color-swatch { border: none; border-radius: 8px; }
 
         .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
-        .btn-cancel, .btn-action, .btn-danger { padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; flex: 1; text-align: center; border: none; font-size: 14px; }
+        .btn-cancel, .btn-action, .btn-danger, .btn-whatsapp { padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; flex: 1; text-align: center; border: none; font-size: 14px; }
         .btn-cancel { background: #eee; color: #333; }
         .btn-action { background: #1565C0; color: white; }
         .btn-danger { background: #d32f2f; color: white; }
+        .btn-whatsapp { background: #25d366; color: white; position: relative; display: flex; align-items: center; justify-content: center; width: 100%; font-size: 16px; }
+        .btn-whatsapp .icon { position: absolute; left: 15px; font-size: 20px; }
+        
         .btn-outline { background: transparent; border: 1px solid #1565C0; color: #1565C0; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 8px; text-align: left; }
         
         /* TOGGLE SWITCHES */
-        .switch { position: relative; display: inline-block; width: 44px; height: 24px; margin-right: 10px; vertical-align: middle; flex-shrink: 0; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; margin-right: 8px; vertical-align: middle; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
         input:checked + .slider { background-color: #1565C0; }
         input:checked + .slider:before { transform: translateX(20px); }
 
+        /* FABs */
         .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 90; }
         .fab { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; color: white; border: none; transition: background-color 0.3s; }
         .fab-zap { background-color: #25d366; }
-        .fab-select { background-color: #ab47bc; } /* Roxo claro */
+        .fab-select { background-color: #ab47bc; }
+        .fab-undo { background-color: #607d8b; display: none; } /* Botão Desfazer */
         
         .btn-enviar-pedidos { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 15px; background-color: #1565C0; color: white; font-weight: bold; font-size: 16px; border: none; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 90; text-align: center; }
 
         .gerenciar-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
         .gerenciar-info { flex: 1; font-size: 13px; }
         .gerenciar-actions button { background: #eee; border: none; cursor: pointer; font-size: 14px; margin-left: 5px; padding: 6px; border-radius: 4px; }
+        
+        .marca-sistema { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; margin-bottom: 20px; }
+        .marca-sistema img { width: 65px; height: 65px; border-radius: 15px; margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); object-fit: cover; }
+        .marca-sistema .titulo { font-size: 22px; font-weight: bold; color: #1565C0; }
+        .marca-sistema .versao { font-size: 12px; color: #666; }
     </style>
 </head>
 <body class="theme-pedido" oncontextmenu="return false;">
 
 <div id="splashScreen">
-    <div class="splash-titulo">Gestor Compras</div>
+    <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
+    <div class="splash-titulo">Alô Feira</div>
+    <div class="splash-versao">v1.0</div>
 </div>
 
 <div class="app-container">
@@ -137,6 +153,7 @@
     <button class="btn-enviar-pedidos" id="btnEnviarPedidos" style="display: none;" onclick="enviarPedidosParaCompras()">Enviar Pedido(s)</button>
 
     <div class="fab-container" id="fabContainer" style="display: none;">
+        <button class="fab fab-undo" onclick="desfazerAcao()" id="btnDesfazer">↩️</button>
         <button class="fab fab-select" onclick="toggleModoSelecao()" id="btnModoSelecao">☑️</button>
         <button class="fab fab-zap" onclick="abrirModalRelatorio()">📄</button>
     </div>
@@ -152,7 +169,7 @@
 
 <div class="modal-overlay" id="modalSenhaAdmin">
     <div class="modal">
-        <div class="modal-title">Admin</div>
+        <div class="modal-title">Acesso Restrito</div>
         <div class="form-group"><label>Senha:</label><input type="password" id="inputSenhaAdmin" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAdmin')">Cancelar</button></div>
     </div>
@@ -160,7 +177,7 @@
 
 <div class="modal-overlay" id="modalSenhaAvancada">
     <div class="modal">
-        <div class="modal-title" style="color:#d32f2f;">Acesso Restrito</div>
+        <div class="modal-title" style="color:#d32f2f;">Zona de Risco</div>
         <div class="form-group"><label>Senha Avançada:</label><input type="password" id="senhaAvancada" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAvancada')">Cancelar</button></div>
     </div>
@@ -224,19 +241,41 @@
 <div class="modal-overlay" id="modalRelatorio">
     <div class="modal">
         <div class="modal-title" style="border-color:#25d366;">Relatório p/ Fornecedor</div>
+        
+        <div style="background:#f1f8e9; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #c5e1a5; display:flex; justify-content:space-around;">
+            <div style="display:flex; align-items:center;">
+                <label class="switch"><input type="checkbox" id="relatToggleCab" checked onchange="gerarTextoRelatorio()"><span class="slider"></span></label>
+                <span style="font-size:12px; font-weight:bold; color:#555;">Cabeçalho</span>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <label class="switch"><input type="checkbox" id="relatToggleItens" checked onchange="gerarTextoRelatorio()"><span class="slider"></span></label>
+                <span style="font-size:12px; font-weight:bold; color:#555;">Título "Itens"</span>
+            </div>
+        </div>
+
         <div class="form-group"><label>Responsável (Colaborador):</label><select id="relatColaborador" onchange="gerarTextoRelatorio()"></select></div>
         <div class="form-group"><label>Fornecedor (Destino):</label><select id="relatFornecedor" onchange="gerarTextoRelatorio()"></select></div>
-        <div class="form-group"><textarea id="relatTexto" rows="9" style="font-size: 12px; background: #f9f9f9;"></textarea></div>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharModal('modalRelatorio')">Voltar</button>
-            <button class="btn-action" style="background:#25d366; color:white; font-size:16px;" onclick="enviarWhatsAppAPI()">📞 Enviar Whatsapp</button>
+        <div class="form-group"><textarea id="relatTexto" rows="8" style="font-size: 12px; background: #f9f9f9;"></textarea></div>
+        
+        <div style="margin-top: 15px;">
+            <button class="btn-whatsapp" onclick="enviarWhatsAppAPI()">
+                <span class="icon">📞</span>
+                <span>Enviar Whatsapp</span>
+            </button>
+            <button class="btn-cancel" style="width: 100%; margin-top: 8px;" onclick="fecharModal('modalRelatorio')">Voltar</button>
         </div>
     </div>
 </div>
 
 <div class="modal-overlay" id="modalPainelUnificado">
-    <div class="modal">
-        <div class="modal-title">Configurações</div>
+    <div class="modal" style="padding-top: 25px;">
+        
+        <div class="marca-sistema">
+            <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
+            <div class="titulo">Alô Feira</div>
+            <div class="versao">v1.0</div>
+        </div>
+
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
         <button class="btn-outline" onclick="abrirGerenciar('produtos')">🍔 Gerenciar Produtos</button>
         <button class="btn-outline" onclick="abrirGerenciar('categorias')">🏷️ Gerenciar Categorias</button>
@@ -365,19 +404,22 @@
     let modoSelecaoAtivo = false;
     let itensSelecionadosRelatorio = new Set();
     let agrupamentoCompradoAtivo = false;
+    let pilhaDesfazer = []; // Memória temporária para desfazer ações
 
     function carregarBanco() {
         let base = {
-            app_id: "gestor_compras", 
+            app_id: "alofeira", 
             restaurante: { nome: "", cnpj: "", rua: "", numero: "", bairro: "", cidade: "", uf: "PB", ponto: "" },
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
             configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false }
         };
-        let salvo = localStorage.getItem('gc_v110');
-        if(!salvo) salvo = localStorage.getItem('gc_v100'); // migração simples
+        // Busca a versão nova, se não tiver, busca das antigas para migrar
+        let salvo = localStorage.getItem('alofeira_v1');
+        if(!salvo) salvo = localStorage.getItem('gc_v110'); 
+        if(!salvo) salvo = localStorage.getItem('gc_v100'); 
         return salvo ? JSON.parse(salvo) : base;
     }
-    function salvarBanco() { localStorage.setItem('gc_v110', JSON.stringify(db)); }
+    function salvarBanco() { localStorage.setItem('alofeira_v1', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
     function formatarDataHora(ts) {
@@ -411,7 +453,7 @@
         if(!db.configs.dadosBaixados) { if(!confirm("Você não puxou dados da nuvem. Salvar apagará a nuvem. Forçar?")) return; }
         try { 
             const btn = document.getElementById('btnSalvarNuvem'); if(btn) btn.innerText = "Salvando..."; 
-            db.app_id = "gestor_compras"; 
+            db.app_id = "alofeira"; 
             await fetch(db.configs.url, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'salvar_banco', dados: db }) }); 
             db.configs.dadosBaixados = true; salvarBanco(); alert("Salvo na nuvem!"); if(btn) btn.innerText = "⬆️ Salvar na Nuvem"; 
         } catch(e) { alert("Erro ao salvar."); }
@@ -427,7 +469,7 @@
 
             if(nuvemDB && (nuvemDB.produtos || nuvemDB.fornecedores)) { 
                 let modoAtual = db.configs.modo; db = nuvemDB; db.configs.modo = modoAtual; db.configs.dadosBaixados = true; 
-                db.app_id = "gestor_compras"; 
+                db.app_id = "alofeira"; 
                 salvarBanco(); 
                 if(pedirConfirmacao) { alert("Sucesso! Banco puxado da nuvem."); location.reload(); } 
             } else { if(pedirConfirmacao) alert("A nuvem está vazia ou o link é inválido. Salve seus dados nela primeiro."); } 
@@ -435,12 +477,12 @@
     }
     
     function excluirTodoHistorico() { let frase = document.getElementById('inputExcluirTudo').value; if(frase === "quero excluir todo o histórico") { db.pedidosAtivos = []; salvarBanco(); alert("Histórico apagado localmente."); document.getElementById('inputExcluirTudo').value = ''; renderizarLista(); } else { alert("Frase incorreta."); } }
-    function forcarAtualizacao() { localStorage.removeItem('gc_v110'); window.location.reload(true); }
+    function forcarAtualizacao() { localStorage.removeItem('alofeira_v1'); window.location.reload(true); }
 
     /* =========================================================================
        INICIALIZAÇÃO E UI
        ========================================================================= */
-    window.onload = () => { setTimeout(() => { document.getElementById('splashScreen').style.display = 'none'; }, 1000); if(db.configs.exigirColaborador && !db.configs.colabAtivoId) { abrirSelecaoColaboradorInicial(); } else { iniciarApp(); } };
+    window.onload = () => { setTimeout(() => { document.getElementById('splashScreen').style.opacity = '0'; setTimeout(()=>{document.getElementById('splashScreen').style.display = 'none';}, 500); }, 1500); if(db.configs.exigirColaborador && !db.configs.colabAtivoId) { abrirSelecaoColaboradorInicial(); } else { iniciarApp(); } };
 
     function iniciarApp() { document.getElementById('seletorModo').value = db.configs.modo; document.getElementById('configExigirColab').checked = db.configs.exigirColaborador; alterarModo(db.configs.modo); }
     function abrirSelecaoColaboradorInicial() { 
@@ -466,7 +508,7 @@
             document.getElementById('btnEnviarPedidos').style.display = 'none';
         }
         document.getElementById('btnModoSelecao').style.backgroundColor = '#ab47bc';
-        salvarBanco(); renderizarFiltros(); renderizarLista();
+        salvarBanco(); atualizarBotaoDesfazer(); renderizarFiltros(); renderizarLista();
     }
 
     function renderizarFiltros() {
@@ -599,6 +641,44 @@
     function cliqueItemCompra(idUnico) { if(modoSelecaoAtivo) { if(itensSelecionadosRelatorio.has(idUnico)) itensSelecionadosRelatorio.delete(idUnico); else itensSelecionadosRelatorio.add(idUnico); renderizarLista(); } }
 
     /* =========================================================================
+       SISTEMA DE DESFAZER (UNDO)
+       ========================================================================= */
+    function registrarDesfazer(pa) {
+        pilhaDesfazer.push({
+            idUnico: pa.idUnico,
+            status: pa.status,
+            excluido: pa.excluido,
+            dataConclusao: pa.dataConclusao,
+            dataExclusao: pa.dataExclusao
+        });
+        atualizarBotaoDesfazer();
+    }
+
+    function desfazerAcao() {
+        if(pilhaDesfazer.length === 0) return;
+        let last = pilhaDesfazer.pop();
+        let pa = db.pedidosAtivos.find(x => x.idUnico === last.idUnico);
+        if(pa) {
+            pa.status = last.status;
+            pa.excluido = last.excluido;
+            pa.dataConclusao = last.dataConclusao;
+            pa.dataExclusao = last.dataExclusao;
+            salvarBanco();
+            renderizarLista();
+        }
+        atualizarBotaoDesfazer();
+    }
+
+    function atualizarBotaoDesfazer() {
+        const btn = document.getElementById('btnDesfazer');
+        if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0) {
+            btn.style.display = 'flex';
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    /* =========================================================================
        GESTOS
        ========================================================================= */
     let touchStartX = 0; let pressTimer; let isLongPress = false; let lastTap = 0; let tapTimer;
@@ -645,12 +725,21 @@
         }
     }
     
-    function acaoSegurar(el) { if(db.configs.modo === 'compras') { const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && !pa.excluido) { pa.status = 'pedido_forn'; delete pa.dataConclusao; salvarBanco(); renderizarLista(); } } }
+    function acaoSegurar(el) { 
+        if(db.configs.modo === 'compras') { 
+            const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
+            if(pa && !pa.excluido) { 
+                registrarDesfazer(pa);
+                pa.status = 'pedido_forn'; delete pa.dataConclusao; salvarBanco(); renderizarLista(); 
+            } 
+        } 
+    }
     
     function acaoDeslizarDireita(el) {
         if(db.configs.modo === 'compras') {
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
             if(pa) {
+                registrarDesfazer(pa);
                 if(pa.excluido) {
                     if(confirm("Desfazer exclusão do item e voltar à lista?")) { pa.excluido = false; pa.status = 'pendente'; salvarBanco(); renderizarLista(); }
                 } else {
@@ -672,6 +761,7 @@
         else { 
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
             if(pa && !pa.excluido) { 
+                registrarDesfazer(pa);
                 if(pa.status === 'entregue') { 
                     if(confirm("Deseja voltar este item para 'Pedido ao Fornecedor'?")) { pa.status = 'pedido_forn'; delete pa.dataConclusao; salvarBanco(); renderizarLista(); } 
                 }
@@ -791,10 +881,24 @@
     function gerarTextoRelatorio() {
         const fornId = document.getElementById('relatFornecedor').value; 
         const res = db.restaurante; const forn = db.fornecedores.find(f => f.id === fornId);
+        const incluirCabecalho = document.getElementById('relatToggleCab').checked;
+        const incluirItens = document.getElementById('relatToggleItens').checked;
         
-        let texto = `> *${res.nome.toUpperCase()}*\n> CNPJ: ${res.cnpj}\n> End.: ${res.rua}, ${res.numero}\n> ${res.bairro} - ${res.cidade} / ${res.uf}\n`;
-        if(res.ponto) texto += `> Ponto de referência: ${res.ponto}\n`;
-        texto += `\n${forn ? '*' + forn.nome.toUpperCase() + '*\n\n' : ''}*Itens para cotação:*\n\n`;
+        let texto = "";
+        
+        if (incluirCabecalho) {
+            texto += `> *${res.nome.toUpperCase()}*\n> CNPJ: ${res.cnpj}\n> End.: ${res.rua}, ${res.numero}\n> ${res.bairro} - ${res.cidade} / ${res.uf}\n`;
+            if(res.ponto) texto += `> Ponto de referência: ${res.ponto}\n`;
+            texto += `\n`;
+        }
+
+        if (forn) {
+            texto += `*${forn.nome.toUpperCase()}*\n\n`;
+        }
+
+        if (incluirItens) {
+            texto += `*Itens para cotação:*\n\n`;
+        }
 
         Array.from(itensSelecionadosRelatorio).forEach(idUnico => {
             const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); if(!p) return;
@@ -806,7 +910,7 @@
         });
         document.getElementById('relatTexto').value = texto;
         
-        const btnZap = document.querySelector('.btn-action[onclick="enviarWhatsAppAPI()"]');
+        const btnZap = document.querySelector('.btn-whatsapp');
         if(forn && forn.telefone) { btnZap.dataset.tel = forn.telefone; } else { btnZap.dataset.tel = ""; }
     }
     
