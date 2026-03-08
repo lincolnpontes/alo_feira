@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Gestor de Compras v6.0</title>
+    <title>Gestor de Compras v7.0</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -172,15 +172,17 @@
         <div class="modal-title">Detalhes da Compra</div>
         <input type="hidden" id="histCompraId">
         
+        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Marcas no Relatório</h4>
+        <div id="histMarcasLista" style="font-size:13px; margin-bottom:15px; background:#e3f2fd; padding:10px; border-radius:5px;"></div>
+
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Edições</h4>
-        <div id="histCompraLista" style="font-size:13px; margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px; max-height: 100px; overflow-y: auto;"></div>
+        <div id="histCompraLista" style="font-size:13px; margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px; max-height: 90px; overflow-y: auto;"></div>
         
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Preços</h4>
-        <div id="histPrecosLista" style="font-size:13px; margin-bottom:15px; background:#e8f5e9; padding:10px; border-radius:5px; max-height: 100px; overflow-y: auto;"></div>
+        <div id="histPrecosLista" style="font-size:13px; margin-bottom:15px; background:#e8f5e9; padding:10px; border-radius:5px; max-height: 90px; overflow-y: auto;"></div>
 
         <div class="modal-actions">
-            <button class="btn-danger" onclick="excluirItemCompra()">🗑️ Excluir Item</button>
-            <button class="btn-cancel" onclick="fecharModal('modalHistoricoCompra')">Voltar</button>
+            <button class="btn-cancel" style="width:100%" onclick="fecharModal('modalHistoricoCompra')">Voltar e Salvar</button>
         </div>
     </div>
 </div>
@@ -266,7 +268,7 @@
             <div class="form-group" style="flex:1;"><label>Qtd Padrão:</label><input type="number" id="prodQtdPadrao" step="0.01" placeholder="Ex: 6"></div>
             <div class="form-group" style="flex:2;"><label>Unidades (vírgula):</label><input type="text" id="prodUnidades" placeholder="ex: kg, cx, pct"></div>
         </div>
-        <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" id="prodMarcasOk"></div>
+        <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" id="prodMarcasOk" placeholder="Ex: Sadia, Perdigão"></div>
         <div class="form-group"><label>Marcas Reprovadas:</label><input type="text" id="prodMarcasNok"></div>
         <div style="display: flex; gap: 10px;">
             <div class="form-group" style="flex:1;"><label>Preço (R$):</label><input type="text" id="prodPreco" inputmode="numeric" oninput="maskMoeda(this)" placeholder="0,00"></div>
@@ -329,15 +331,15 @@
 
     function carregarBanco() {
         let base = {
-            app_id: "gestor_compras", // Carimbo de identificação do App
+            app_id: "gestor_compras", 
             restaurante: { nome: "", cnpj: "", rua: "", numero: "", bairro: "", cidade: "", uf: "PB", ponto: "" },
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
             configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false }
         };
-        let salvo = localStorage.getItem('gc_v60');
+        let salvo = localStorage.getItem('gc_v70');
         return salvo ? JSON.parse(salvo) : base;
     }
-    function salvarBanco() { localStorage.setItem('gc_v60', JSON.stringify(db)); }
+    function salvarBanco() { localStorage.setItem('gc_v70', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
     /* =========================================================================
@@ -349,7 +351,7 @@
     function parseMoeda(str) { if(!str) return 0; return parseFloat(str.replace(/\./g, "").replace(",", ".")); }
 
     /* =========================================================================
-       NUVEM / ZONA DE RISCO E PROTEÇÃO ANTI ALÔ COZINHA
+       NUVEM E ZONA DE RISCO
        ========================================================================= */
     function solicitarAcessoAvancado() { fecharModal('modalPainelUnificado'); document.getElementById('senhaAvancada').value = ''; document.getElementById('modalSenhaAvancada').style.display = 'flex'; setTimeout(()=>document.getElementById('senhaAvancada').focus(), 100); }
     document.getElementById('senhaAvancada').addEventListener('input', function(e) { if(this.value === "1999") { this.blur(); this.value = ''; fecharModal('modalSenhaAvancada'); document.getElementById('configUrlApp').value = db.configs.url || ''; document.getElementById('modalConfigAvancadas').style.display = 'flex'; } });
@@ -360,7 +362,7 @@
         if(!db.configs.dadosBaixados) { if(!confirm("Você não puxou dados da nuvem. Salvar apagará a nuvem. Forçar?")) return; }
         try { 
             const btn = document.getElementById('btnSalvarNuvem'); if(btn) btn.innerText = "Salvando..."; 
-            db.app_id = "gestor_compras"; // Garante o carimbo
+            db.app_id = "gestor_compras"; 
             await fetch(db.configs.url, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'salvar_banco', dados: db }) }); 
             db.configs.dadosBaixados = true; salvarBanco(); alert("Salvo na nuvem!"); if(btn) btn.innerText = "⬆️ Salvar na Nuvem"; 
         } catch(e) { alert("Erro ao salvar."); }
@@ -372,15 +374,14 @@
             let res = await fetch(db.configs.url, { redirect: "follow" }); 
             let nuvemDB = await res.json(); 
             
-            // FILTRO DE SEGURANÇA: Bloqueia se identificar estrutura do Alô Cozinha
             if(nuvemDB && nuvemDB.mesas !== undefined) {
-                alert("❌ ERRO CRÍTICO:\nEsta URL pertence ao sistema Alô Cozinha (Salão)! Operação bloqueada para proteger seus dados. Use uma URL do Google Sheets limpa para o Compras.");
+                alert("❌ ERRO CRÍTICO:\nEsta URL pertence ao sistema Alô Cozinha (Salão)! Operação bloqueada para proteger seus dados. Use uma URL limpa para o Compras.");
                 return;
             }
 
             if(nuvemDB && (nuvemDB.produtos || nuvemDB.fornecedores)) { 
                 let modoAtual = db.configs.modo; db = nuvemDB; db.configs.modo = modoAtual; db.configs.dadosBaixados = true; 
-                db.app_id = "gestor_compras"; // Carimba o banco
+                db.app_id = "gestor_compras"; 
                 salvarBanco(); 
                 if(pedirConfirmacao) { alert("Sucesso! Banco puxado da nuvem."); location.reload(); } 
             } else { 
@@ -390,7 +391,7 @@
     }
     
     function excluirTodoHistorico() { let frase = document.getElementById('inputExcluirTudo').value; if(frase === "quero excluir todo o histórico") { db.pedidosAtivos = []; salvarBanco(); alert("Histórico apagado localmente."); document.getElementById('inputExcluirTudo').value = ''; renderizarLista(); } else { alert("Frase incorreta."); } }
-    function forcarAtualizacao() { localStorage.removeItem('gc_v60'); window.location.reload(true); }
+    function forcarAtualizacao() { localStorage.removeItem('gc_v70'); window.location.reload(true); }
 
     /* =========================================================================
        INICIALIZAÇÃO E UI
@@ -408,7 +409,7 @@
         document.getElementById('fabContainer').style.display = modo === 'compras' ? 'flex' : 'none';
         
         let dicas = document.getElementById('dicasCabecalho');
-        if(modo === 'pedido') { dicas.innerHTML = "👆 Toque: Pedir Padrão<br>👈 Deslize: Desmarcar<br>✌️ 2 Toques: Editar/Obs"; } else { dicas.innerHTML = "👉 Mudar Status | ⏳ Segurar: Fornecedor<br>✌️ 2 toques: Histórico/Excluir"; }
+        if(modo === 'pedido') { dicas.innerHTML = "👆 Toque: Pedir Padrão<br>👈 Deslize: Desmarcar<br>✌️ 2 Toques: Editar/Obs"; } else { dicas.innerHTML = "👉 Mudar Status | 👈 Excluir<br>✌️ 2 toques: Detalhes/Marcas"; }
         salvarBanco(); renderizarFiltros(); renderizarLista();
     }
 
@@ -430,36 +431,38 @@
                 if(categoriaAtual && p.categoria !== categoriaAtual) return; if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
                 
-                const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id && !pa.excluido);
-                
-                // Pedido que pode ser editado (não concluído)
-                const pedidoEditavel = pedidosDeste.find(pa => ['rascunho','pendente','pedido_forn'].includes(pa.status));
-                // Apenas o pedido mais recente para mostrar o status
+                const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id);
                 const ultimoPedido = pedidosDeste[pedidosDeste.length-1];
+                const pedidoEditavel = pedidosDeste.find(pa => !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente'));
                 
                 let classesExtra = ""; let infoDireita = "";
-                let padraoTexto = p.qtdPadrao ? ` (Padrão: ${p.qtdPadrao})` : "";
-                let subtitulo = `Unidades: ${p.unidades.join(', ')}${padraoTexto}`;
+                let defaultUn = p.unidades && p.unidades.length > 0 ? p.unidades[0] : 'un';
+                let padraoTexto = p.qtdPadrao ? `(Padrão: ${p.qtdPadrao} ${defaultUn})` : `(Padrão: 1 ${defaultUn})`;
                 
                 if (ultimoPedido) { 
-                    if(pedidoEditavel) {
-                        if(pedidoEditavel.status === 'rascunho') { classesExtra += "item-pedido-rascunho"; temRascunho = true; } else { classesExtra += "item-pedido-ativo"; }
-                    } else { classesExtra += "item-pedido-ativo"; }
-
-                    let statusName = "";
-                    switch(ultimoPedido.status) {
-                        case 'rascunho': statusName = 'Rascunho'; break;
-                        case 'pendente': statusName = 'Pendente'; break;
-                        case 'pedido_forn': statusName = 'Pedido Fornecedor'; break;
-                        case 'comprado': statusName = 'Comprado'; break;
-                        case 'entregue': statusName = 'Entregue'; break;
+                    let statusName = "Excluído";
+                    if(!ultimoPedido.excluido) {
+                        switch(ultimoPedido.status) {
+                            case 'rascunho': statusName = 'Rascunho'; break;
+                            case 'pendente': statusName = 'Pendente'; break;
+                            case 'pedido_forn': statusName = 'Pedido Forn.'; break;
+                            case 'comprado': statusName = 'Comprado'; break;
+                            case 'entregue': statusName = 'Entregue'; break;
+                        }
                     }
 
                     let obsVisual = ultimoPedido.obs ? `<br><span style="color:#d32f2f; font-size:11px;">Obs: ${ultimoPedido.obs}</span>` : "";
-                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><span style="font-size: 10px; color: #1565C0; margin-bottom: 2px;">Status: <b>${statusName}</b></span><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${ultimoPedido.qtd} ${ultimoPedido.unidade}</span>${obsVisual}</div>`;
+                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><span style="font-size: 11px; color: #1565C0; margin-bottom: 2px;"><b>${statusName}</b></span><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${ultimoPedido.qtd} ${ultimoPedido.unidade}</span>${obsVisual}</div>`;
+                    
+                    if(pedidoEditavel) {
+                        classesExtra += (pedidoEditavel.status === 'rascunho') ? "item-pedido-rascunho " : "item-pedido-ativo ";
+                        if(pedidoEditavel.status === 'rascunho') temRascunho = true;
+                    }
                 }
 
-                lista.innerHTML += `<li class="item ${classesExtra}" data-id="${p.id}" data-pedid="${pedidoEditavel ? pedidoEditavel.idUnico : ''}" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)"><div style="display: flex; align-items: center; flex: 1;"><div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${p.nome.charAt(0)}</div><div class="item-info"><div class="item-title">${p.nome}</div><div class="item-subtitle">${subtitulo}</div></div></div>${infoDireita}</li>`;
+                let pedIdAtributo = pedidoEditavel ? pedidoEditavel.idUnico : '';
+
+                lista.innerHTML += `<li class="item ${classesExtra}" data-id="${p.id}" data-pedid="${pedIdAtributo}" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)"><div style="display: flex; align-items: center; flex: 1;"><div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${p.nome.charAt(0)}</div><div class="item-info"><div class="item-title">${p.nome}</div><div class="item-subtitle">${padraoTexto}</div></div></div>${infoDireita}</li>`;
                 itensMostrados++;
             });
             document.getElementById('btnEnviarPedidos').style.display = temRascunho ? 'block' : 'none';
@@ -477,8 +480,11 @@
                 let statusText = pa.status === 'pedido_forn' ? 'Pedido Fornecedor' : pa.status;
                 let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado')) ? ' <span style="font-size:10px; color:#d32f2f; font-weight:bold;">(Editado)</span>' : '';
                 let obsVisual = pa.obs ? `<br><span style="color:#d32f2f; font-weight:bold;">Obs: ${pa.obs}</span>` : "";
+                
+                let marcasEscolhidasText = (pa.marcasSelecionadas && pa.marcasSelecionadas.length > 0) ? pa.marcasSelecionadas.join(', ') : 'Nenhuma';
+                let marcasVisual = `<br>Marcas: ${marcasEscolhidasText}`;
 
-                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''} ${pa.excluido ? 'riscado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info"><div class="item-title">${tituloItem}${editIndicador}</div><div class="item-subtitle">Marcas OK: ${p.marcasAprovadas || 'N/A'}${obsVisual}<br><b style="text-transform: uppercase;">Status: ${statusText}</b></div></div></li>`;
+                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''} ${pa.excluido ? 'riscado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info"><div class="item-title">${tituloItem}${editIndicador}</div><div class="item-subtitle"><b style="text-transform: uppercase;">Status: ${statusText}</b>${marcasVisual}${obsVisual}</div></div></li>`;
                 itensMostrados++;
             });
         }
@@ -509,7 +515,6 @@
         if(db.configs.modo === 'pedido') { 
             const pId = el.getAttribute('data-id'); const pedId = el.getAttribute('data-pedid'); 
             if(!pedId) {
-                // Se não tem pedId editável (ou seja, tá limpo ou só tem comprado/entregue), CRIA NOVO
                 const p = db.produtos.find(x => x.id === pId); if(!p) return;
                 let qtd = p.qtdPadrao || 1; let un = p.unidades[0] || 'un';
                 db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, obs: '', status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
@@ -522,7 +527,7 @@
         if(db.configs.modo === 'pedido') { const pedId = el.getAttribute('data-pedid'); if(pedId) abrirModalEditarPedido(pedId); } 
         else {
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
-            if(pa) { if(pa.excluido) { if(confirm("Desfazer exclusão?")) { pa.excluido = false; salvarBanco(); renderizarLista(); } } else { abrirHistoricoCompra(paId); } }
+            if(pa && !pa.excluido) { abrirHistoricoCompra(paId); }
         }
     }
     
@@ -549,14 +554,27 @@
         else { 
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
             if(pa && !pa.excluido) { 
-                if(pa.status === 'comprado') { if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; salvarBanco(); renderizarLista(); } }
-                else if (pa.status === 'entregue') { if(confirm("Deseja voltar este item para 'Pedido Fornecedor'?")) { pa.status = 'pedido_forn'; salvarBanco(); renderizarLista(); } }
+                if(pa.status === 'entregue') { 
+                    if(confirm("Deseja voltar este item para 'Pedido Fornecedor'?")) { pa.status = 'pedido_forn'; salvarBanco(); renderizarLista(); } 
+                }
+                else if (pa.status === 'pedido_forn') { 
+                    if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; salvarBanco(); renderizarLista(); } 
+                }
+                else if (pa.status === 'comprado') { 
+                    if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; salvarBanco(); renderizarLista(); } 
+                }
+                else if (pa.status === 'pendente') {
+                    if(confirm("Deseja excluir o item? Ele ficará riscado nas Compras por 7 dias.")) { 
+                        pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); 
+                        salvarBanco(); renderizarLista(); 
+                    }
+                }
             } 
         }
     }
 
     /* =========================================================================
-       OPERAÇÕES DE PEDIDO
+       OPERAÇÕES DE PEDIDO E COMPRAS (DETALHES)
        ========================================================================= */
     function abrirModalEditarPedido(paId) { 
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); 
@@ -578,16 +596,24 @@
     }
     
     function excluirRascunho() { const paId = document.getElementById('editPedidoId').value; let pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && pa.status === 'rascunho') { db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== paId); } salvarBanco(); fecharModal('modalEditarPedido'); renderizarLista(); }
-
     function enviarPedidosParaCompras() { let rascunhos = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido); rascunhos.forEach(pa => { pa.status = 'pendente'; }); salvarBanco(); alert("Pedidos enviados com sucesso!"); renderizarLista(); }
 
-    /* =========================================================================
-       HISTÓRICO NO MODO COMPRAS
-       ========================================================================= */
     function abrirHistoricoCompra(paId) {
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(prod => prod.id === pa.produtoId);
         document.getElementById('histCompraId').value = paId;
         
+        let htmlMarcas = "";
+        if(p && p.marcasAprovadas) {
+            let marcasArr = p.marcasAprovadas.split(',').map(m=>m.trim()).filter(m=>m);
+            if(marcasArr.length > 0) {
+                marcasArr.forEach(m => {
+                    let checked = (pa.marcasSelecionadas && pa.marcasSelecionadas.includes(m)) ? 'checked' : '';
+                    htmlMarcas += `<label style="display:inline-block; margin-right:10px; margin-bottom:5px;"><input type="checkbox" value="${m}" onchange="toggleMarcaCompra('${paId}', this.value, this.checked)" ${checked}> ${m}</label>`;
+                });
+            } else { htmlMarcas = "Nenhuma marca específica cadastrada."; }
+        } else { htmlMarcas = "Nenhuma marca cadastrada no produto."; }
+        document.getElementById('histMarcasLista').innerHTML = htmlMarcas;
+
         let htmlEdicao = "<ul>"; if(pa.historico) pa.historico.forEach(h => { htmlEdicao += `<li>${h.data} - ${h.msg}</li>`; }); else htmlEdicao += "<li>Sem histórico</li>"; htmlEdicao += "</ul>";
         document.getElementById('histCompraLista').innerHTML = htmlEdicao;
 
@@ -602,9 +628,12 @@
         document.getElementById('modalHistoricoCompra').style.display = 'flex';
     }
 
-    function excluirItemCompra() {
-        const paId = document.getElementById('histCompraId').value; let pa = db.pedidosAtivos.find(x => x.idUnico === paId);
-        if(pa) { if(confirm("Excluir item definitivamente? Ele ficará riscado nas Compras por 7 dias.")) { pa.excluido = true; pa.dataExclusao = Date.now(); salvarBanco(); fecharModal('modalHistoricoCompra'); renderizarLista(); } }
+    function toggleMarcaCompra(paId, marca, isChecked) {
+        let pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return;
+        if(!pa.marcasSelecionadas) pa.marcasSelecionadas = [];
+        if(isChecked) { if(!pa.marcasSelecionadas.includes(marca)) pa.marcasSelecionadas.push(marca); } 
+        else { pa.marcasSelecionadas = pa.marcasSelecionadas.filter(m => m !== marca); }
+        salvarBanco(); renderizarLista();
     }
 
     /* =========================================================================
@@ -616,19 +645,26 @@
         const selColab = document.getElementById('relatColaborador'); selColab.innerHTML = ''; db.colaboradores.forEach(c => selColab.innerHTML += `<option value="${c.id}" ${c.id === db.configs.colabAtivoId ? 'selected' : ''}>${c.nome}</option>`);
         document.getElementById('modalRelatorio').style.display = 'flex'; gerarTextoRelatorio();
     }
+    
     function gerarTextoRelatorio() {
-        const fornId = document.getElementById('relatFornecedor').value; const colabId = document.getElementById('relatColaborador').value;
-        const res = db.restaurante; const colab = db.colaboradores.find(c => c.id === colabId) || {nome:"", telefone:""}; const forn = db.fornecedores.find(f => f.id === fornId);
+        const fornId = document.getElementById('relatFornecedor').value; 
+        const res = db.restaurante; const forn = db.fornecedores.find(f => f.id === fornId);
         
         let pontoOpt = res.ponto ? `\n> Ponto de referência: ${res.ponto}` : '';
-        let texto = `> *${res.nome.toUpperCase()}*\n> CNPJ: ${res.cnpj}\n> Contato: ${colab.nome}\n> Telefone: ${colab.telefone}\n> End.: ${res.rua}, ${res.numero}\n> (${res.bairro} - ${res.cidade} / ${res.uf})${pontoOpt}\n\n`;
+        let texto = `> *${res.nome.toUpperCase()}*\n> CNPJ: ${res.cnpj}\n> End.: ${res.rua}, ${res.numero}\n> ${res.bairro} - ${res.cidade} / ${res.uf}${pontoOpt}\n\n`;
         texto += `${forn ? '*' + forn.nome.toUpperCase() + '*\n\n' : ''}*Itens para cotação:*\n\n`;
 
         Array.from(itensSelecionadosRelatorio).forEach(idUnico => {
             const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); if(!p) return;
-            texto += `▪ ${p.nome} - Qtd: ${pa.qtd} ${pa.unidade}${pa.obs ? ' *(obs.: ' + pa.obs + ')*' : ''}\n`;
+            
+            let marcasStr = (pa.marcasSelecionadas && pa.marcasSelecionadas.length > 0) ? ` - Marcas: ${pa.marcasSelecionadas.join(', ')}` : '';
+            let obsStr = pa.obs ? ` *(obs.: ${pa.obs})*` : '';
+            texto += `▪ ${p.nome} - Qtd: ${pa.qtd} ${pa.unidade}${marcasStr}${obsStr}\n`;
         });
         document.getElementById('relatTexto').value = texto;
+        
+        const btnZap = document.querySelector('.btn-action[onclick="enviarWhatsAppAPI()"]');
+        if(forn && forn.telefone) { btnZap.dataset.tel = forn.telefone; } else { btnZap.dataset.tel = ""; }
     }
     
     function enviarWhatsAppAPI() {
@@ -638,11 +674,9 @@
         const tel = forn ? forn.telefone : null;
 
         if(tel) { 
-            let num = tel.replace(/\D/g,'');
-            if(num.length === 10 || num.length === 11) num = '55' + num;
+            let num = tel.replace(/\D/g,''); if(num.length === 10 || num.length === 11) num = '55' + num;
             window.open(`https://wa.me/${num}?text=${encodeURIComponent(texto)}`, '_blank'); 
-        } 
-        else { 
+        } else { 
             const txtArea = document.getElementById('relatTexto'); txtArea.select(); document.execCommand('copy'); 
             alert("Copiado! Selecione o contato no WhatsApp manualmente."); 
             window.open(`https://wa.me/`, '_blank'); 
