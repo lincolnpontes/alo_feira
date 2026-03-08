@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Gestor de Compras v7.0</title>
+    <title>Gestor de Compras v8.0</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -137,7 +137,7 @@
 <div class="modal-overlay" id="modalSenhaAdmin">
     <div class="modal">
         <div class="modal-title">Admin</div>
-        <div class="form-group"><label>Senha:</label><input type="password" id="inputSenhaAdmin" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
+        <div class="form-group"><label>Senha:</label><input type="password" autocomplete="off" id="inputSenhaAdmin" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAdmin')">Cancelar</button></div>
     </div>
 </div>
@@ -145,7 +145,7 @@
 <div class="modal-overlay" id="modalSenhaAvancada">
     <div class="modal">
         <div class="modal-title" style="color:#d32f2f;">Acesso Restrito</div>
-        <div class="form-group"><label>Senha Avançada:</label><input type="password" id="senhaAvancada" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
+        <div class="form-group"><label>Senha Avançada:</label><input type="password" autocomplete="off" id="senhaAvancada" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAvancada')">Cancelar</button></div>
     </div>
 </div>
@@ -155,12 +155,11 @@
         <div class="modal-title">Detalhes do Pedido</div>
         <input type="hidden" id="editPedidoId">
         <div style="display: flex; gap:10px;">
-            <div class="form-group" style="flex:1;"><label>Quantidade:</label><input type="number" id="editPedidoQtd" step="0.01"></div>
+            <div class="form-group" style="flex:1;"><label>Quantidade:</label><input type="number" autocomplete="off" id="editPedidoQtd" step="0.01"></div>
             <div class="form-group" style="flex:1;"><label>Unidade:</label><select id="editPedidoUnidade"></select></div>
         </div>
-        <div class="form-group"><label>Observação (Opcional):</label><input type="text" id="editPedidoObs" placeholder="Ex: maduro, marca tal..."></div>
+        <div class="form-group"><label>Observação (Opcional):</label><input type="text" autocomplete="off" id="editPedidoObs" placeholder="Ex: maduro, marca tal..."></div>
         <div class="modal-actions">
-            <button class="btn-danger" onclick="excluirRascunho()">🗑️ Desmarcar</button>
             <button class="btn-cancel" onclick="fecharModal('modalEditarPedido')">Cancelar</button>
             <button class="btn-action" onclick="salvarEdicaoPedido()">Salvar</button>
         </div>
@@ -172,6 +171,8 @@
         <div class="modal-title">Detalhes da Compra</div>
         <input type="hidden" id="histCompraId">
         
+        <div id="histCompraDataConclusao"></div>
+
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Marcas no Relatório</h4>
         <div id="histMarcasLista" style="font-size:13px; margin-bottom:15px; background:#e3f2fd; padding:10px; border-radius:5px;"></div>
 
@@ -192,7 +193,7 @@
         <div class="modal-title" style="border-color:#25d366;">Relatório p/ Fornecedor</div>
         <div class="form-group"><label>Responsável (Colaborador):</label><select id="relatColaborador" onchange="gerarTextoRelatorio()"></select></div>
         <div class="form-group"><label>Fornecedor (Destino):</label><select id="relatFornecedor" onchange="gerarTextoRelatorio()"></select></div>
-        <div class="form-group"><textarea id="relatTexto" rows="9" style="font-size: 12px; background: #f9f9f9;"></textarea></div>
+        <div class="form-group"><textarea autocomplete="off" id="relatTexto" rows="9" style="font-size: 12px; background: #f9f9f9;"></textarea></div>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="fecharModal('modalRelatorio')">Voltar</button>
             <button class="btn-action" style="background:#25d366; color:white; font-size:16px;" onclick="enviarWhatsAppAPI()">📞 Enviar Whatsapp</button>
@@ -225,11 +226,11 @@
 <div class="modal-overlay" id="modalConfigAvancadas">
     <div class="modal" style="max-height: 90vh; overflow-y: auto;">
         <div class="modal-title" style="color:#d32f2f;">Zona de Risco</div>
-        <div class="form-group"><label>URL Google Script:</label><input type="text" id="configUrlApp" placeholder="https://script.google.com/macros/s/..."><button class="btn-action" style="width: 100%; margin-top: 10px; background-color: #4CAF50;" onclick="salvarURL()">💾 Salvar URL e Puxar Dados</button></div>
+        <div class="form-group"><label>URL Google Script:</label><input type="text" autocomplete="off" id="configUrlApp" placeholder="https://script.google.com/macros/s/..."><button class="btn-action" style="width: 100%; margin-top: 10px; background-color: #4CAF50;" onclick="salvarURL()">💾 Salvar URL e Puxar Dados</button></div>
         <div style="display: flex; gap: 10px; margin-bottom: 20px;"><button id="btnSalvarNuvem" class="btn-outline" style="margin: 0; flex: 1; justify-content: center; font-size: 13px; border-color:#2e7d32; color:#2e7d32;" onclick="sincronizarSalvarNuvem()">⬆️ Salvar na Nuvem</button></div>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
         <p style="font-size: 13px; color: #555; margin-bottom: 5px;">Atenção: A ação abaixo é irreversível.</p>
-        <div class="form-group"><label>Para apagar todos os pedidos, digite: <b>quero excluir todo o histórico</b></label><input type="text" id="inputExcluirTudo" placeholder="digite a frase exata"><button class="btn-danger" style="margin-top: 10px; width: 100%;" onclick="excluirTodoHistorico()">🗑️ Apagar Todo o Histórico</button></div>
+        <div class="form-group"><label>Para apagar todos os pedidos, digite: <b>quero excluir todo o histórico</b></label><input type="text" autocomplete="off" id="inputExcluirTudo" placeholder="digite a frase exata"><button class="btn-danger" style="margin-top: 10px; width: 100%;" onclick="excluirTodoHistorico()">🗑️ Apagar Todo o Histórico</button></div>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
         <div class="form-group"><label>Problemas de Cache ou Atualização?</label><button class="btn-outline" style="border-color:#fbc02d; color:#fbc02d; width: 100%;" onclick="forcarAtualizacao()">🔄 Forçar Atualização (Limpar Cache)</button></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalConfigAvancadas'); document.getElementById('modalPainelUnificado').style.display='flex';">Voltar</button></div>
@@ -248,12 +249,12 @@
 <div class="modal-overlay" id="modalFormRestaurante">
     <div class="modal">
         <div class="modal-title">Restaurante</div>
-        <div class="form-group"><label>Nome Fantasia:</label><input type="text" id="restNome"></div>
-        <div class="form-group"><label>CNPJ:</label><input type="text" id="restCNPJ" inputmode="numeric" oninput="maskCNPJ(this)" maxlength="18"></div>
-        <div class="form-group"><label>Rua:</label><input type="text" id="restRua"></div>
-        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:1;"><label>Número:</label><input type="text" id="restNum" inputmode="numeric"></div><div class="form-group" style="flex:3;"><label>Bairro:</label><input type="text" id="restBairro"></div></div>
-        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:2;"><label>Cidade:</label><input type="text" id="restCidade"></div><div class="form-group" style="flex:1;"><label>UF:</label><select id="restUF"><option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select></div></div>
-        <div class="form-group"><label>Ponto de Referência (Opcional):</label><input type="text" id="restPonto"></div>
+        <div class="form-group"><label>Nome Fantasia:</label><input type="text" autocomplete="off" id="restNome"></div>
+        <div class="form-group"><label>CNPJ:</label><input type="text" autocomplete="off" id="restCNPJ" inputmode="numeric" oninput="maskCNPJ(this)" maxlength="18"></div>
+        <div class="form-group"><label>Rua:</label><input type="text" autocomplete="off" id="restRua"></div>
+        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:1;"><label>Número:</label><input type="text" autocomplete="off" id="restNum" inputmode="numeric"></div><div class="form-group" style="flex:3;"><label>Bairro:</label><input type="text" autocomplete="off" id="restBairro"></div></div>
+        <div style="display: flex; gap:10px;"><div class="form-group" style="flex:2;"><label>Cidade:</label><input type="text" autocomplete="off" id="restCidade"></div><div class="form-group" style="flex:1;"><label>UF:</label><select id="restUF"><option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select></div></div>
+        <div class="form-group"><label>Ponto de Referência (Opcional):</label><input type="text" autocomplete="off" id="restPonto"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display='flex';">Cancelar</button><button class="btn-action" onclick="salvarRestaurante()">Salvar</button></div>
     </div>
 </div>
@@ -262,16 +263,16 @@
     <div class="modal">
         <div class="modal-title">Produto</div>
         <input type="hidden" id="prodId">
-        <div class="form-group"><label>Nome:</label><input type="text" id="prodNome"></div>
+        <div class="form-group"><label>Nome:</label><input type="text" autocomplete="off" id="prodNome"></div>
         <div class="form-group"><label>Categoria:</label><select id="prodCategoria"></select></div>
         <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex:1;"><label>Qtd Padrão:</label><input type="number" id="prodQtdPadrao" step="0.01" placeholder="Ex: 6"></div>
-            <div class="form-group" style="flex:2;"><label>Unidades (vírgula):</label><input type="text" id="prodUnidades" placeholder="ex: kg, cx, pct"></div>
+            <div class="form-group" style="flex:1;"><label>Qtd Padrão:</label><input type="number" autocomplete="off" id="prodQtdPadrao" step="0.01" placeholder="Ex: 6"></div>
+            <div class="form-group" style="flex:2;"><label>Unidades (vírgula):</label><input type="text" autocomplete="off" id="prodUnidades" placeholder="ex: kg, cx, pct"></div>
         </div>
-        <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" id="prodMarcasOk" placeholder="Ex: Sadia, Perdigão"></div>
-        <div class="form-group"><label>Marcas Reprovadas:</label><input type="text" id="prodMarcasNok"></div>
+        <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" autocomplete="off" id="prodMarcasOk" placeholder="Ex: Sadia, Perdigão"></div>
+        <div class="form-group"><label>Marcas Reprovadas:</label><input type="text" autocomplete="off" id="prodMarcasNok"></div>
         <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex:1;"><label>Preço (R$):</label><input type="text" id="prodPreco" inputmode="numeric" oninput="maskMoeda(this)" placeholder="0,00"></div>
+            <div class="form-group" style="flex:1;"><label>Preço (R$):</label><input type="text" autocomplete="off" id="prodPreco" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00"></div>
             <div class="form-group" style="flex:1;"><label>Data do Preço:</label><input type="date" id="prodPrecoData"></div>
         </div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormProduto'); abrirGerenciar('produtos');">Cancelar</button><button class="btn-action" onclick="salvarProduto()">Salvar</button></div>
@@ -282,7 +283,7 @@
     <div class="modal">
         <div class="modal-title">Categoria</div>
         <input type="hidden" id="catId">
-        <div class="form-group"><label>Nome:</label><input type="text" id="catNome"></div>
+        <div class="form-group"><label>Nome:</label><input type="text" autocomplete="off" id="catNome"></div>
         <div style="display: flex; gap: 10px;">
             <div class="form-group" style="flex:1;"><label>Cor Fundo:</label><input type="color" id="catCor"></div>
             <div class="form-group" style="flex:1;"><label>Cor Texto:</label><input type="color" id="catCorTexto"></div>
@@ -295,8 +296,8 @@
     <div class="modal">
         <div class="modal-title">Colaborador</div>
         <input type="hidden" id="colabId">
-        <div class="form-group"><label>Nome:</label><input type="text" id="colabNome"></div>
-        <div class="form-group"><label>Senha:</label><input type="password" id="colabSenha" placeholder="Deixe em branco p/ 123"></div>
+        <div class="form-group"><label>Nome:</label><input type="text" autocomplete="off" id="colabNome"></div>
+        <div class="form-group"><label>Senha:</label><input type="password" autocomplete="off" id="colabSenha" placeholder="Deixe em branco p/ 123"></div>
         <div class="form-group"><label>Categorias Permitidas:</label>
             <div id="colabCategoriasBox" style="font-size:14px; max-height:150px; overflow-y:auto; border:1px solid #ccc; padding:10px; border-radius:4px; background:#fafafa;"></div>
         </div>
@@ -308,13 +309,13 @@
     <div class="modal">
         <div class="modal-title">Fornecedor</div>
         <input type="hidden" id="fornId">
-        <div class="form-group"><label>Nome da Empresa:</label><input type="text" id="fornNome"></div>
-        <div class="form-group"><label>Nome do Vendedor (Opcional):</label><input type="text" id="fornVendedor"></div>
-        <div class="form-group"><label>WhatsApp Vendedor:</label><input type="text" id="fornTel" inputmode="numeric" oninput="maskTelefone(this)" placeholder="(00) 00000-0000" maxlength="15"></div>
-        <div class="form-group"><label>Nome do Gerente (Opcional):</label><input type="text" id="fornNomeGerente"></div>
+        <div class="form-group"><label>Nome da Empresa:</label><input type="text" autocomplete="off" id="fornNome"></div>
+        <div class="form-group"><label>Nome do Vendedor (Opcional):</label><input type="text" autocomplete="off" id="fornVendedor"></div>
+        <div class="form-group"><label>WhatsApp Vendedor:</label><input type="text" autocomplete="off" id="fornTel" inputmode="numeric" oninput="maskTelefone(this)" placeholder="(00) 00000-0000" maxlength="15"></div>
+        <div class="form-group"><label>Nome do Gerente (Opcional):</label><input type="text" autocomplete="off" id="fornNomeGerente"></div>
         <div style="display:flex; gap:10px;">
-            <div class="form-group" style="flex:1;"><label>Tel. Gerente (Opcional):</label><input type="text" id="fornTelGerente" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
-            <div class="form-group" style="flex:1;"><label>Tel. Empresa (Opcional):</label><input type="text" id="fornTelEmpresa" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
+            <div class="form-group" style="flex:1;"><label>Tel. Gerente (Opcional):</label><input type="text" autocomplete="off" id="fornTelGerente" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
+            <div class="form-group" style="flex:1;"><label>Tel. Empresa (Opcional):</label><input type="text" autocomplete="off" id="fornTelEmpresa" inputmode="numeric" oninput="maskTelefone(this)" maxlength="15"></div>
         </div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores');">Cancelar</button><button class="btn-action" onclick="salvarFornecedor()">Salvar</button></div>
     </div>
@@ -336,11 +337,21 @@
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
             configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false }
         };
-        let salvo = localStorage.getItem('gc_v70');
+        let salvo = localStorage.getItem('gc_v80');
         return salvo ? JSON.parse(salvo) : base;
     }
-    function salvarBanco() { localStorage.setItem('gc_v70', JSON.stringify(db)); }
+    function salvarBanco() { localStorage.setItem('gc_v80', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+    function formatarDataHora(ts) {
+        if(!ts) return ""; let d = new Date(ts);
+        return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} às ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+    function tempoRelativo(ts) {
+        if(!ts) return ""; let hoje = new Date(); hoje.setHours(0,0,0,0); let d = new Date(ts); d.setHours(0,0,0,0);
+        let diff = (hoje - d) / (1000 * 60 * 60 * 24);
+        if(diff === 0) return "Hoje"; if(diff === 1) return "Ontem"; return `Há ${diff} dias`;
+    }
 
     /* =========================================================================
        MÁSCARAS E FORMATAÇÃO
@@ -374,24 +385,19 @@
             let res = await fetch(db.configs.url, { redirect: "follow" }); 
             let nuvemDB = await res.json(); 
             
-            if(nuvemDB && nuvemDB.mesas !== undefined) {
-                alert("❌ ERRO CRÍTICO:\nEsta URL pertence ao sistema Alô Cozinha (Salão)! Operação bloqueada para proteger seus dados. Use uma URL limpa para o Compras.");
-                return;
-            }
+            if(nuvemDB && nuvemDB.mesas !== undefined) { alert("❌ ERRO CRÍTICO:\nEsta URL pertence ao sistema Alô Cozinha (Salão)! Operação bloqueada para proteger seus dados. Use uma URL limpa para o Compras."); return; }
 
             if(nuvemDB && (nuvemDB.produtos || nuvemDB.fornecedores)) { 
                 let modoAtual = db.configs.modo; db = nuvemDB; db.configs.modo = modoAtual; db.configs.dadosBaixados = true; 
                 db.app_id = "gestor_compras"; 
                 salvarBanco(); 
                 if(pedirConfirmacao) { alert("Sucesso! Banco puxado da nuvem."); location.reload(); } 
-            } else { 
-                if(pedirConfirmacao) alert("A nuvem está vazia ou o link é inválido. Salve seus dados nela primeiro."); 
-            } 
+            } else { if(pedirConfirmacao) alert("A nuvem está vazia ou o link é inválido. Salve seus dados nela primeiro."); } 
         } catch(e) { if(pedirConfirmacao) alert("Erro ao puxar da nuvem. Verifique a URL."); }
     }
     
     function excluirTodoHistorico() { let frase = document.getElementById('inputExcluirTudo').value; if(frase === "quero excluir todo o histórico") { db.pedidosAtivos = []; salvarBanco(); alert("Histórico apagado localmente."); document.getElementById('inputExcluirTudo').value = ''; renderizarLista(); } else { alert("Frase incorreta."); } }
-    function forcarAtualizacao() { localStorage.removeItem('gc_v70'); window.location.reload(true); }
+    function forcarAtualizacao() { localStorage.removeItem('gc_v80'); window.location.reload(true); }
 
     /* =========================================================================
        INICIALIZAÇÃO E UI
@@ -406,10 +412,16 @@
     function alterarModo(modo) {
         db.configs.modo = modo; modoSelecaoAtivo = false; itensSelecionadosRelatorio.clear();
         document.body.className = `theme-${modo}`; document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#6a1b9a'; 
-        document.getElementById('fabContainer').style.display = modo === 'compras' ? 'flex' : 'none';
         
         let dicas = document.getElementById('dicasCabecalho');
-        if(modo === 'pedido') { dicas.innerHTML = "👆 Toque: Pedir Padrão<br>👈 Deslize: Desmarcar<br>✌️ 2 Toques: Editar/Obs"; } else { dicas.innerHTML = "👉 Mudar Status | 👈 Excluir<br>✌️ 2 toques: Detalhes/Marcas"; }
+        if(modo === 'pedido') { 
+            dicas.innerHTML = "👆 Toque: Pedir | 👈 Deslize: Desmarcar<br>✌️ 2 Toques: Editar"; 
+            document.getElementById('fabContainer').style.display = 'none';
+        } else { 
+            dicas.innerHTML = "👉 Deslize: Mudar Status | 👈 Deslize: Voltar Status<br>👆 Segure: Pedido ao Forn. | ✌️ 2 toques: Detalhes"; 
+            document.getElementById('fabContainer').style.display = 'flex';
+            document.getElementById('btnEnviarPedidos').style.display = 'none';
+        }
         salvarBanco(); renderizarFiltros(); renderizarLista();
     }
 
@@ -433,26 +445,26 @@
                 
                 const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id);
                 const ultimoPedido = pedidosDeste[pedidosDeste.length-1];
-                const pedidoEditavel = pedidosDeste.find(pa => !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente'));
+                const pedidoEditavel = pedidosDeste.find(pa => !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
                 
                 let classesExtra = ""; let infoDireita = "";
                 let defaultUn = p.unidades && p.unidades.length > 0 ? p.unidades[0] : 'un';
                 let padraoTexto = p.qtdPadrao ? `(Padrão: ${p.qtdPadrao} ${defaultUn})` : `(Padrão: 1 ${defaultUn})`;
                 
                 if (ultimoPedido) { 
-                    let statusName = "Excluído";
+                    let statusName = "Excluído"; let statusColor = "#d32f2f";
                     if(!ultimoPedido.excluido) {
                         switch(ultimoPedido.status) {
-                            case 'rascunho': statusName = 'Rascunho'; break;
-                            case 'pendente': statusName = 'Pendente'; break;
-                            case 'pedido_forn': statusName = 'Pedido Forn.'; break;
-                            case 'comprado': statusName = 'Comprado'; break;
-                            case 'entregue': statusName = 'Entregue'; break;
+                            case 'rascunho': statusName = 'Rascunho'; statusColor = "#1565C0"; break;
+                            case 'pendente': statusName = 'Pendente'; statusColor = "#f57f17"; break;
+                            case 'pedido_forn': statusName = 'Pedido Forn.'; statusColor = "#9c27b0"; break;
+                            case 'comprado': statusName = 'Comprado'; statusColor = "#1b5e20"; break;
+                            case 'entregue': statusName = 'Entregue'; statusColor = "#1b5e20"; break;
                         }
                     }
 
                     let obsVisual = ultimoPedido.obs ? `<br><span style="color:#d32f2f; font-size:11px;">Obs: ${ultimoPedido.obs}</span>` : "";
-                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><span style="font-size: 11px; color: #1565C0; margin-bottom: 2px;"><b>${statusName}</b></span><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${ultimoPedido.qtd} ${ultimoPedido.unidade}</span>${obsVisual}</div>`;
+                    infoDireita = `<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;"><span style="font-size: 11px; color: ${statusColor}; margin-bottom: 2px;"><b>${statusName}</b></span><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${ultimoPedido.qtd} ${ultimoPedido.unidade}</span>${obsVisual}</div>`;
                     
                     if(pedidoEditavel) {
                         classesExtra += (pedidoEditavel.status === 'rascunho') ? "item-pedido-rascunho " : "item-pedido-ativo ";
@@ -477,14 +489,14 @@
                 let isSelected = itensSelecionadosRelatorio.has(pa.idUnico); let htmlSelecao = modoSelecaoAtivo ? `<div class="checkbox-selecao"></div>` : '';
                 
                 let tituloItem = `${p.nome} - ${pa.qtd} ${pa.unidade}`;
-                let statusText = pa.status === 'pedido_forn' ? 'Pedido Fornecedor' : pa.status;
+                let tempoTxt = ""; if((pa.status === 'comprado' || pa.status === 'entregue') && pa.dataConclusao) { tempoTxt = ` (${tempoRelativo(pa.dataConclusao)})`; }
+                let statusText = pa.status === 'pedido_forn' ? 'Pedido ao Fornecedor' : pa.status;
+                statusText += tempoTxt;
+
                 let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado')) ? ' <span style="font-size:10px; color:#d32f2f; font-weight:bold;">(Editado)</span>' : '';
                 let obsVisual = pa.obs ? `<br><span style="color:#d32f2f; font-weight:bold;">Obs: ${pa.obs}</span>` : "";
                 
-                let marcasEscolhidasText = (pa.marcasSelecionadas && pa.marcasSelecionadas.length > 0) ? pa.marcasSelecionadas.join(', ') : 'Nenhuma';
-                let marcasVisual = `<br>Marcas: ${marcasEscolhidasText}`;
-
-                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''} ${pa.excluido ? 'riscado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info"><div class="item-title">${tituloItem}${editIndicador}</div><div class="item-subtitle"><b style="text-transform: uppercase;">Status: ${statusText}</b>${marcasVisual}${obsVisual}</div></div></li>`;
+                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''} ${pa.excluido ? 'riscado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info"><div class="item-title">${tituloItem}${editIndicador}</div><div class="item-subtitle"><b style="text-transform: uppercase;">Status: ${statusText}</b>${obsVisual}</div></div></li>`;
                 itensMostrados++;
             });
         }
@@ -524,21 +536,35 @@
     }
     
     function acaoDuploToque(el) {
-        if(db.configs.modo === 'pedido') { const pedId = el.getAttribute('data-pedid'); if(pedId) abrirModalEditarPedido(pedId); } 
+        if(db.configs.modo === 'pedido') { 
+            let pedId = el.getAttribute('data-pedid'); const pId = el.getAttribute('data-id');
+            if(!pedId) {
+                const p = db.produtos.find(x => x.id === pId); if(!p) return;
+                let qtd = p.qtdPadrao || 1; let un = p.unidades[0] || 'un';
+                pedId = 'pa_' + Date.now();
+                db.pedidosAtivos.push({ idUnico: pedId, produtoId: pId, qtd: qtd, unidade: un, obs: '', status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
+                salvarBanco();
+            }
+            abrirModalEditarPedido(pedId); 
+        } 
         else {
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
             if(pa && !pa.excluido) { abrirHistoricoCompra(paId); }
         }
     }
     
-    function acaoSegurar(el) { if(db.configs.modo === 'compras') { const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && !pa.excluido) { pa.status = 'pedido_forn'; salvarBanco(); renderizarLista(); } } }
+    function acaoSegurar(el) { if(db.configs.modo === 'compras') { const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && !pa.excluido) { pa.status = 'pedido_forn'; delete pa.dataConclusao; salvarBanco(); renderizarLista(); } } }
     
     function acaoDeslizarDireita(el) {
         if(db.configs.modo === 'compras') {
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
-            if(pa && !pa.excluido) {
-                if (pa.status === 'pendente') { pa.status = 'comprado'; } else if (pa.status === 'pedido_forn') { pa.status = 'entregue'; }
-                salvarBanco(); renderizarLista();
+            if(pa) {
+                if(pa.excluido) {
+                    if(confirm("Desfazer exclusão do item e voltar à lista?")) { pa.excluido = false; pa.status = 'pendente'; salvarBanco(); renderizarLista(); }
+                } else {
+                    if (pa.status === 'pendente') { pa.status = 'comprado'; pa.dataConclusao = Date.now(); } else if (pa.status === 'pedido_forn') { pa.status = 'entregue'; pa.dataConclusao = Date.now(); }
+                    salvarBanco(); renderizarLista();
+                }
             }
         }
     }
@@ -555,17 +581,14 @@
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
             if(pa && !pa.excluido) { 
                 if(pa.status === 'entregue') { 
-                    if(confirm("Deseja voltar este item para 'Pedido Fornecedor'?")) { pa.status = 'pedido_forn'; salvarBanco(); renderizarLista(); } 
+                    if(confirm("Deseja voltar este item para 'Pedido ao Fornecedor'?")) { pa.status = 'pedido_forn'; delete pa.dataConclusao; salvarBanco(); renderizarLista(); } 
                 }
-                else if (pa.status === 'pedido_forn') { 
-                    if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; salvarBanco(); renderizarLista(); } 
-                }
-                else if (pa.status === 'comprado') { 
-                    if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; salvarBanco(); renderizarLista(); } 
+                else if (pa.status === 'pedido_forn' || pa.status === 'comprado') { 
+                    if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; delete pa.dataConclusao; salvarBanco(); renderizarLista(); } 
                 }
                 else if (pa.status === 'pendente') {
                     if(confirm("Deseja excluir o item? Ele ficará riscado nas Compras por 7 dias.")) { 
-                        pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); 
+                        pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); delete pa.dataConclusao;
                         salvarBanco(); renderizarLista(); 
                     }
                 }
@@ -580,7 +603,8 @@
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); 
         document.getElementById('editPedidoId').value = paId; document.getElementById('editPedidoQtd').value = pa.qtd; document.getElementById('editPedidoObs').value = pa.obs || '';
         const selUn = document.getElementById('editPedidoUnidade'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); 
-        document.getElementById('modalEditarPedido').style.display = 'flex'; setTimeout(()=> document.getElementById('editPedidoQtd').focus(), 100);
+        document.getElementById('modalEditarPedido').style.display = 'flex'; 
+        setTimeout(()=> { document.getElementById('editPedidoQtd').focus(); document.getElementById('editPedidoQtd').select(); }, 150);
     }
     
     function salvarEdicaoPedido() { 
@@ -595,13 +619,18 @@
         fecharModal('modalEditarPedido'); renderizarLista(); 
     }
     
-    function excluirRascunho() { const paId = document.getElementById('editPedidoId').value; let pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && pa.status === 'rascunho') { db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== paId); } salvarBanco(); fecharModal('modalEditarPedido'); renderizarLista(); }
     function enviarPedidosParaCompras() { let rascunhos = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido); rascunhos.forEach(pa => { pa.status = 'pendente'; }); salvarBanco(); alert("Pedidos enviados com sucesso!"); renderizarLista(); }
 
     function abrirHistoricoCompra(paId) {
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(prod => prod.id === pa.produtoId);
         document.getElementById('histCompraId').value = paId;
         
+        let htmlDataConclusao = "";
+        if((pa.status === 'comprado' || pa.status === 'entregue') && pa.dataConclusao) {
+            htmlDataConclusao = `<p style="color:#1b5e20; font-weight:bold; margin-top:0; font-size:13px;">✅ Marcado como ${pa.status} em: ${formatarDataHora(pa.dataConclusao)}</p>`;
+        }
+        document.getElementById('histCompraDataConclusao').innerHTML = htmlDataConclusao;
+
         let htmlMarcas = "";
         if(p && p.marcasAprovadas) {
             let marcasArr = p.marcasAprovadas.split(',').map(m=>m.trim()).filter(m=>m);
@@ -650,16 +679,16 @@
         const fornId = document.getElementById('relatFornecedor').value; 
         const res = db.restaurante; const forn = db.fornecedores.find(f => f.id === fornId);
         
-        let pontoOpt = res.ponto ? `\n> Ponto de referência: ${res.ponto}` : '';
-        let texto = `> *${res.nome.toUpperCase()}*\n> CNPJ: ${res.cnpj}\n> End.: ${res.rua}, ${res.numero}\n> ${res.bairro} - ${res.cidade} / ${res.uf}${pontoOpt}\n\n`;
-        texto += `${forn ? '*' + forn.nome.toUpperCase() + '*\n\n' : ''}*Itens para cotação:*\n\n`;
+        let texto = `> *${res.nome.toUpperCase()}*\n> CNPJ: ${res.cnpj}\n> End.: ${res.rua}, ${res.numero}\n> ${res.bairro} - ${res.cidade} / ${res.uf}\n`;
+        if(res.ponto) texto += `> Ponto de referência: ${res.ponto}\n`;
+        texto += `\n${forn ? '*' + forn.nome.toUpperCase() + '*\n\n' : ''}*Itens para cotação:*\n\n`;
 
         Array.from(itensSelecionadosRelatorio).forEach(idUnico => {
             const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); if(!p) return;
             
-            let marcasStr = (pa.marcasSelecionadas && pa.marcasSelecionadas.length > 0) ? ` - Marcas: ${pa.marcasSelecionadas.join(', ')}` : '';
+            let marcasStr = (pa.marcasSelecionadas && pa.marcasSelecionadas.length > 0) ? ` - Marca: ${pa.marcasSelecionadas.join(', ')}` : '';
             let obsStr = pa.obs ? ` *(obs.: ${pa.obs})*` : '';
-            texto += `▪ ${p.nome} - Qtd: ${pa.qtd} ${pa.unidade}${marcasStr}${obsStr}\n`;
+            texto += `▪ ${p.nome}${marcasStr} - Qtd: ${pa.qtd} ${pa.unidade}${obsStr}\n`;
         });
         document.getElementById('relatTexto').value = texto;
         
