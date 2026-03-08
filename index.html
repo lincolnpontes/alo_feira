@@ -140,6 +140,7 @@
         </select>
         <div id="dicasCabecalho" class="dicas-cabecalho"></div>
         <div class="header-actions">
+            <button id="btnTrocarPerfil" onclick="abrirSelecaoColaboradorInicial(true)" style="margin-right: 12px; font-size: 22px;">👤</button>
             <button id="btnHistHoje" onclick="abrirPedidosHoje()" style="margin-right: 12px; font-size: 22px;">📋</button>
             <button onclick="abrirAdmin()">⚙️</button>
         </div>
@@ -173,9 +174,13 @@
 
 <div class="modal-overlay" id="modalColaboradorObrigatorio">
     <div class="modal">
-        <div class="modal-title">Bem-vindo</div>
-        <div class="form-group"><label>Quem está operando o sistema agora?</label><select id="selectColabInicial"></select></div>
-        <div class="modal-actions"><button class="btn-action" onclick="definirColaboradorAtivo()">Entrar</button></div>
+        <div class="modal-title">Identificação</div>
+        <div class="form-group"><label>Quem está operando o sistema?</label><select id="selectColabInicial"></select></div>
+        <div class="form-group"><label>Senha do Perfil:</label><input type="password" id="inputSenhaColab" placeholder="Deixe em branco se não houver" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" id="btnCancelColab" style="display:none;" onclick="fecharModal('modalColaboradorObrigatorio')">Cancelar</button>
+            <button class="btn-action" onclick="definirColaboradorAtivo()">Entrar no Sistema</button>
+        </div>
     </div>
 </div>
 
@@ -297,7 +302,7 @@
         <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
         <div class="form-group" style="display:flex; align-items:center;">
             <label class="switch"><input type="checkbox" id="configExigirColab" onchange="toggleExigirColab()"><span class="slider"></span></label>
-            <span style="font-weight:bold; font-size:14px; color:#555; padding-top:2px;">Exigir Identificação</span>
+            <span style="font-weight:bold; font-size:14px; color:#555; padding-top:2px;">Exigir Identificação ao Abrir App</span>
         </div>
         
         <h3 style="font-size: 16px; color: #d32f2f; margin-top: 25px; margin-bottom: 10px;">Avançado</h3>
@@ -401,8 +406,13 @@
         <div class="modal-title">Colaborador</div>
         <input type="hidden" id="colabId">
         <div class="form-group"><label>Nome:</label><input type="text" id="colabNome"></div>
-        <div class="form-group"><label>Senha:</label><input type="password" id="colabSenha" placeholder="Deixe em branco p/ 123"></div>
+        <div class="form-group"><label>Senha do Perfil:</label><input type="password" id="colabSenha" placeholder="Deixe em branco se não houver" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         
+        <div class="form-group" style="background:#e3f2fd; padding:10px; border-radius:5px; margin-bottom:15px; display:flex; align-items:center;">
+            <label class="switch"><input type="checkbox" id="colabIsAdmin"><span class="slider"></span></label>
+            <span style="font-weight:bold; font-size:12px; color:#1565C0;">Administrador do Sistema</span>
+        </div>
+
         <div class="form-group" style="background:#ffebee; padding:10px; border-radius:5px; margin-bottom:15px; display:flex; align-items:center;">
             <label class="switch"><input type="checkbox" id="colabApenasReceber"><span class="slider"></span></label>
             <span style="font-weight:bold; font-size:12px; color:#c62828;">Apenas Receber (Modo Compras)</span>
@@ -524,17 +534,73 @@
     /* =========================================================================
        INICIALIZAÇÃO E UI
        ========================================================================= */
-    window.onload = () => { setTimeout(() => { document.getElementById('splashScreen').style.opacity = '0'; setTimeout(()=>{document.getElementById('splashScreen').style.display = 'none';}, 500); }, 1500); if(db.configs.exigirColaborador && !db.configs.colabAtivoId) { abrirSelecaoColaboradorInicial(); } else { iniciarApp(); } };
+    window.onload = () => { 
+        setTimeout(() => { 
+            document.getElementById('splashScreen').style.opacity = '0'; 
+            setTimeout(()=>{document.getElementById('splashScreen').style.display = 'none';}, 500); 
+        }, 1500); 
 
-    function iniciarApp() { document.getElementById('seletorModo').value = db.configs.modo; document.getElementById('configExigirColab').checked = db.configs.exigirColaborador; alterarModo(db.configs.modo); }
-    function abrirSelecaoColaboradorInicial() { 
-        const sel = document.getElementById('selectColabInicial'); sel.innerHTML = '<option value="">-- Selecione --</option>'; 
+        if (db.configs.exigirColaborador) { 
+            // Força a tela de identificação na abertura
+            abrirSelecaoColaboradorInicial(false); 
+        } else { 
+            // Procura o perfil de Administrador para entrar automaticamente
+            let admin = db.colaboradores.find(c => c.isAdmin);
+            if (admin) {
+                db.configs.colabAtivoId = admin.id;
+            } else {
+                db.configs.colabAtivoId = null;
+            }
+            iniciarApp(); 
+        } 
+    };
+
+    function iniciarApp() { 
+        document.getElementById('seletorModo').value = db.configs.modo; 
+        document.getElementById('configExigirColab').checked = db.configs.exigirColaborador; 
+        alterarModo(db.configs.modo); 
+    }
+
+    function abrirSelecaoColaboradorInicial(isTroca = false) { 
+        if (db.colaboradores.length === 0 && db.configs.exigirColaborador) {
+            alert("Nenhum colaborador cadastrado. Acesso liberado como Administrador Padrão para configurações.");
+            db.configs.exigirColaborador = false;
+            salvarBanco();
+            iniciarApp();
+            return;
+        }
+
+        const sel = document.getElementById('selectColabInicial'); 
+        sel.innerHTML = '<option value="">-- Selecione o Perfil --</option>'; 
         let colabOrdem = [...db.colaboradores].sort((a,b) => a.nome.localeCompare(b.nome));
         colabOrdem.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nome}</option>`); 
+        
+        document.getElementById('inputSenhaColab').value = '';
+        document.getElementById('btnCancelColab').style.display = isTroca ? 'block' : 'none';
         document.getElementById('modalColaboradorObrigatorio').style.display = 'flex'; 
     }
-    function definirColaboradorAtivo() { const id = document.getElementById('selectColabInicial').value; if(!id) return alert("Selecione."); db.configs.colabAtivoId = id; salvarBanco(); fecharModal('modalColaboradorObrigatorio'); iniciarApp(); }
-    function toggleExigirColab() { db.configs.exigirColaborador = document.getElementById('configExigirColab').checked; salvarBanco(); }
+
+    function definirColaboradorAtivo() { 
+        const id = document.getElementById('selectColabInicial').value; 
+        if(!id) return alert("Selecione um perfil primeiro."); 
+
+        const colab = db.colaboradores.find(c => c.id === id);
+        const senhaDigitada = document.getElementById('inputSenhaColab').value;
+
+        if (colab.senha && colab.senha !== senhaDigitada) {
+            return alert("Senha incorreta!");
+        }
+
+        db.configs.colabAtivoId = id; 
+        salvarBanco(); 
+        fecharModal('modalColaboradorObrigatorio'); 
+        iniciarApp(); 
+    }
+
+    function toggleExigirColab() { 
+        db.configs.exigirColaborador = document.getElementById('configExigirColab').checked; 
+        salvarBanco(); 
+    }
 
     function alterarModo(modo) {
         db.configs.modo = modo; modoSelecaoAtivo = false; itensSelecionadosRelatorio.clear(); agrupamentoCompradoAtivo = false;
@@ -714,7 +780,7 @@
                 let qtdNum = pa.qtd !== '' ? pa.qtd : '-';
                 let tituloItem = `${p.nome} - ${qtdNum} ${pa.unidade}`;
                 
-                // Lógica de tempo amigável (sem uppercase forçado)
+                // Lógica de tempo amigável
                 let tsReferencia = pa.dataStatus || pa.dataConclusao || pa.dataExclusao || parseInt(pa.idUnico.split('_')[1]);
                 let tempoTxt = tsReferencia ? ` ${tempoRelativo(tsReferencia)}` : "";
                 
@@ -729,7 +795,8 @@
                 
                 let statusText = nomeStatus + tempoTxt; 
 
-                let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado')) ? ' <span style="font-size:10px; color:#d32f2f; font-weight:bold;">(Editado)</span>' : '';
+                // O indicador de editado agora só aparece se foi editado NA COMPRA
+                let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado em compras')) ? ' <span style="font-size:10px; color:#d32f2f; font-weight:bold;">(Editado)</span>' : '';
                 let obsVisual = pa.obs ? `<br><span style="color:#000; font-weight:bold;">Obs: ${pa.obs}</span>` : "";
                 
                 lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''} ${pa.excluido ? 'riscado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info"><div class="item-title">${tituloItem}${editIndicador}</div><div class="item-subtitle"><b style="color:#444;">Status: ${statusText}</b>${obsVisual}</div></div></li>`;
@@ -808,19 +875,14 @@
     }
 
     function excluirPedidoHoje(idUnico) {
-        if(confirm("Deseja cancelar e excluir este item pedido hoje?")) {
-            let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico);
-            if(pa) {
-                pa.excluido = true;
-                pa.status = 'excluido';
-                pa.dataExclusao = Date.now();
-                salvarBanco();
-                abrirPedidosHoje();
-                renderizarLista();
-            }
+        if(confirm("Deseja apagar definitivamente este pedido feito hoje?")) {
+            // Exclusão real e definitiva (na raiz)
+            db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== idUnico);
+            salvarBanco();
+            abrirPedidosHoje();
+            renderizarLista();
         }
     }
-
 
     /* =========================================================================
        SISTEMA DE DESFAZER (UNDO)
@@ -919,7 +981,7 @@
                 const p = db.produtos.find(x => x.id === pId); if(!p) return;
                 let qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; 
                 let un = p.unidades[0] || ''; let obsPad = p.obsPadrao || '';
-                db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
+                db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco(); renderizarLista();
             } 
         } 
@@ -933,7 +995,7 @@
                 let qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; 
                 let un = p.unidades[0] || ''; let obsPad = p.obsPadrao || '';
                 pedId = 'pa_' + Date.now();
-                db.pedidosAtivos.push({ idUnico: pedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
+                db.pedidosAtivos.push({ idUnico: pedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco();
             }
             abrirModalEditarPedido(pedId); 
@@ -1020,7 +1082,7 @@
         let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
         if(pa) { 
             pa.qtd = qtd; pa.unidade = document.getElementById('editPedidoUnidade').value; pa.obs = document.getElementById('editPedidoObs').value;
-            pa.historico = pa.historico || []; pa.historico.push({ data: new Date().toLocaleString(), msg: `Editado: ${qtd} ${pa.unidade}` });
+            // Modificação na raiz não gera mais tag de histórico visual.
             salvarBanco(); 
         } 
         fecharModal('modalEditarPedido'); 
@@ -1306,6 +1368,7 @@
     function abrirFormColaborador(id) {
         fecharModal('modalListagem'); const box = document.getElementById('colabCategoriasBox'); box.innerHTML = ''; const c = id ? db.colaboradores.find(x => x.id === id) : null;
         
+        document.getElementById('colabIsAdmin').checked = c ? (c.isAdmin || false) : false;
         document.getElementById('colabApenasReceber').checked = c ? (c.apenasReceber || false) : false;
 
         db.categorias.forEach(cat => { 
@@ -1314,7 +1377,18 @@
         });
         document.getElementById('colabId').value = id || ''; document.getElementById('colabNome').value = c ? c.nome : ''; document.getElementById('colabSenha').value = c ? c.senha : ''; document.getElementById('modalFormColaborador').style.display = 'flex';
     }
-    function salvarColaborador() { const id = document.getElementById('colabId').value || 'col_'+Date.now(); const cats = Array.from(document.querySelectorAll('.chk-cat-colab:checked')).map(el => el.value); const s = document.getElementById('colabSenha').value || "123"; const apenasReceber = document.getElementById('colabApenasReceber').checked; const novo = { id: id, nome: document.getElementById('colabNome').value, telefone: "", senha: s, apenasReceber: apenasReceber, catsPermitidas: cats }; const idx = db.colaboradores.findIndex(x => x.id === id); if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo); salvarBanco(); fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores'); }
+    
+    function salvarColaborador() { 
+        const id = document.getElementById('colabId').value || 'col_'+Date.now(); 
+        const cats = Array.from(document.querySelectorAll('.chk-cat-colab:checked')).map(el => el.value); 
+        const s = document.getElementById('colabSenha').value; 
+        const isAdmin = document.getElementById('colabIsAdmin').checked;
+        const apenasReceber = document.getElementById('colabApenasReceber').checked; 
+        const novo = { id: id, nome: document.getElementById('colabNome').value, telefone: "", senha: s, isAdmin: isAdmin, apenasReceber: apenasReceber, catsPermitidas: cats }; 
+        const idx = db.colaboradores.findIndex(x => x.id === id); 
+        if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo); 
+        salvarBanco(); fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores'); 
+    }
 
     function abrirFormFornecedor(id) {
         fecharModal('modalListagem'); if(id) { const f = db.fornecedores.find(x => x.id === id); document.getElementById('fornId').value = id; document.getElementById('fornNome').value = f.nome; document.getElementById('fornVendedor').value = f.vendedor || ''; document.getElementById('fornTel').value = f.telefone || ''; document.getElementById('fornNomeGerente').value = f.nomeGerente || ''; document.getElementById('fornTelGerente').value = f.telGerente || ''; document.getElementById('fornTelEmpresa').value = f.telEmpresa || ''; } else { document.getElementById('fornId').value = ''; document.getElementById('fornNome').value = ''; document.getElementById('fornVendedor').value = ''; document.getElementById('fornTel').value = ''; document.getElementById('fornNomeGerente').value = ''; document.getElementById('fornTelGerente').value = ''; document.getElementById('fornTelEmpresa').value = ''; } document.getElementById('modalFormFornecedor').style.display = 'flex';
