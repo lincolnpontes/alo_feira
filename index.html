@@ -340,10 +340,18 @@
         <div class="form-group"><label>Nome para o Relatório (Opcional):</label><input type="text" id="prodDesc"></div>
         <div class="form-group"><label>Observação Padrão (Opcional):</label><input type="text" id="prodObsPadrao" placeholder="Ex: maduro, marca tal..."></div>
         <div class="form-group"><label>Categoria:</label><select id="prodCategoria"></select></div>
+        
         <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex:1;"><label>Qtd Padrão (Opcional):</label><input type="text" inputmode="decimal" id="prodQtdPadrao" placeholder=""></div>
-            <div class="form-group" style="flex:2;"><label>Unidades (vírgula):</label><input type="text" id="prodUnidades" placeholder="ex: kg, cx, pct"></div>
+            <div class="form-group" style="flex: 1.6;">
+                <label style="white-space: nowrap;">Qtd Padrão (Opcional):</label>
+                <input type="text" inputmode="decimal" id="prodQtdPadrao" placeholder="">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>Unidades (vírgula):</label>
+                <input type="text" id="prodUnidades" placeholder="ex: kg, cx">
+            </div>
         </div>
+        
         <div class="form-group"><label>Marcas Aprovadas:</label><input type="text" id="prodMarcasOk" placeholder="Ex: Sadia, Perdigão"></div>
         <div class="form-group"><label>Marcas Reprovadas:</label><input type="text" id="prodMarcasNok"></div>
         
@@ -587,7 +595,7 @@
                 const pedidoEditavel = pedidosDeste.find(pa => !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
                 
                 let classesExtra = ""; let infoDireita = "";
-                let defaultUn = p.unidades && p.unidades.length > 0 ? p.unidades[0] : 'un';
+                let defaultUn = p.unidades && p.unidades.length > 0 ? p.unidades[0] : '';
                 
                 let padraoTexto = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? `(Padrão: ${p.qtdPadrao} ${defaultUn})` : '';
                 if(p.obsPadrao) {
@@ -642,7 +650,6 @@
                     return nomeA.localeCompare(nomeB);
                 });
             } else if (categoriaAtual === null) {
-                // Modo TODOS normal -> Categoria -> Alfabetica
                 comprasParaMostrar.sort((a, b) => {
                     let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
                     let getCatPrio = (prod) => { if(!prod) return 999; let idx = db.categorias.findIndex(c => c.id === prod.categoria); return idx >= 0 ? idx : 999; };
@@ -745,13 +752,43 @@
     /* =========================================================================
        GESTOS E RESTRIÇÕES
        ========================================================================= */
-    let touchStartX = 0; let pressTimer; let isLongPress = false; let lastTap = 0; let tapTimer;
+    let touchStartX = 0; let touchStartY = 0; let pressTimer; let isLongPress = false; let lastTap = 0; let tapTimer; let isScrolling = false;
 
-    function handleTouchStart(e, el) { touchStartX = e.changedTouches[0].screenX; isLongPress = false; pressTimer = setTimeout(() => { isLongPress = true; acaoSegurar(el); }, 600); }
-    function handleTouchMove(e) { clearTimeout(pressTimer); }
+    function handleTouchStart(e, el) { 
+        touchStartX = e.changedTouches[0].screenX; 
+        touchStartY = e.changedTouches[0].screenY;
+        isLongPress = false; 
+        isScrolling = false;
+        
+        pressTimer = setTimeout(() => { 
+            if (!isScrolling) {
+                isLongPress = true; 
+                acaoSegurar(el); 
+            }
+        }, 600); 
+    }
+    
+    function handleTouchMove(e) { 
+        let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
+        let diffX = Math.abs(e.changedTouches[0].screenX - touchStartX);
+        
+        // Se mover mais de 15px, entendemos que o usuário está rolando ou arrastando, aborta a "segurada" longa
+        if (diffY > 15 || diffX > 15) {
+            isScrolling = true;
+            clearTimeout(pressTimer); 
+        }
+    }
+    
     function handleTouchEnd(e, el) { 
-        clearTimeout(pressTimer); if(isLongPress || modoSelecaoAtivo) return;
+        clearTimeout(pressTimer); 
+        if(isLongPress || modoSelecaoAtivo) return;
+        
         let diffX = e.changedTouches[0].screenX - touchStartX; 
+        let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
+
+        // PROTEÇÃO DE ROLAGEM: Se moveu o dedo mais de 15px para cima/baixo, é rolagem da tela. Ignora tudo.
+        if (diffY > 15 || isScrolling && Math.abs(diffX) < 40) return;
+
         if (Math.abs(diffX) < 20) {
             let currentTime = new Date().getTime(); let tapLength = currentTime - lastTap;
             if (tapLength < 350 && tapLength > 0) { clearTimeout(tapTimer); acaoDuploToque(el); } else { tapTimer = setTimeout(() => { acaoToqueSimples(el); }, 350); } lastTap = currentTime;
@@ -770,7 +807,7 @@
             if(!pedId) {
                 const p = db.produtos.find(x => x.id === pId); if(!p) return;
                 let qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; 
-                let un = p.unidades[0] || 'un'; let obsPad = p.obsPadrao || '';
+                let un = p.unidades[0] || ''; let obsPad = p.obsPadrao || '';
                 db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco(); renderizarLista();
             } 
@@ -783,7 +820,7 @@
             if(!pedId) {
                 const p = db.produtos.find(x => x.id === pId); if(!p) return;
                 let qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; 
-                let un = p.unidades[0] || 'un'; let obsPad = p.obsPadrao || '';
+                let un = p.unidades[0] || ''; let obsPad = p.obsPadrao || '';
                 pedId = 'pa_' + Date.now();
                 db.pedidosAtivos.push({ idUnico: pedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', excluido: false, historico: [{ data: new Date().toLocaleString(), msg: `Criado padrão: ${qtd} ${un}` }], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco();
@@ -1115,7 +1152,7 @@
             document.getElementById('prodNome').value = ''; 
             document.getElementById('prodDesc').value = ''; 
             document.getElementById('prodObsPadrao').value = ''; 
-            document.getElementById('prodUnidades').value = 'un'; 
+            document.getElementById('prodUnidades').value = ''; 
             document.getElementById('prodMarcasOk').value = ''; 
             document.getElementById('prodMarcasNok').value = ''; 
             document.getElementById('prodQtdPadrao').value = ''; 
@@ -1138,7 +1175,7 @@
             tempPrecosProduto.push({ data: pData, preco: pVal });
         }
 
-        const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : ['un'], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto };
+        const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto };
         const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo);
         salvarBanco(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista();
     }
