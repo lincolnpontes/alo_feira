@@ -10,10 +10,11 @@
     <title>Alô Feira v1.0</title>
 
     <style>
-        /* BASE & BLINDAGEM */
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; display: flex; justify-content: center; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; overflow: hidden; }
+        /* BASE & BLINDAGEM - RESOLVIDO PROBLEMA DE TELA DESCENDO */
+        html, body { width: 100%; height: 100%; position: fixed; overflow: hidden; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
         input, select, textarea { user-select: auto; -webkit-user-select: auto; font-family: inherit; }
-        .app-container { width: 100%; max-width: 100%; background-color: #ffffff; height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .app-container { width: 100%; max-width: 100%; height: 100%; background-color: #ffffff; display: flex; flex-direction: column; position: absolute; top: 0; left: 0; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         
         /* SPLASH SCREEN */
         #splashScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #1565C0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; transition: opacity 0.5s ease; }
@@ -22,11 +23,12 @@
         .splash-versao { font-size: 14px; margin-top: 5px; opacity: 0.8; }
         
         /* CABEÇALHO */
-        .header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; color: white; transition: background-color 0.3s; }
+        .header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; color: white; transition: background-color 0.3s; flex-shrink: 0; }
         .header-select { background: transparent; color: white; border: none; font-size: 18px; font-weight: bold; outline: none; -webkit-appearance: none; appearance: none; }
         .header-select option { color: black; font-size: 16px; }
         
-        .dicas-cabecalho { font-size: 10px; line-height: 1.3; text-align: left; flex: 1; opacity: 0.95; margin-right: 10px; margin-left: 10px; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
+        /* LEGENDAS ALINHADAS E NUMA LINHA SÓ */
+        .dicas-cabecalho { font-size: 9px; line-height: 1.3; text-align: left; flex: 1; opacity: 0.95; margin-right: 10px; margin-left: 10px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; white-space: nowrap; }
         .dicas-cabecalho div { margin-bottom: 2px; }
 
         .header-actions button { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; }
@@ -35,7 +37,7 @@
         body.theme-compras .header { background-color: #6a1b9a !important; }
 
         .area-conteudo { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .scroll-area { overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 90px; }
+        .scroll-area { overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 90px; -webkit-overflow-scrolling: touch; }
 
         /* FILTROS */
         .filters { padding: 10px 15px; display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; border-bottom: 1px solid #eee; background: white; flex-shrink: 0; }
@@ -142,7 +144,7 @@
         <div class="header-actions">
             <button id="btnTrocarPerfil" onclick="abrirSelecaoColaboradorInicial(true)" style="margin-right: 12px; font-size: 22px;">👤</button>
             <button id="btnHistHoje" onclick="abrirPedidosHoje()" style="margin-right: 12px; font-size: 22px;">📋</button>
-            <button onclick="abrirAdmin()">⚙️</button>
+            <button id="btnAdmin" onclick="abrirAdmin()">⚙️</button>
         </div>
     </div>
 
@@ -178,7 +180,7 @@
         <div class="form-group"><label>Quem está operando o sistema?</label><select id="selectColabInicial"></select></div>
         <div class="form-group"><label>Senha do Perfil:</label><input type="password" id="inputSenhaColab" placeholder="Deixe em branco se não houver" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions" style="display: flex; gap: 8px;">
-            <button class="btn-danger" id="btnSairSistema" style="display:none; flex: 1;" onclick="sairDoSistema()">Sair do Sistema</button>
+            <button class="btn-danger" id="btnSairSistema" style="display:none; flex: 1;" onclick="sairDoSistema()">Sair do App</button>
             <button class="btn-cancel" id="btnCancelColab" style="display:none; flex: 1;" onclick="fecharModal('modalColaboradorObrigatorio')">Cancelar</button>
             <button class="btn-action" style="flex: 2;" onclick="definirColaboradorAtivo()">Entrar</button>
         </div>
@@ -505,11 +507,24 @@
     /* =========================================================================
        NUVEM E ZONA DE RISCO
        ========================================================================= */
+    function atualizarVisibilidadeAdmin() {
+        const btnAdmin = document.getElementById('btnAdmin');
+        if(!btnAdmin) return;
+        let colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
+        let temColab = db.colaboradores.length > 0;
+        
+        // Se não tiver nenhum cadastro ou se o atual for admin, mostra a engrenagem
+        if (!temColab || (colab && colab.isAdmin)) {
+            btnAdmin.style.display = 'inline-block';
+        } else {
+            btnAdmin.style.display = 'none';
+        }
+    }
+
     function solicitarAcessoAvancado() { 
         let colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
         let hasAdminInSystem = db.colaboradores.some(c => c.isAdmin);
         
-        // Só bloqueia se houver algum admin cadastrado no sistema e o usuário atual não for ele
         if (hasAdminInSystem && (!colab || !colab.isAdmin)) {
             return alert("⚠️ Acesso Negado: Apenas o Administrador do Sistema pode acessar a Zona de Risco.");
         }
@@ -627,7 +642,6 @@
         db.configs.colabAtivoId = null;
         salvarBanco();
         fecharModal('modalColaboradorObrigatorio');
-        // Reabre o splash screen para mascarar o reload e garantir a limpeza do DOM na mente do usuário
         document.getElementById('splashScreen').style.opacity = '1';
         document.getElementById('splashScreen').style.display = 'flex';
         setTimeout(() => location.reload(), 300);
@@ -644,16 +658,17 @@
         
         let dicas = document.getElementById('dicasCabecalho');
         if(modo === 'pedido') { 
-            dicas.innerHTML = "<div>👆 Toque: Pedir</div><div>👈 Deslize: Desmarcar</div><div>✌️ 2 Toques: Editar</div>"; 
+            dicas.innerHTML = "<div>👆 Toque: Pedir</div><div>👈 Deslize: Apagar</div><div>✌️ 2 Toques: Detalhes</div>"; 
             document.getElementById('fabContainer').style.display = 'none';
             document.getElementById('btnHistHoje').style.display = 'inline-block';
         } else { 
-            dicas.innerHTML = "<div>👉 Deslize: Mudar Status</div><div>👈 Deslize: Voltar Status</div><div>👆 Segure: Pedido ao Forn.</div><div>✌️ 2 Toques: Detalhes</div>"; 
+            dicas.innerHTML = "<div>👉 Deslize: Avançar Status</div><div>👈 Deslize: Voltar Status</div><div>👆 Segure: P/ Fornecedor</div><div>✌️ 2 Toques: Detalhes</div>"; 
             document.getElementById('fabContainer').style.display = 'flex';
             document.getElementById('btnEnviarPedidos').style.display = 'none';
             document.getElementById('btnHistHoje').style.display = 'none';
         }
         document.getElementById('btnModoSelecao').style.backgroundColor = '#ab47bc';
+        atualizarVisibilidadeAdmin();
         salvarBanco(); atualizarBotaoDesfazer(); renderizarFiltros(); renderizarLista();
     }
 
@@ -689,7 +704,6 @@
         let temRascunho = false; let agora = Date.now();
         let produtosOrdenados = [...db.produtos];
 
-        // ORDENAÇÃO NATIVA (CATEGORIA -> ALFABÉTICA)
         if (categoriaAtual === null) {
             produtosOrdenados.sort((a, b) => {
                 let idxA = db.categorias.findIndex(c => c.id === a.categoria); if(idxA === -1) idxA = 999;
@@ -708,7 +722,6 @@
                 if(categoriaAtual && p.categoria !== categoriaAtual) return; 
                 if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 
-                // Cabeçalho de Categoria no modo Todos
                 if (categoriaAtual === null) {
                     let cObj = db.categorias.find(c => c.id === p.categoria); let catName = cObj ? cObj.nome : "Sem Categoria";
                     if (catName !== lastCatHeader) {
@@ -804,6 +817,9 @@
                 const p = db.produtos.find(prod => prod.id === pa.produtoId); if(!p) return; 
                 if(categoriaAtual && p.categoria !== categoriaAtual) return;
                 
+                // BARREIRA DE COMPRAS: Oculta itens que o cara não tem permissão para receber
+                if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
+                
                 if (agrupamentoCompradoAtivo) {
                     let currentGroup = pa.status === 'pendente' ? '⏳ PENDENTES' : (pa.status === 'pedido_forn' ? '📦 PEDIDOS AO FORNECEDOR' : '✅ COMPRADOS / ENTREGUES');
                     if (currentGroup !== lastGroup) {
@@ -825,7 +841,6 @@
                 let qtdNum = pa.qtd !== '' ? pa.qtd : '-';
                 let tituloItem = `${p.nome} - ${qtdNum} ${pa.unidade}`;
                 
-                // Lógica de tempo amigável
                 let tsReferencia = pa.dataStatus || pa.dataConclusao || pa.dataExclusao || parseInt(pa.idUnico.split('_')[1]);
                 let tempoTxt = tsReferencia ? ` ${tempoRelativo(tsReferencia)}` : "";
                 
@@ -840,7 +855,6 @@
                 
                 let statusText = nomeStatus + tempoTxt; 
 
-                // O indicador de editado agora só aparece se foi editado NA COMPRA
                 let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado em compras')) ? ' <span style="font-size:10px; color:#d32f2f; font-weight:bold;">(Editado)</span>' : '';
                 let obsVisual = pa.obs ? `<br><span style="color:#000; font-weight:bold;">Obs: ${pa.obs}</span>` : "";
                 
@@ -885,7 +899,6 @@
                 else if(pa.status === 'entregue') statusNome = 'Entregue ✅';
 
                 let acoes = '';
-                // Bloqueia a edição caso já tenha sido acionado pelo fornecedor ou comprado
                 if(pa.status === 'pendente') {
                     acoes = `
                         <button onclick="prepararEdicaoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px;">✏️</button>
@@ -917,16 +930,12 @@
         modal.style.display = 'flex';
     }
 
-    function prepararEdicaoHoje(idUnico) {
-        abrirModalEditarPedido(idUnico);
-    }
+    function prepararEdicaoHoje(idUnico) { abrirModalEditarPedido(idUnico); }
 
     function excluirPedidoHoje(idUnico) {
         if(confirm("Deseja apagar definitivamente este pedido feito hoje?")) {
             db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== idUnico);
-            salvarBanco();
-            abrirPedidosHoje();
-            renderizarLista();
+            salvarBanco(); abrirPedidosHoje(); renderizarLista();
         }
     }
 
@@ -934,69 +943,34 @@
        SISTEMA DE DESFAZER (UNDO)
        ========================================================================= */
     function registrarDesfazer(pa) {
-        pilhaDesfazer.push({
-            idUnico: pa.idUnico,
-            status: pa.status,
-            excluido: pa.excluido,
-            dataConclusao: pa.dataConclusao,
-            dataExclusao: pa.dataExclusao,
-            dataStatus: pa.dataStatus
-        });
+        pilhaDesfazer.push({ idUnico: pa.idUnico, status: pa.status, excluido: pa.excluido, dataConclusao: pa.dataConclusao, dataExclusao: pa.dataExclusao, dataStatus: pa.dataStatus });
         atualizarBotaoDesfazer();
     }
 
     function desfazerAcao() {
-        if(pilhaDesfazer.length === 0) return;
-        let last = pilhaDesfazer.pop();
-        let pa = db.pedidosAtivos.find(x => x.idUnico === last.idUnico);
-        if(pa) {
-            pa.status = last.status;
-            pa.excluido = last.excluido;
-            pa.dataConclusao = last.dataConclusao;
-            pa.dataExclusao = last.dataExclusao;
-            pa.dataStatus = last.dataStatus;
-            salvarBanco();
-            renderizarLista();
-        }
+        if(pilhaDesfazer.length === 0) return; let last = pilhaDesfazer.pop(); let pa = db.pedidosAtivos.find(x => x.idUnico === last.idUnico);
+        if(pa) { pa.status = last.status; pa.excluido = last.excluido; pa.dataConclusao = last.dataConclusao; pa.dataExclusao = last.dataExclusao; pa.dataStatus = last.dataStatus; salvarBanco(); renderizarLista(); }
         atualizarBotaoDesfazer();
     }
 
     function atualizarBotaoDesfazer() {
         const btn = document.getElementById('btnDesfazer');
-        if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0) {
-            btn.style.display = 'flex';
-        } else {
-            btn.style.display = 'none';
-        }
+        if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0) { btn.style.display = 'flex'; } else { btn.style.display = 'none'; }
     }
 
     /* =========================================================================
-       GESTOS E RESTRIÇÕES
+       GESTOS E RESTRIÇÕES - OTIMIZADO (ZERO LAG)
        ========================================================================= */
-    let touchStartX = 0; let touchStartY = 0; let pressTimer; let isLongPress = false; let lastTap = 0; let tapTimer; let isScrolling = false;
+    let touchStartX = 0; let touchStartY = 0; let pressTimer; let isLongPress = false; let lastTap = 0; let lastTapId = null; let isScrolling = false;
 
     function handleTouchStart(e, el) { 
-        touchStartX = e.changedTouches[0].screenX; 
-        touchStartY = e.changedTouches[0].screenY;
-        isLongPress = false; 
-        isScrolling = false;
-        
-        pressTimer = setTimeout(() => { 
-            if (!isScrolling) {
-                isLongPress = true; 
-                acaoSegurar(el); 
-            }
-        }, 600); 
+        touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; isLongPress = false; isScrolling = false;
+        pressTimer = setTimeout(() => { if (!isScrolling) { isLongPress = true; acaoSegurar(el); } }, 600); 
     }
     
     function handleTouchMove(e) { 
-        let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
-        let diffX = Math.abs(e.changedTouches[0].screenX - touchStartX);
-        
-        if (diffY > 15 || diffX > 15) {
-            isScrolling = true;
-            clearTimeout(pressTimer); 
-        }
+        let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY); let diffX = Math.abs(e.changedTouches[0].screenX - touchStartX);
+        if (diffY > 15 || diffX > 15) { isScrolling = true; clearTimeout(pressTimer); }
     }
     
     function handleTouchEnd(e, el) { 
@@ -1006,18 +980,26 @@
         let diffX = e.changedTouches[0].screenX - touchStartX; 
         let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
 
-        if (diffY > 15 || isScrolling && Math.abs(diffX) < 40) return;
+        if (diffY > 15 || (isScrolling && Math.abs(diffX) < 40)) return;
 
         if (Math.abs(diffX) < 20) {
-            let currentTime = new Date().getTime(); let tapLength = currentTime - lastTap;
-            if (tapLength < 350 && tapLength > 0) { clearTimeout(tapTimer); acaoDuploToque(el); } else { tapTimer = setTimeout(() => { acaoToqueSimples(el); }, 350); } lastTap = currentTime;
+            let currentTime = new Date().getTime(); 
+            let tapLength = currentTime - lastTap;
+            let currentId = el.getAttribute('data-id');
+
+            if (tapLength < 350 && tapLength > 0 && lastTapId === currentId) { 
+                acaoDuploToque(el); 
+            } else { 
+                acaoToqueSimples(el); 
+            } 
+            lastTap = currentTime;
+            lastTapId = currentId;
         } 
         else if (diffX < -80) { acaoDeslizarEsquerda(el); } else if (diffX > 80) { acaoDeslizarDireita(el); }
     }
 
     function getPermissaoColab() {
-        let c = db.colaboradores.find(col => col.id === db.configs.colabAtivoId);
-        return c ? (c.apenasReceber || false) : false;
+        let c = db.colaboradores.find(col => col.id === db.configs.colabAtivoId); return c ? (c.apenasReceber || false) : false;
     }
 
     function acaoToqueSimples(el) { 
@@ -1035,16 +1017,13 @@
     
     function acaoDuploToque(el) {
         if(db.configs.modo === 'pedido') { 
-            let pedId = el.getAttribute('data-pedid'); const pId = el.getAttribute('data-id');
-            if(!pedId) {
-                const p = db.produtos.find(x => x.id === pId); if(!p) return;
-                let qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; 
-                let un = p.unidades[0] || ''; let obsPad = p.obsPadrao || '';
-                pedId = 'pa_' + Date.now();
-                db.pedidosAtivos.push({ idUnico: pedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId });
-                salvarBanco();
+            const pId = el.getAttribute('data-id');
+            // Busca o rascunho que foi recém-criado pelo 1º clique (ou que já existia)
+            const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === pId && !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
+            const pedidoEditavel = pedidosDeste[pedidosDeste.length-1];
+            if(pedidoEditavel) {
+                abrirModalEditarPedido(pedidoEditavel.idUnico); 
             }
-            abrirModalEditarPedido(pedId); 
         } 
         else {
             if (getPermissaoColab()) return alert("Seu perfil não permite editar os detalhes das compras.");
@@ -1463,7 +1442,7 @@
             apenasReceber: apenasReceber, 
             catsPermitidasPedido: catsPed,
             catsPermitidasCompras: catsComp,
-            catsPermitidas: [] // Limpo para forçar o uso dos novos arrays daqui pra frente
+            catsPermitidas: []
         }; 
         
         const idx = db.colaboradores.findIndex(x => x.id === id); 
