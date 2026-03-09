@@ -578,39 +578,39 @@
 
     function salvarURL() { const inputUrl = document.getElementById('configUrlApp').value.trim(); if(!inputUrl) return alert("Digite a URL!"); db.configs.url = inputUrl; salvarBanco(); sincronizarFundo(true); }
     
-    // O motor silencioso que faz o trabalho pesado de buscar e fundir dados
+    // O motor silencioso blindado contra corridas de envio
     async function sincronizarFundo(forcado = false) {
         if(!db.configs.url) return;
-        if(isSyncingFundo && !forcado) return; // Evita que várias sincronizações rodem ao mesmo tempo
         
-        // Se a tela estiver oculta/bloqueada, não gasta internet (a não ser que seja forçado)
+        // TRANCA: Se estiver enviando ou já sincronizando, bloqueia!
+        if(isSyncingFundo) {
+            if(forcado) alert("🔄 O sistema já está processando dados com a nuvem no momento. Aguarde alguns segundos.");
+            return;
+        }
+        
+        // Se a tela estiver oculta/bloqueada, não gasta internet
         if(document.hidden && !forcado) return;
 
-        // PROTEÇÃO DE RASCUNHO: Se o usuário estiver montando um pedido, pausa o radar do fundo para evitar sobrescrita!
+        // PROTEÇÃO DE RASCUNHO
         let temRascunho = db.pedidosAtivos.some(pa => pa.status === 'rascunho' && !pa.excluido);
         if(temRascunho && db.configs.modo === 'pedido' && !forcado) return;
 
-        isSyncingFundo = true;
+        isSyncingFundo = true; // ATIVA A TRANCA
         let indicador = document.getElementById('syncIndicador');
         indicador.style.opacity = '1';
 
         try {
-            // 1. Puxa os dados fresquinhos da nuvem burlando o cache
+            // 1. Puxa dados da nuvem
             let fetchUrl = db.configs.url + (db.configs.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
             let res = await fetch(fetchUrl, { redirect: "follow", cache: "no-store" }); 
             let nuvemDB = await res.json(); 
 
             if(nuvemDB && nuvemDB.app_id === "alofeira" && nuvemDB.pedidosAtivos) {
-                // Guarda a foto de como o banco estava antes
                 let jsonAntes = JSON.stringify(db.pedidosAtivos);
 
-                // --- SMART MERGE BLINDADO ---
                 let mergedPedidos = new Map();
-                
-                // Joga a nuvem na mesa
                 nuvemDB.pedidosAtivos.forEach(pCloud => mergedPedidos.set(pCloud.idUnico, pCloud));
                 
-                // Joga o local por cima se for mais novo ou se for um RASCUNHO (rascunho nunca é apagado pela nuvem)
                 let pedidosLocais = db.pedidosAtivos || [];
                 pedidosLocais.forEach(pLoc => {
                     let pCloud = mergedPedidos.get(pLoc.idUnico);
@@ -624,26 +624,37 @@
 
                 db.pedidosAtivos = Array.from(mergedPedidos.values());
 
-                // Atualiza cadastros
                 if(nuvemDB.produtos) db.produtos = nuvemDB.produtos;
                 if(nuvemDB.categorias) db.categorias = nuvemDB.categorias;
                 if(nuvemDB.fornecedores) db.fornecedores = nuvemDB.fornecedores;
                 if(nuvemDB.colaboradores) db.colaboradores = nuvemDB.colaboradores;
 
+                // RECUPERAÇÃO DE MEMÓRIA: Puxar as configs mestre da nuvem!
+                if(nuvemDB.configs) {
+                    db.configs.exigirColaborador = nuvemDB.configs.exigirColaborador;
+                    db.configs.senhaAdmin = nuvemDB.configs.senhaAdmin || "1999";
+                }
+
                 db.configs.dadosBaixados = true;
                 salvarBanco();
 
-                // 2. Só recarrega a lista se algo realmente mudou, para não interromper a leitura
+                // Checagem de segurança se a nuvem exige login mas o celular estava apagado
+                if (db.configs.exigirColaborador && !db.configs.colabAtivoId && document.getElementById('modalColaboradorObrigatorio').style.display !== 'flex') {
+                    fecharModal('modalConfigAvancadas');
+                    fecharModal('modalPainelUnificado');
+                    abrirSelecaoColaboradorInicial(false);
+                }
+
                 let jsonDepois = JSON.stringify(db.pedidosAtivos);
                 if(jsonAntes !== jsonDepois) {
                     renderizarLista();
                     if(document.getElementById('modalPedidosHoje').style.display === 'flex') abrirPedidosHoje();
                 }
 
-                // 3. Devolve para a nuvem o banco já fundido
                 nuvemDB.pedidosAtivos = db.pedidosAtivos;
                 await fetch(db.configs.url, { 
                     method: 'POST', 
+                    redirect: "follow",
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: 'salvar_banco', dados: db }) 
                 });
@@ -653,15 +664,12 @@
         } catch(e) {
             if(forcado) alert("Erro de conexão ao sincronizar. O app tentará novamente em breve.");
         } finally {
-            isSyncingFundo = false;
+            isSyncingFundo = false; // DESATIVA A TRANCA
             indicador.style.opacity = '0';
         }
     }
 
-    // Radar que gira a cada 20 segundos
-    setInterval(() => {
-        sincronizarFundo(false);
-    }, 20000);
+    setInterval(() => { sincronizarFundo(false); }, 20000);
     
     function exportarDados() {
         db.app_id = "alofeira"; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
@@ -682,45 +690,42 @@
         reader.readAsText(file);
     }
 
-    // NOVA FUNÇÃO: EXCLUIR TUDO (LOCAL E NUVEM) - VERSÃO T27
     async function excluirTodoHistorico() { 
         let frase = document.getElementById('inputExcluirTudo').value.trim().toLowerCase(); 
         
         if(frase === "quero excluir todo o histórico") { 
+            // TRANCA ANTES DE APAGAR
+            if(isSyncingFundo) return alert("⏳ Aguarde o sistema terminar de conversar com a nuvem antes de apagar o histórico.");
+            
             if(!confirm("⚠️ TEM CERTEZA? Isso vai apagar todos os pedidos de TODOS os aparelhos conectados. Essa ação não afeta produtos ou categorias.")) return;
 
-            // Limpa localmente (apenas os pedidos)
             db.pedidosAtivos = []; 
             salvarBanco(); 
             
-            // Se tiver URL configurada, empurra a limpeza para a nuvem Imediatamente (sem puxar nada antes)
             if (db.configs.url) {
+                isSyncingFundo = true; // ATIVA A TRANCA
                 document.getElementById('loadingOverlay').style.display = 'flex';
                 document.getElementById('loadingText').innerHTML = "Apagando histórico na nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde.</span>";
                 
-                // Trava o radar para ele não tentar fundir dados enquanto apagamos
-                isSyncingFundo = true; 
-
                 try {
                     let res = await fetch(db.configs.url, { 
                         method: 'POST', 
+                        redirect: "follow",
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ action: 'salvar_banco', dados: db }) 
                     });
                     
                     if(!res.ok) throw new Error("Erro de resposta");
-                    
                     alert("✅ Histórico de pedidos apagado localmente e na nuvem com sucesso!"); 
                 } catch(e) {
-                    alert("❌ Os pedidos foram apagados no seu celular, mas houve uma falha de conexão ao tentar apagar na nuvem. Verifique sua internet.");
+                    alert("❌ Os pedidos foram apagados no celular, mas houve falha na conexão ao apagar na nuvem.");
                 } finally {
-                    // Libera o radar e restaura o texto de loading
-                    isSyncingFundo = false;
+                    isSyncingFundo = false; // DESATIVA TRANCA
                     document.getElementById('loadingOverlay').style.display = 'none';
                     document.getElementById('loadingText').innerHTML = "Gravando pedido na nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde. Não feche o app.</span>";
                 }
             } else {
-                alert("✅ Histórico apagado localmente (Sistema não está conectado à nuvem).");
+                alert("✅ Histórico apagado localmente (Sistema não está conectado).");
             }
             
             document.getElementById('inputExcluirTudo').value = ''; 
@@ -961,40 +966,42 @@
         let rascunhos = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido); 
         if(rascunhos.length === 0) return;
 
-        // Mostra a tela de carregamento bloqueando tudo
+        // TRANCA ANTES DE ENVIAR
+        if (isSyncingFundo) {
+            alert("⏳ O radar do aplicativo está checando a nuvem agora. Aguarde 3 segundinhos e clique em Enviar novamente.");
+            return;
+        }
+
+        isSyncingFundo = true; // ATIVA TRANCA
         document.getElementById('loadingOverlay').style.display = 'flex';
         
-        // Fazemos um backup local antes de tentar enviar
         let backupPedidos = JSON.parse(JSON.stringify(db.pedidosAtivos));
-
-        // Aplica o status 'pendente' provisoriamente
         let agora = Date.now();
         rascunhos.forEach(pa => { pa.status = 'pendente'; pa.dataStatus = agora; }); 
         salvarBanco(); 
 
         try {
-            // Tenta enviar para o Google de forma síncrona/travada
             let res = await fetch(db.configs.url, { 
                 method: 'POST', 
+                redirect: "follow",
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: 'salvar_banco', dados: db }) 
             });
 
             if(!res.ok) throw new Error("Erro na resposta do servidor");
 
-            // SE CHEGOU AQUI: O Google confirmou o recebimento!
             document.getElementById('loadingOverlay').style.display = 'none';
             alert("✅ SUCESSO! O pedido foi gravado com segurança na nuvem."); 
             renderizarLista(); 
 
         } catch (error) {
-            // SE DEU ERRO (Internet caiu, servidor falhou, etc)
-            // Desfaz a mudança de status e volta tudo para Rascunho
             db.pedidosAtivos = backupPedidos;
             salvarBanco();
             document.getElementById('loadingOverlay').style.display = 'none';
             alert("❌ FALHA NA CONEXÃO!\nSeu pedido NÃO foi enviado. Por favor, verifique a sua internet e clique em Enviar novamente.\n\nFique tranquilo, os itens continuam marcados na sua tela.");
             renderizarLista();
+        } finally {
+            isSyncingFundo = false; // DESATIVA TRANCA
         }
     }
 
