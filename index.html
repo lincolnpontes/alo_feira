@@ -264,10 +264,14 @@
     <div class="modal">
         <div class="modal-title" style="border-color:#25d366;">Relatório p/ Fornecedor</div>
         
-        <div style="background:#f1f8e9; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #c5e1a5; display:flex; justify-content:space-around;">
+        <div style="background:#f1f8e9; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #c5e1a5; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
             <div style="display:flex; align-items:center;">
                 <label class="switch"><input type="checkbox" id="relatToggleCab" checked onchange="gerarTextoRelatorio()"><span class="slider"></span></label>
                 <span style="font-size:12px; font-weight:bold; color:#555;">Cabeçalho</span>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <label class="switch"><input type="checkbox" id="relatToggleCat" checked onchange="gerarTextoRelatorio()"><span class="slider"></span></label>
+                <span style="font-size:12px; font-weight:bold; color:#555;">Agrupar Categoria</span>
             </div>
             <div style="display:flex; align-items:center;">
                 <label class="switch"><input type="checkbox" id="relatToggleItens" checked onchange="gerarTextoRelatorio()"><span class="slider"></span></label>
@@ -483,7 +487,7 @@
     let agrupamentoCompradoAtivo = false;
     let pilhaDesfazer = []; 
     let tempPrecosProduto = [];
-    let tempFornecedoresProduto = []; // Guarda os IDs dos fornecedores na edição do produto
+    let tempFornecedoresProduto = [];
 
     function carregarBanco() {
         let base = {
@@ -501,8 +505,10 @@
     function salvarBanco() { localStorage.setItem('alofeira_v1', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
+    // BUG FIX DA VERSÃO T20: Administrador ignora restrição de categoria!
     function getCatsPermitidas(colabLogado) {
         if(!colabLogado) return null;
+        if(colabLogado.isAdmin) return null; 
         let cats = db.configs.modo === 'pedido' ? colabLogado.catsPermitidasPedido : colabLogado.catsPermitidasCompras;
         return cats !== undefined ? cats : colabLogado.catsPermitidas; 
     }
@@ -540,19 +546,13 @@
         if(!btnAdmin) return;
         let colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
         let temColab = db.colaboradores.length > 0;
-        
-        if (!temColab || (colab && colab.isAdmin)) { btnAdmin.style.display = 'inline-block'; } 
-        else { btnAdmin.style.display = 'none'; }
+        if (!temColab || (colab && colab.isAdmin)) { btnAdmin.style.display = 'inline-block'; } else { btnAdmin.style.display = 'none'; }
     }
 
     function solicitarAcessoAvancado() { 
         let colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
         let hasAdminInSystem = db.colaboradores.some(c => c.isAdmin);
-        
-        if (hasAdminInSystem && (!colab || !colab.isAdmin)) {
-            return alert("⚠️ Acesso Negado: Apenas o Administrador do Sistema pode acessar a Zona de Risco.");
-        }
-
+        if (hasAdminInSystem && (!colab || !colab.isAdmin)) { return alert("⚠️ Acesso Negado: Apenas o Administrador do Sistema pode acessar a Zona de Risco."); }
         fecharModal('modalPainelUnificado'); document.getElementById('senhaAvancada').value = ''; document.getElementById('modalSenhaAvancada').style.display = 'flex'; setTimeout(()=>document.getElementById('senhaAvancada').focus(), 100); 
     }
     
@@ -564,17 +564,14 @@
         if(!db.configs.dadosBaixados) { if(!confirm("Você não puxou dados da nuvem. Salvar apagará a nuvem. Forçar?")) return; }
         try { 
             const btn = document.getElementById('btnSalvarNuvem'); if(btn) btn.innerText = "Salvando..."; 
-            db.app_id = "alofeira"; 
-            await fetch(db.configs.url, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'salvar_banco', dados: db }) }); 
+            db.app_id = "alofeira"; await fetch(db.configs.url, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'salvar_banco', dados: db }) }); 
             db.configs.dadosBaixados = true; salvarBanco(); alert("Salvo na nuvem!"); if(btn) btn.innerText = "☁️ Salvar na Nuvem"; 
         } catch(e) { alert("Erro ao salvar."); }
     }
     
     function exportarDados() {
-        db.app_id = "alofeira";
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
+        db.app_id = "alofeira"; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+        const downloadAnchorNode = document.createElement('a'); downloadAnchorNode.setAttribute("href", dataStr);
         downloadAnchorNode.setAttribute("download", "alofeira_bkp_" + getHojeSTR() + ".json");
         document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
     }
@@ -585,9 +582,7 @@
         reader.onload = function(e) {
             try {
                 const importedDb = JSON.parse(e.target.result);
-                if(importedDb && importedDb.app_id === "alofeira") {
-                    db = importedDb; salvarBanco(); alert("Dados importados com sucesso!"); location.reload();
-                } else { alert("Arquivo de backup inválido ou de outro sistema."); }
+                if(importedDb && importedDb.app_id === "alofeira") { db = importedDb; salvarBanco(); alert("Dados importados com sucesso!"); location.reload(); } else { alert("Arquivo de backup inválido ou de outro sistema."); }
             } catch(err) { alert("Erro ao ler o arquivo."); }
         };
         reader.readAsText(file);
@@ -600,8 +595,7 @@
             if(nuvemDB && nuvemDB.mesas !== undefined) { alert("❌ ERRO CRÍTICO:\nEsta URL pertence ao sistema Alô Cozinha (Salão)! Operação bloqueada."); return; }
             if(nuvemDB && (nuvemDB.produtos || nuvemDB.fornecedores)) { 
                 let modoAtual = db.configs.modo; db = nuvemDB; db.configs.modo = modoAtual; db.configs.dadosBaixados = true; 
-                db.app_id = "alofeira"; salvarBanco(); 
-                if(pedirConfirmacao) { alert("Sucesso! Banco puxado da nuvem."); location.reload(); } 
+                db.app_id = "alofeira"; salvarBanco(); if(pedirConfirmacao) { alert("Sucesso! Banco puxado da nuvem."); location.reload(); } 
             } else { if(pedirConfirmacao) alert("A nuvem está vazia ou o link é inválido. Salve seus dados nela primeiro."); } 
         } catch(e) { if(pedirConfirmacao) alert("Erro ao puxar da nuvem. Verifique a URL."); }
     }
@@ -637,8 +631,7 @@
     
     function sairDoSistema() {
         db.configs.colabAtivoId = null; salvarBanco(); fecharModal('modalColaboradorObrigatorio');
-        document.getElementById('splashScreen').style.opacity = '1'; document.getElementById('splashScreen').style.display = 'flex';
-        setTimeout(() => location.reload(), 300);
+        document.getElementById('splashScreen').style.opacity = '1'; document.getElementById('splashScreen').style.display = 'flex'; setTimeout(() => location.reload(), 300);
     }
 
     function toggleExigirColab() { db.configs.exigirColaborador = document.getElementById('configExigirColab').checked; salvarBanco(); }
@@ -676,8 +669,7 @@
 
     function renderizarLista() {
         const lista = document.getElementById('listaPrincipal'); lista.innerHTML = ''; let itensMostrados = 0;
-        let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); 
-        let catsPermitidas = getCatsPermitidas(colabLogado);
+        let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = getCatsPermitidas(colabLogado);
         
         let temRascunho = false; let agora = Date.now();
         let produtosOrdenados = [...db.produtos];
@@ -692,7 +684,6 @@
 
         if (db.configs.modo === 'pedido') {
             let lastCatHeader = "";
-
             produtosOrdenados.forEach(p => {
                 if(categoriaAtual && p.categoria !== categoriaAtual) return; 
                 if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
@@ -703,7 +694,6 @@
                 }
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
-                
                 const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id);
                 const ultimoPedido = pedidosDeste[pedidosDeste.length-1];
                 const pedidoEditavel = pedidosDeste.find(pa => !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
@@ -725,11 +715,9 @@
                             case 'entregue': statusName = 'Entregue'; statusClass = 'bg-entregue'; break;
                         }
                     }
-
                     let obsVisual = ultimoPedido.obs ? `<br><span style="color:#000; font-size:11px;">Obs: ${ultimoPedido.obs}</span>` : "";
                     let qtdNum = ultimoPedido.qtd !== '' ? ultimoPedido.qtd : '-';
                     infoDireita = `<div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${qtdNum} ${ultimoPedido.unidade}</span>${obsVisual}`;
-                    
                     if(pedidoEditavel) { classesExtra += (pedidoEditavel.status === 'rascunho') ? "item-pedido-rascunho " : "item-pedido-ativo "; if(pedidoEditavel.status === 'rascunho') temRascunho = true; }
                 }
 
@@ -749,7 +737,6 @@
 
         } else {
             let comprasParaMostrar = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho');
-            
             if(agrupamentoCompradoAtivo) {
                 comprasParaMostrar.sort((a, b) => {
                     let getStatusPrio = (s) => s === 'pendente' ? 1 : (s === 'pedido_forn' ? 2 : 3);
@@ -774,7 +761,6 @@
             }
 
             let lastGroup = ""; let lastCatHeader = "";
-
             comprasParaMostrar.forEach(pa => {
                 if(pa.excluido) { const diffDays = (agora - pa.dataExclusao) / (1000 * 60 * 60 * 24); if(diffDays >= 7) return; }
                 const p = db.produtos.find(prod => prod.id === pa.produtoId); if(!p) return; 
@@ -839,7 +825,7 @@
     function excluirPedidoHoje(idUnico) { if(confirm("Deseja apagar definitivamente este pedido feito hoje?")) { db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== idUnico); salvarBanco(); abrirPedidosHoje(); renderizarLista(); } }
 
     /* =========================================================================
-       SISTEMA DE DESFAZER (UNDO) COM DEEP COPY
+       SISTEMA DE DESFAZER (UNDO)
        ========================================================================= */
     function registrarDesfazer(pa) { pilhaDesfazer.push(JSON.parse(JSON.stringify(pa))); atualizarBotaoDesfazer(); }
     function desfazerAcao() {
@@ -849,7 +835,7 @@
     function atualizarBotaoDesfazer() { const btn = document.getElementById('btnDesfazer'); if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0) { btn.style.display = 'flex'; } else { btn.style.display = 'none'; } }
 
     /* =========================================================================
-       GESTOS E RESTRIÇÕES - SEM COR DE TOQUE, ZERO LAG MANTIDO
+       GESTOS E RESTRIÇÕES 
        ========================================================================= */
     let touchStartX = 0; let touchStartY = 0; let pressTimer; let isLongPress = false; let lastTap = 0; let lastTapId = null; let isScrolling = false;
 
@@ -867,8 +853,7 @@
         clearTimeout(pressTimer); 
         if(isLongPress || modoSelecaoAtivo) return;
         
-        let diffX = e.changedTouches[0].screenX - touchStartX; 
-        let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
+        let diffX = e.changedTouches[0].screenX - touchStartX; let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
 
         if (diffY > 40 || (isScrolling && Math.abs(diffX) < 25)) return;
 
@@ -895,8 +880,7 @@
                 db.pedidosAtivos.push({ idUnico: novoPedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco(); 
                 
-                el.setAttribute('data-pedid', novoPedId);
-                el.classList.add('item-pedido-rascunho');
+                el.setAttribute('data-pedid', novoPedId); el.classList.add('item-pedido-rascunho');
                 let infoDir = el.querySelector('.info-direita');
                 if(infoDir) { infoDir.innerHTML = `<div class="status-badge bg-rascunho" style="margin-bottom: 2px;">Rascunho</div><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${qtd} ${un}</span>`; }
                 document.getElementById('btnEnviarPedidos').style.display = 'block';
@@ -910,8 +894,7 @@
             const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === pId && !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
             const pedidoEditavel = pedidosDeste[pedidosDeste.length-1];
             if(pedidoEditavel) { abrirModalEditarPedido(pedidoEditavel.idUnico); }
-        } 
-        else {
+        } else {
             if (getPermissaoColab()) return alert("Seu perfil não permite editar os detalhes das compras.");
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
             if(pa && !pa.excluido) { abrirHistoricoCompra(paId); }
@@ -949,18 +932,13 @@
             if(pedId) { 
                 let pa = db.pedidosAtivos.find(x => x.idUnico === pedId); 
                 if(pa && pa.status === 'rascunho') { 
-                    db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== pedId); 
-                    salvarBanco(); 
-                    
+                    db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== pedId); salvarBanco(); 
                     el.setAttribute('data-pedid', ''); el.classList.remove('item-pedido-rascunho'); el.classList.remove('item-pedido-ativo');
                     let infoDir = el.querySelector('.info-direita'); if(infoDir) infoDir.innerHTML = '';
-                    
-                    let temRascunho = db.pedidosAtivos.some(x => x.status === 'rascunho' && !x.excluido);
-                    if(!temRascunho) document.getElementById('btnEnviarPedidos').style.display = 'none';
+                    let temRascunho = db.pedidosAtivos.some(x => x.status === 'rascunho' && !x.excluido); if(!temRascunho) document.getElementById('btnEnviarPedidos').style.display = 'none';
                 } 
             } 
-        } 
-        else { 
+        } else { 
             if (getPermissaoColab()) return alert("Seu perfil não permite cancelar ou voltar o status.");
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
             if(pa && !pa.excluido) { 
@@ -998,7 +976,6 @@
     function abrirHistoricoCompra(paId) {
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(prod => prod.id === pa.produtoId);
         document.getElementById('histCompraId').value = paId;
-        
         document.getElementById('histCompraQtd').value = pa.qtd; document.getElementById('histCompraObs').value = pa.obs || '';
         const selUn = document.getElementById('histCompraUnd'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); 
 
@@ -1014,13 +991,8 @@
         } else { htmlMarcas = "Nenhuma marca cadastrada no produto."; }
         document.getElementById('histMarcasLista').innerHTML = htmlMarcas;
 
-        let htmlEdicao = "<ul>"; if(pa.historico) pa.historico.forEach(h => { htmlEdicao += `<li>${h.data} - ${h.msg}</li>`; }); else htmlEdicao += "<li>Sem histórico</li>"; htmlEdicao += "</ul>";
-        document.getElementById('histCompraLista').innerHTML = htmlEdicao;
-
-        let htmlPrecos = "<ul>";
-        if(p && p.historicoPrecos && p.historicoPrecos.length > 0) { let rev = [...p.historicoPrecos].reverse(); rev.forEach(h => { htmlPrecos += `<li>${h.data}: R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</li>`; }); } else { htmlPrecos += "<li>Sem histórico</li>"; }
-        htmlPrecos += "</ul>"; document.getElementById('histPrecosLista').innerHTML = htmlPrecos;
-
+        let htmlEdicao = "<ul>"; if(pa.historico) pa.historico.forEach(h => { htmlEdicao += `<li>${h.data} - ${h.msg}</li>`; }); else htmlEdicao += "<li>Sem histórico</li>"; htmlEdicao += "</ul>"; document.getElementById('histCompraLista').innerHTML = htmlEdicao;
+        let htmlPrecos = "<ul>"; if(p && p.historicoPrecos && p.historicoPrecos.length > 0) { let rev = [...p.historicoPrecos].reverse(); rev.forEach(h => { htmlPrecos += `<li>${h.data}: R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</li>`; }); } else { htmlPrecos += "<li>Sem histórico</li>"; } htmlPrecos += "</ul>"; document.getElementById('histPrecosLista').innerHTML = htmlPrecos;
         document.getElementById('modalHistoricoCompra').style.display = 'flex';
     }
 
@@ -1039,7 +1011,7 @@
     }
 
     /* =========================================================================
-       RELATÓRIO WHATSAPP
+       RELATÓRIO WHATSAPP (AGORA COM AGRUPAMENTO POR CATEGORIA)
        ========================================================================= */
     function abrirModalRelatorio() {
         if(itensSelecionadosRelatorio.size === 0) return alert("Selecione os itens marcando o botão ☑️ primeiro.");
@@ -1052,18 +1024,66 @@
     
     function gerarTextoRelatorio() {
         const fornId = document.getElementById('relatFornecedor').value; const res = db.restaurante; const forn = db.fornecedores.find(f => f.id === fornId);
-        const incluirCabecalho = document.getElementById('relatToggleCab').checked; const incluirItens = document.getElementById('relatToggleItens').checked;
+        const incluirCabecalho = document.getElementById('relatToggleCab').checked; 
+        const incluirItens = document.getElementById('relatToggleItens').checked;
+        const agruparCat = document.getElementById('relatToggleCat').checked;
         let texto = "";
         
         if (incluirCabecalho) { texto += `> *${res.nome.toUpperCase()}*\n> CNPJ: ${res.cnpj}\n> End.: ${res.rua}, ${res.numero}\n> ${res.bairro} - ${res.cidade} / ${res.uf}\n`; if(res.ponto) texto += `> Ponto de referência: ${res.ponto}\n`; texto += `\n`; }
         if (forn) { texto += `*${forn.nome.toUpperCase()}*\n\n`; }
-        if (incluirItens) { texto += `*Itens para cotação:*\n\n`; }
+        if (incluirItens) { texto += `*Itens para cotação:*\n`; }
 
-        Array.from(itensSelecionadosRelatorio).forEach(idUnico => {
-            const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); if(!p) return;
-            let nomeItem = p.descFornecedor ? p.descFornecedor : p.nome; let marcasStr = (pa.marcasSelecionadas && pa.marcasSelecionadas.length > 0) ? ` - Marca: ${pa.marcasSelecionadas.join(', ')}` : ''; let obsStr = pa.obs ? ` *(obs.: ${pa.obs})*` : ''; let qtdStr = pa.qtd !== '' ? pa.qtd : '-';
-            texto += `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${pa.unidade}${obsStr}\n`;
-        });
+        // Pega todos os itens selecionados e os produtos correspondentes
+        let itensProcessados = Array.from(itensSelecionadosRelatorio).map(idUnico => {
+            const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico);
+            const p = pa ? db.produtos.find(x => x.id === pa.produtoId) : null;
+            return { pa, p };
+        }).filter(item => item.pa && item.p);
+
+        if (agruparCat) {
+            // Agrupar por Categoria
+            let grupos = {};
+            itensProcessados.forEach(item => {
+                let cId = item.p.categoria || "sem_cat";
+                if(!grupos[cId]) grupos[cId] = [];
+                grupos[cId].push(item);
+            });
+
+            // Imprimir na ordem das categorias
+            db.categorias.forEach(cat => {
+                if (grupos[cat.id] && grupos[cat.id].length > 0) {
+                    texto += `\n> *${cat.nome}*\n`;
+                    // Ordenar alfabetico dentro da categoria
+                    grupos[cat.id].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).forEach(item => {
+                        let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome;
+                        let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : '';
+                        let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : '';
+                        let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-';
+                        texto += `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}\n`;
+                    });
+                }
+            });
+            
+            // Imprimir os sem categoria (se houver)
+            if (grupos["sem_cat"] && grupos["sem_cat"].length > 0) {
+                texto += `\n> *Outros*\n`;
+                grupos["sem_cat"].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).forEach(item => {
+                    let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome;
+                    let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-';
+                    texto += `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}\n`;
+                });
+            }
+
+        } else {
+            // Formato antigo (sem agrupar)
+            texto += `\n`;
+            itensProcessados.forEach(item => {
+                let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome;
+                let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-';
+                texto += `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}\n`;
+            });
+        }
+
         document.getElementById('relatTexto').value = texto;
         const btnZap = document.querySelector('.btn-whatsapp'); if(forn && forn.telefone) { btnZap.dataset.tel = forn.telefone; } else { btnZap.dataset.tel = ""; }
     }
@@ -1121,8 +1141,7 @@
 
     function duplicarProduto(id) {
         let p = db.produtos.find(x => x.id === id); if(!p) return;
-        let copia = JSON.parse(JSON.stringify(p));
-        copia.id = 'p_' + Date.now(); copia.nome = copia.nome + " (Cópia)"; db.produtos.push(copia);
+        let copia = JSON.parse(JSON.stringify(p)); copia.id = 'p_' + Date.now(); copia.nome = copia.nome + " (Cópia)"; db.produtos.push(copia);
         salvarBanco(); abrirGerenciar('produtos');
     }
 
@@ -1140,84 +1159,49 @@
     function excluirPrecoProduto(idx) { if(confirm("Excluir este preço do histórico?")) { tempPrecosProduto.splice(idx, 1); renderizarPrecosTemporarios(); } }
 
     function renderizarFornecedoresVinculados() {
-        const box = document.getElementById('listaFornecedoresVinculados');
-        box.innerHTML = '';
-        if(tempFornecedoresProduto.length === 0) {
-            box.innerHTML = '<span style="font-size:12px; color:#999;">Nenhum fornecedor vinculado.</span>';
-            return;
-        }
+        const box = document.getElementById('listaFornecedoresVinculados'); box.innerHTML = '';
+        if(tempFornecedoresProduto.length === 0) { box.innerHTML = '<span style="font-size:12px; color:#999;">Nenhum fornecedor vinculado.</span>'; return; }
         tempFornecedoresProduto.forEach(fId => {
             let f = db.fornecedores.find(x => x.id === fId);
-            if(f) {
-                box.innerHTML += `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:#e3f2fd; padding:6px 10px; border-radius:4px; font-size:13px; color:#1565C0; font-weight:bold;">
-                    <span>${f.nome}</span>
-                    <button onclick="removerFornecedorVinculado('${f.id}')" style="background:none; border:none; cursor:pointer; color:#d32f2f; font-size:16px;">×</button>
-                </div>`;
-            }
+            if(f) { box.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:#e3f2fd; padding:6px 10px; border-radius:4px; font-size:13px; color:#1565C0; font-weight:bold;"><span>${f.nome}</span><button onclick="removerFornecedorVinculado('${f.id}')" style="background:none; border:none; cursor:pointer; color:#d32f2f; font-size:16px;">×</button></div>`; }
         });
     }
 
-    function removerFornecedorVinculado(id) {
-        tempFornecedoresProduto = tempFornecedoresProduto.filter(x => x !== id);
-        renderizarFornecedoresVinculados();
-    }
+    function removerFornecedorVinculado(id) { tempFornecedoresProduto = tempFornecedoresProduto.filter(x => x !== id); renderizarFornecedoresVinculados(); }
 
     function abrirModalSelecaoFornecedores() {
-        const box = document.getElementById('boxListaFornecedoresSelecao');
-        box.innerHTML = '';
-        if(db.fornecedores.length === 0) {
-            box.innerHTML = '<span style="font-size:13px; color:#666; padding:10px; display:block;">Nenhum fornecedor cadastrado no sistema.</span>';
-        } else {
+        const box = document.getElementById('boxListaFornecedoresSelecao'); box.innerHTML = '';
+        if(db.fornecedores.length === 0) { box.innerHTML = '<span style="font-size:13px; color:#666; padding:10px; display:block;">Nenhum fornecedor cadastrado no sistema.</span>'; } 
+        else {
             let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome));
             fornOrdem.forEach(f => {
                 let checked = tempFornecedoresProduto.includes(f.id) ? 'checked' : '';
-                box.innerHTML += `
-                <label style="display:flex; align-items:center; padding:10px; border-bottom:1px solid #eee; font-size:14px; cursor:pointer;">
-                    <input type="checkbox" value="${f.id}" class="chk-selecao-forn" style="margin-right:10px; width:18px; height:18px;" ${checked}>
-                    ${f.nome}
-                </label>`;
+                box.innerHTML += `<label style="display:flex; align-items:center; padding:10px; border-bottom:1px solid #eee; font-size:14px; cursor:pointer;"><input type="checkbox" value="${f.id}" class="chk-selecao-forn" style="margin-right:10px; width:18px; height:18px;" ${checked}>${f.nome}</label>`;
             });
         }
         document.getElementById('modalSelecaoFornecedores').style.display = 'flex';
     }
 
-    function confirmarSelecaoFornecedores() {
-        tempFornecedoresProduto = Array.from(document.querySelectorAll('.chk-selecao-forn:checked')).map(el => el.value);
-        fecharModal('modalSelecaoFornecedores');
-        renderizarFornecedoresVinculados();
-    }
+    function confirmarSelecaoFornecedores() { tempFornecedoresProduto = Array.from(document.querySelectorAll('.chk-selecao-forn:checked')).map(el => el.value); fecharModal('modalSelecaoFornecedores'); renderizarFornecedoresVinculados(); }
 
     function abrirFormProduto(id) {
         fecharModal('modalListagem'); const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
         document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR();
-        
         let p = null;
         if(id) {
             p = db.produtos.find(x => x.id === id); 
             document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodDesc').value = p.descFornecedor || ''; document.getElementById('prodObsPadrao').value = p.obsPadrao || ''; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : '';
-            tempPrecosProduto = p.historicoPrecos ? JSON.parse(JSON.stringify(p.historicoPrecos)) : [];
-            tempFornecedoresProduto = p.fornecedores ? JSON.parse(JSON.stringify(p.fornecedores)) : [];
+            tempPrecosProduto = p.historicoPrecos ? JSON.parse(JSON.stringify(p.historicoPrecos)) : []; tempFornecedoresProduto = p.fornecedores ? JSON.parse(JSON.stringify(p.fornecedores)) : [];
         } else { 
             document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = ''; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodQtdPadrao').value = ''; 
-            tempPrecosProduto = [];
-            tempFornecedoresProduto = [];
+            tempPrecosProduto = []; tempFornecedoresProduto = [];
         }
-        
-        renderizarFornecedoresVinculados();
-        renderizarPrecosTemporarios(); 
-        document.getElementById('modalFormProduto').style.display = 'flex';
+        renderizarFornecedoresVinculados(); renderizarPrecosTemporarios(); document.getElementById('modalFormProduto').style.display = 'flex';
     }
     
     function salvarProduto() {
-        const id = document.getElementById('prodId').value || 'p_'+Date.now(); 
-        const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); 
-        const pVal = parseMoeda(document.getElementById('prodPreco').value); 
-        const pData = document.getElementById('prodPrecoData').value; 
-        let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : '';
-        
+        const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : '';
         if(pVal > 0) { tempPrecosProduto.push({ data: pData, preco: pVal }); }
-
         const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: tempFornecedoresProduto };
         const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo);
         salvarBanco(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista();
