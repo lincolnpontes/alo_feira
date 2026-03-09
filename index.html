@@ -607,7 +607,6 @@
         }
     }
     
-    // O motor invisível do dia a dia
     async function sincronizarFundo(forcado = false, forcarPush = false) {
         if(!db.configs.url) return;
         
@@ -940,9 +939,11 @@
                 }
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
-                const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id);
+                
+                // === AQUI ESTÁ A CORREÇÃO DE OURO: CEGANDO O ITEM EXCLUÍDO ===
+                const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id && !pa.excluido);
                 const ultimoPedido = pedidosDeste[pedidosDeste.length-1];
-                const pedidoEditavel = pedidosDeste.find(pa => !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
+                const pedidoEditavel = pedidosDeste.find(pa => (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
                 
                 let classesExtra = ""; let infoDireita = "";
                 let defaultUn = p.unidades && p.unidades.length > 0 ? p.unidades[0] : '';
