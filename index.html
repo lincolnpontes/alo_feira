@@ -48,9 +48,6 @@
         /* LISTAS & ITENS COMPACTOS */
         .list { padding: 0; margin: 0; list-style: none; }
         .item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #eee; position: relative; transition: background 0.2s; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
-        
-        /* Resposta visual imediata ao encostar o dedo */
-        .touch-ativo { background-color: #e3f2fd !important; transition: none !important; }
 
         .item-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px; flex-shrink: 0; color: white; font-size: 15px; }
         .item-info { flex: 1; pointer-events: none; display: flex; flex-direction: column; justify-content: center; }
@@ -391,7 +388,8 @@
         
         <div class="form-group">
             <label>Fornecedores Vinculados:</label>
-            <div id="prodFornecedoresBox" style="font-size:14px; max-height:120px; overflow-y:auto; border:1px solid #ccc; padding:10px; border-radius:4px; background:#fafafa;"></div>
+            <div id="listaFornecedoresVinculados" style="margin-bottom: 8px; display: flex; flex-direction: column; gap: 5px;"></div>
+            <button class="btn-outline" style="border-style: dashed; margin-bottom: 0;" onclick="abrirModalSelecaoFornecedores()">+ Selecionar Fornecedores</button>
         </div>
 
         <div style="background:#fff3e0; padding:10px; border-radius:5px; margin-bottom:10px;">
@@ -408,6 +406,16 @@
         </div>
 
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormProduto'); abrirGerenciar('produtos');">Cancelar</button><button class="btn-action" onclick="salvarProduto()">Salvar Produto</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalSelecaoFornecedores" style="z-index: 1005;">
+    <div class="modal">
+        <div class="modal-title">Selecionar Fornecedores</div>
+        <div id="boxListaFornecedoresSelecao" style="max-height: 50vh; overflow-y: auto; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; padding: 5px;"></div>
+        <div class="modal-actions">
+            <button class="btn-action" onclick="confirmarSelecaoFornecedores()" style="width: 100%;">Confirmar Seleção</button>
+        </div>
     </div>
 </div>
 
@@ -475,6 +483,7 @@
     let agrupamentoCompradoAtivo = false;
     let pilhaDesfazer = []; 
     let tempPrecosProduto = [];
+    let tempFornecedoresProduto = []; // Guarda os IDs dos fornecedores na edição do produto
 
     function carregarBanco() {
         let base = {
@@ -840,34 +849,27 @@
     function atualizarBotaoDesfazer() { const btn = document.getElementById('btnDesfazer'); if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0) { btn.style.display = 'flex'; } else { btn.style.display = 'none'; } }
 
     /* =========================================================================
-       GESTOS E RESTRIÇÕES - OTIMIZADO (ZERO LAG & DESLIZE PERFEITO)
+       GESTOS E RESTRIÇÕES - SEM COR DE TOQUE, ZERO LAG MANTIDO
        ========================================================================= */
     let touchStartX = 0; let touchStartY = 0; let pressTimer; let isLongPress = false; let lastTap = 0; let lastTapId = null; let isScrolling = false;
 
     function handleTouchStart(e, el) { 
         touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; isLongPress = false; isScrolling = false;
-        el.classList.add('touch-ativo'); // Resposta de cor imediata
         pressTimer = setTimeout(() => { if (!isScrolling) { isLongPress = true; acaoSegurar(el); } }, 600); 
     }
     
     function handleTouchMove(e) { 
         let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY); let diffX = Math.abs(e.changedTouches[0].screenX - touchStartX);
-        // Tolera muito mais movimento Y antes de considerar scroll e cancelar o gesto horizontal (de 15px para 40px)
-        if (diffY > 40 || diffX > 15) { 
-            isScrolling = true; clearTimeout(pressTimer); 
-            e.currentTarget.classList.remove('touch-ativo'); 
-        }
+        if (diffY > 40 || diffX > 15) { isScrolling = true; clearTimeout(pressTimer); }
     }
     
     function handleTouchEnd(e, el) { 
         clearTimeout(pressTimer); 
-        el.classList.remove('touch-ativo');
         if(isLongPress || modoSelecaoAtivo) return;
         
         let diffX = e.changedTouches[0].screenX - touchStartX; 
         let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
 
-        // Se moveu muito no Y (scroll claro), cancela.
         if (diffY > 40 || (isScrolling && Math.abs(diffX) < 25)) return;
 
         if (Math.abs(diffX) < 20) {
@@ -875,7 +877,6 @@
             if (tapLength < 350 && tapLength > 0 && lastTapId === currentId) { acaoDuploToque(el); } else { acaoToqueSimples(el); } 
             lastTap = currentTime; lastTapId = currentId;
         } 
-        // Gatilho super curto e responsivo pro lado (25px)
         else if (diffX < -25) { acaoDeslizarEsquerda(el); } 
         else if (diffX > 25) { acaoDeslizarDireita(el); }
     }
@@ -894,7 +895,6 @@
                 db.pedidosAtivos.push({ idUnico: novoPedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco(); 
                 
-                // DOM Manipulation Direto! Sem recarregar a lista = ZERO LAG.
                 el.setAttribute('data-pedid', novoPedId);
                 el.classList.add('item-pedido-rascunho');
                 let infoDir = el.querySelector('.info-direita');
@@ -952,10 +952,7 @@
                     db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== pedId); 
                     salvarBanco(); 
                     
-                    // DOM Manipulation Direta
-                    el.setAttribute('data-pedid', '');
-                    el.classList.remove('item-pedido-rascunho');
-                    el.classList.remove('item-pedido-ativo');
+                    el.setAttribute('data-pedid', ''); el.classList.remove('item-pedido-rascunho'); el.classList.remove('item-pedido-ativo');
                     let infoDir = el.querySelector('.info-direita'); if(infoDir) infoDir.innerHTML = '';
                     
                     let temRascunho = db.pedidosAtivos.some(x => x.status === 'rascunho' && !x.excluido);
@@ -1131,7 +1128,7 @@
 
     function salvarRestaurante() { db.restaurante.nome = document.getElementById('restNome').value; db.restaurante.cnpj = document.getElementById('restCNPJ').value; db.restaurante.rua = document.getElementById('restRua').value; db.restaurante.numero = document.getElementById('restNum').value; db.restaurante.bairro = document.getElementById('restBairro').value; db.restaurante.cidade = document.getElementById('restCidade').value; db.restaurante.uf = document.getElementById('restUF').value; db.restaurante.ponto = document.getElementById('restPonto').value; salvarBanco(); fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display = 'flex'; }
 
-    /* LÓGICA DE PREÇOS PRODUTO */
+    /* LÓGICA DE PREÇOS PRODUTO E FORNECEDORES VINCULADOS */
     function renderizarPrecosTemporarios() {
         const box = document.getElementById('boxHistoricoPrecos'); const list = document.getElementById('listaPrecosProduto'); list.innerHTML = '';
         if(tempPrecosProduto.length === 0) { box.style.display = 'none'; } else {
@@ -1142,6 +1139,55 @@
     function editarPrecoProduto(idx) { let nval = prompt("Editar Preço (apenas números e vírgula):", tempPrecosProduto[idx].preco.toLocaleString('pt-BR', {minimumFractionDigits: 2})); if(nval !== null && nval.trim() !== "") { tempPrecosProduto[idx].preco = parseFloatBr(nval); renderizarPrecosTemporarios(); } }
     function excluirPrecoProduto(idx) { if(confirm("Excluir este preço do histórico?")) { tempPrecosProduto.splice(idx, 1); renderizarPrecosTemporarios(); } }
 
+    function renderizarFornecedoresVinculados() {
+        const box = document.getElementById('listaFornecedoresVinculados');
+        box.innerHTML = '';
+        if(tempFornecedoresProduto.length === 0) {
+            box.innerHTML = '<span style="font-size:12px; color:#999;">Nenhum fornecedor vinculado.</span>';
+            return;
+        }
+        tempFornecedoresProduto.forEach(fId => {
+            let f = db.fornecedores.find(x => x.id === fId);
+            if(f) {
+                box.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#e3f2fd; padding:6px 10px; border-radius:4px; font-size:13px; color:#1565C0; font-weight:bold;">
+                    <span>${f.nome}</span>
+                    <button onclick="removerFornecedorVinculado('${f.id}')" style="background:none; border:none; cursor:pointer; color:#d32f2f; font-size:16px;">×</button>
+                </div>`;
+            }
+        });
+    }
+
+    function removerFornecedorVinculado(id) {
+        tempFornecedoresProduto = tempFornecedoresProduto.filter(x => x !== id);
+        renderizarFornecedoresVinculados();
+    }
+
+    function abrirModalSelecaoFornecedores() {
+        const box = document.getElementById('boxListaFornecedoresSelecao');
+        box.innerHTML = '';
+        if(db.fornecedores.length === 0) {
+            box.innerHTML = '<span style="font-size:13px; color:#666; padding:10px; display:block;">Nenhum fornecedor cadastrado no sistema.</span>';
+        } else {
+            let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome));
+            fornOrdem.forEach(f => {
+                let checked = tempFornecedoresProduto.includes(f.id) ? 'checked' : '';
+                box.innerHTML += `
+                <label style="display:flex; align-items:center; padding:10px; border-bottom:1px solid #eee; font-size:14px; cursor:pointer;">
+                    <input type="checkbox" value="${f.id}" class="chk-selecao-forn" style="margin-right:10px; width:18px; height:18px;" ${checked}>
+                    ${f.nome}
+                </label>`;
+            });
+        }
+        document.getElementById('modalSelecaoFornecedores').style.display = 'flex';
+    }
+
+    function confirmarSelecaoFornecedores() {
+        tempFornecedoresProduto = Array.from(document.querySelectorAll('.chk-selecao-forn:checked')).map(el => el.value);
+        fecharModal('modalSelecaoFornecedores');
+        renderizarFornecedoresVinculados();
+    }
+
     function abrirFormProduto(id) {
         fecharModal('modalListagem'); const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
         document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR();
@@ -1151,20 +1197,16 @@
             p = db.produtos.find(x => x.id === id); 
             document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodDesc').value = p.descFornecedor || ''; document.getElementById('prodObsPadrao').value = p.obsPadrao || ''; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : '';
             tempPrecosProduto = p.historicoPrecos ? JSON.parse(JSON.stringify(p.historicoPrecos)) : [];
+            tempFornecedoresProduto = p.fornecedores ? JSON.parse(JSON.stringify(p.fornecedores)) : [];
         } else { 
-            document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = ''; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodQtdPadrao').value = ''; tempPrecosProduto = [];
+            document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = ''; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodQtdPadrao').value = ''; 
+            tempPrecosProduto = [];
+            tempFornecedoresProduto = [];
         }
         
-        // Renderizar checkbox de fornecedores
-        const boxForn = document.getElementById('prodFornecedoresBox'); boxForn.innerHTML = '';
-        let fornVinculados = (p && p.fornecedores) ? p.fornecedores : [];
-        if(db.fornecedores.length === 0) { boxForn.innerHTML = '<span style="color:#999;font-size:12px;">Nenhum fornecedor cadastrado.</span>'; }
-        db.fornecedores.forEach(f => {
-            let checked = fornVinculados.includes(f.id) ? 'checked' : '';
-            boxForn.innerHTML += `<label style="display:block; margin-bottom:5px;"><input type="checkbox" value="${f.id}" class="chk-forn-prod" ${checked}> ${f.nome}</label>`;
-        });
-
-        renderizarPrecosTemporarios(); document.getElementById('modalFormProduto').style.display = 'flex';
+        renderizarFornecedoresVinculados();
+        renderizarPrecosTemporarios(); 
+        document.getElementById('modalFormProduto').style.display = 'flex';
     }
     
     function salvarProduto() {
@@ -1173,11 +1215,10 @@
         const pVal = parseMoeda(document.getElementById('prodPreco').value); 
         const pData = document.getElementById('prodPrecoData').value; 
         let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : '';
-        const fornArr = Array.from(document.querySelectorAll('.chk-forn-prod:checked')).map(el => el.value);
         
         if(pVal > 0) { tempPrecosProduto.push({ data: pData, preco: pVal }); }
 
-        const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: fornArr };
+        const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: tempFornecedoresProduto };
         const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo);
         salvarBanco(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista();
     }
