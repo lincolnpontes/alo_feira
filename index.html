@@ -342,7 +342,7 @@
 <div class="modal-overlay" id="modalConfigAvancadas">
     <div class="modal" style="max-height: 90vh; overflow-y: auto;">
         <div class="modal-title" style="color:#d32f2f;">Zona de Risco</div>
-        <div class="form-group"><label>URL Google Script:</label><input type="text" id="configUrlApp" placeholder="https://script.google.com/macros/s/..."><button class="btn-action" style="width: 100%; margin-top: 10px; background-color: #4CAF50;" onclick="salvarURL()">💾 Salvar URL</button></div>
+        <div class="form-group"><label>URL Google Script:</label><input type="text" id="configUrlApp" placeholder="https://script.google.com/macros/s/..."><button class="btn-action" style="width: 100%; margin-top: 10px; background-color: #4CAF50;" onclick="salvarURL()">💾 Salvar URL e Puxar Dados</button></div>
         
         <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
             <button id="btnSalvarNuvem" class="btn-action" style="margin: 0; width: 100%; font-size: 15px; margin-bottom: 10px;" onclick="forcarEnvioNuvemCompleto()">☁️ Forçar Envio Completo pra Nuvem</button>
@@ -574,9 +574,43 @@
     
     document.getElementById('senhaAvancada').addEventListener('input', function(e) { if(this.value === "1999") { this.blur(); this.value = ''; fecharModal('modalSenhaAvancada'); document.getElementById('configUrlApp').value = db.configs.url || ''; document.getElementById('modalConfigAvancadas').style.display = 'flex'; } });
 
-    function salvarURL() { const inputUrl = document.getElementById('configUrlApp').value.trim(); if(!inputUrl) return alert("Digite a URL!"); db.configs.url = inputUrl; salvarBanco(); sincronizarFundo(true); }
+    // --- A NOVA E PODEROSA FUNÇÃO DE SALVAR URL ---
+    async function salvarURL() { 
+        const inputUrl = document.getElementById('configUrlApp').value.trim(); 
+        if(!inputUrl) return alert("Digite a URL primeiro!"); 
+        
+        // Mostra a tela de loading blindada
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        document.getElementById('loadingText').innerHTML = "Conectando à nuvem e puxando dados...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde e não feche.</span>";
+
+        try {
+            let fetchUrl = inputUrl + (inputUrl.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
+            let res = await fetch(fetchUrl, { redirect: "follow", cache: "no-store" });
+            let nuvemDB = await res.json();
+
+            if(nuvemDB && nuvemDB.app_id === "alofeira") {
+                // Trazemos tudo da nuvem e forçamos a URL nova e o destravamento
+                nuvemDB.configs = nuvemDB.configs || {};
+                nuvemDB.configs.url = inputUrl;
+                nuvemDB.configs.dadosBaixados = true;
+                nuvemDB.configs.pausarSync = false; // Garante que o radar volte a funcionar
+
+                db = nuvemDB; // Esmaga o banco local inteiro com o que veio da nuvem
+                salvarBanco();
+
+                alert("✅ Conexão estabelecida! Todos os dados foram puxados da nuvem com sucesso.");
+                location.reload(); // Dá um F5 no app pra recarregar tudo do zero limpo
+            } else {
+                alert("❌ O link parece correto, mas não encontrei o banco de dados lá. Verifique a URL.");
+            }
+        } catch(e) {
+            alert("❌ Falha na conexão. Verifique sua internet ou se a URL está correta e tente de novo.");
+        } finally {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+    }
     
-    // O motor blindado definitivo
+    // O motor invisível do dia a dia
     async function sincronizarFundo(forcado = false, forcarPush = false) {
         if(!db.configs.url) return;
         
@@ -660,7 +694,6 @@
                 }
             }
             
-            // --- A MÁGICA T30 ---
             if (precisaAtualizarNuvem || forcarPush || forcado) {
                 let dbParaNuvem = JSON.parse(JSON.stringify(db));
                 dbParaNuvem.pedidosAtivos = dbParaNuvem.pedidosAtivos.filter(p => p.status !== 'rascunho');
@@ -690,7 +723,6 @@
         document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
     }
 
-    // --- FUNÇÃO DE IMPORTAÇÃO COM A TRAVA DE SEGURANÇA ---
     function importarDados(event) {
         const file = event.target.files[0]; 
         if(!file) return;
@@ -726,7 +758,6 @@
         event.target.value = ''; 
     }
 
-    // --- MOTOR PARA EMPURRAR PRA NUVEM E DESTRAVAR O RADAR ---
     async function forcarEnvioNuvemCompleto() {
         if(!db.configs.url) return alert("⚠️ Configure a URL do sistema na caixinha acima primeiro!");
         
