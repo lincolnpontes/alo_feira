@@ -358,7 +358,7 @@
         <p style="font-size: 13px; color: #555; margin-bottom: 5px;">Atenção: A ação abaixo é irreversível.</p>
         <div class="form-group"><label>Para apagar todos os pedidos, digite: <b>quero excluir todo o histórico</b></label><input type="text" id="inputExcluirTudo" placeholder="digite a frase exata"><button class="btn-danger" style="margin-top: 10px; width: 100%;" onclick="excluirTodoHistorico()">🗑️ Apagar Todo o Histórico</button></div>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-        <div class="form-group"><label>Problemas de Cache ou Atualização?</label><button class="btn-outline" style="border-color:#fbc02d; color:#fbc02d; width: 100%; text-align: center;" onclick="forcarAtualizacao()">🔄 Forçar Atualização (Limpar Cache)</button></div>
+        <div class="form-group"><label>App travou ou quer puxar versão nova?</label><button class="btn-outline" style="border-color:#fbc02d; color:#fbc02d; width: 100%; text-align: center;" onclick="forcarAtualizacao()">🔄 Forçar Atualização do App</button></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalConfigAvancadas'); document.getElementById('modalPainelUnificado').style.display='flex';">Voltar</button></div>
     </div>
 </div>
@@ -574,12 +574,10 @@
     
     document.getElementById('senhaAvancada').addEventListener('input', function(e) { if(this.value === "1999") { this.blur(); this.value = ''; fecharModal('modalSenhaAvancada'); document.getElementById('configUrlApp').value = db.configs.url || ''; document.getElementById('modalConfigAvancadas').style.display = 'flex'; } });
 
-    // --- A NOVA E PODEROSA FUNÇÃO DE SALVAR URL ---
     async function salvarURL() { 
         const inputUrl = document.getElementById('configUrlApp').value.trim(); 
         if(!inputUrl) return alert("Digite a URL primeiro!"); 
         
-        // Mostra a tela de loading blindada
         document.getElementById('loadingOverlay').style.display = 'flex';
         document.getElementById('loadingText').innerHTML = "Conectando à nuvem e puxando dados...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde e não feche.</span>";
 
@@ -589,17 +587,16 @@
             let nuvemDB = await res.json();
 
             if(nuvemDB && nuvemDB.app_id === "alofeira") {
-                // Trazemos tudo da nuvem e forçamos a URL nova e o destravamento
                 nuvemDB.configs = nuvemDB.configs || {};
                 nuvemDB.configs.url = inputUrl;
                 nuvemDB.configs.dadosBaixados = true;
-                nuvemDB.configs.pausarSync = false; // Garante que o radar volte a funcionar
+                nuvemDB.configs.pausarSync = false; 
 
-                db = nuvemDB; // Esmaga o banco local inteiro com o que veio da nuvem
+                db = nuvemDB; 
                 salvarBanco();
 
                 alert("✅ Conexão estabelecida! Todos os dados foram puxados da nuvem com sucesso.");
-                location.reload(); // Dá um F5 no app pra recarregar tudo do zero limpo
+                location.reload(); 
             } else {
                 alert("❌ O link parece correto, mas não encontrei o banco de dados lá. Verifique a URL.");
             }
@@ -614,7 +611,6 @@
     async function sincronizarFundo(forcado = false, forcarPush = false) {
         if(!db.configs.url) return;
         
-        // SE ACABOU DE IMPORTAR UM BACKUP, TRAVA O RADAR PRA NÃO APAGAR O CELULAR
         if(db.configs && db.configs.pausarSync && !forcado && !forcarPush) return;
         
         if(isSyncingFundo) {
@@ -662,7 +658,7 @@
                     
                     if(!pCloud || tLoc > tCloud) {
                         mergedPedidos.set(pLoc.idUnico, pLoc);
-                        precisaAtualizarNuvem = true; // DETECTOU QUE O CELULAR TEM ALGO MAIS NOVO
+                        precisaAtualizarNuvem = true; 
                     }
                 });
 
@@ -739,7 +735,7 @@
                     if (urlSalva) db.configs.url = urlSalva; 
                     
                     if(!db.configs) db.configs = {};
-                    db.configs.pausarSync = true; // AQUI TÁ O CADEADO! O radar fica cego.
+                    db.configs.pausarSync = true; 
                     
                     salvarBanco(); 
                     
@@ -777,7 +773,6 @@
 
             if(!res.ok) throw new Error("Falha no servidor");
             
-            // SE DEU TUDO CERTO, DESTRAVA A NUVEM PRO DIA A DIA
             db.configs.pausarSync = false;
             salvarBanco();
             
@@ -806,7 +801,7 @@
                 document.getElementById('loadingText').innerHTML = "Apagando histórico na nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde.</span>";
                 
                 try {
-                    let dbParaNuvem = JSON.parse(JSON.stringify(db)); // Array já está vazio
+                    let dbParaNuvem = JSON.parse(JSON.stringify(db)); 
                     let res = await fetch(db.configs.url, { 
                         method: 'POST', 
                         redirect: "follow",
@@ -836,7 +831,18 @@
         } 
     }
 
-    function forcarAtualizacao() { localStorage.removeItem('alofeira_v1'); window.location.reload(true); }
+    function forcarAtualizacao() { 
+        if(confirm("Deseja forçar a atualização do aplicativo? Isso vai tentar baixar a versão mais nova do sistema sem apagar seus dados, produtos ou URL.")) {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for(let registration of registrations) {
+                        registration.update(); 
+                    }
+                });
+            }
+            window.location.href = window.location.pathname + '?nocache=' + new Date().getTime();
+        }
+    }
 
     /* =========================================================================
        INICIALIZAÇÃO E UI
@@ -1127,12 +1133,22 @@
         }
         modal.style.display = 'flex';
     }
+    
     function prepararEdicaoHoje(idUnico) { abrirModalEditarPedido(idUnico); }
+    
     function excluirPedidoHoje(idUnico) { 
         if(confirm("Deseja apagar definitivamente este pedido feito hoje?")) { 
-            db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== idUnico); 
-            salvarBanco(); abrirPedidosHoje(); renderizarLista(); 
-            sincronizarFundo(false, true); 
+            let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico);
+            if(pa) {
+                pa.excluido = true;
+                pa.status = 'excluido';
+                pa.dataExclusao = Date.now();
+                pa.dataStatus = Date.now();
+                salvarBanco();
+                abrirPedidosHoje();
+                renderizarLista();
+                sincronizarFundo(false, true); 
+            }
         } 
     }
 
