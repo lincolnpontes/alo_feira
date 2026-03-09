@@ -562,14 +562,26 @@
     document.getElementById('senhaAvancada').addEventListener('input', function(e) { if(this.value === "1999") { this.blur(); this.value = ''; fecharModal('modalSenhaAvancada'); document.getElementById('configUrlApp').value = db.configs.url || ''; document.getElementById('modalConfigAvancadas').style.display = 'flex'; } });
 
     function salvarURL() { const inputUrl = document.getElementById('configUrlApp').value.trim(); if(!inputUrl) return alert("Digite a URL!"); db.configs.url = inputUrl; salvarBanco(); puxarDaNuvem(true); }
+    
     async function sincronizarSalvarNuvem() {
         if(!db.configs.url) return alert("Configure a URL primeiro!");
         if(!db.configs.dadosBaixados) { if(!confirm("Você não puxou dados da nuvem. Salvar apagará a nuvem. Forçar?")) return; }
         try { 
             const btn = document.getElementById('btnSalvarNuvem'); if(btn) btn.innerText = "Salvando..."; 
-            db.app_id = "alofeira"; await fetch(db.configs.url, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'salvar_banco', dados: db }) }); 
+            db.app_id = "alofeira"; 
+            
+            // Alterado para um POST de texto plano para evitar falhas silenciosas de CORS do Google Script
+            await fetch(db.configs.url, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'salvar_banco', dados: db }) 
+            }); 
+            
             db.configs.dadosBaixados = true; salvarBanco(); alert("Salvo na nuvem!"); if(btn) btn.innerText = "☁️ Salvar na Nuvem"; 
-        } catch(e) { alert("Erro ao salvar."); }
+        } catch(e) { 
+            alert("Erro ao salvar. Tente novamente."); 
+            const btn = document.getElementById('btnSalvarNuvem'); if(btn) btn.innerText = "☁️ Salvar na Nuvem";
+        }
     }
     
     function exportarDados() {
@@ -594,13 +606,20 @@
     async function puxarDaNuvem(pedirConfirmacao = true) {
         if(!db.configs.url) return;
         try { 
-            let res = await fetch(db.configs.url, { redirect: "follow" }); let nuvemDB = await res.json(); 
+            // O SEGREDO DO CACHE: Força a URL ser única cada vez que puxar, evitando que o navegador te engane!
+            let urlLimpa = db.configs.url;
+            let separador = urlLimpa.includes('?') ? '&' : '?';
+            let fetchUrl = urlLimpa + separador + 'nocache=' + new Date().getTime();
+
+            let res = await fetch(fetchUrl, { redirect: "follow", cache: "no-store" }); 
+            let nuvemDB = await res.json(); 
+            
             if(nuvemDB && nuvemDB.mesas !== undefined) { alert("❌ ERRO CRÍTICO:\nEsta URL pertence ao sistema Alô Cozinha (Salão)! Operação bloqueada."); return; }
             if(nuvemDB && (nuvemDB.produtos || nuvemDB.fornecedores)) { 
                 let modoAtual = db.configs.modo; db = nuvemDB; db.configs.modo = modoAtual; db.configs.dadosBaixados = true; 
                 db.app_id = "alofeira"; salvarBanco(); if(pedirConfirmacao) { alert("Sucesso! Banco puxado da nuvem."); location.reload(); } 
             } else { if(pedirConfirmacao) alert("A nuvem está vazia ou o link é inválido. Salve seus dados nela primeiro."); } 
-        } catch(e) { if(pedirConfirmacao) alert("Erro ao puxar da nuvem. Verifique a URL."); }
+        } catch(e) { if(pedirConfirmacao) alert("Erro ao puxar da nuvem. Verifique a URL ou a sua conexão."); }
     }
     
     function excluirTodoHistorico() { let frase = document.getElementById('inputExcluirTudo').value; if(frase === "quero excluir todo o histórico") { db.pedidosAtivos = []; salvarBanco(); alert("Histórico apagado localmente."); document.getElementById('inputExcluirTudo').value = ''; renderizarLista(); } else { alert("Frase incorreta."); } }
@@ -868,7 +887,6 @@
     
     function handleTouchMove(e) { 
         let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY); let diffX = Math.abs(e.changedTouches[0].screenX - touchStartX);
-        // Aumentado a tolerancia do scroll X para não cancelar cliques facilmente
         if (diffY > 40 || diffX > 20) { isScrolling = true; clearTimeout(pressTimer); }
     }
     
@@ -878,16 +896,13 @@
         
         let diffX = e.changedTouches[0].screenX - touchStartX; let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
 
-        // Se estiver rolando a tela e não arrastou muito para o lado, ignora
         if (diffY > 40 || (isScrolling && Math.abs(diffX) < 40)) return;
 
-        // Limite de clique
         if (Math.abs(diffX) < 30) {
             let currentTime = new Date().getTime(); let tapLength = currentTime - lastTap; let currentId = el.getAttribute('data-id');
             if (tapLength < 350 && tapLength > 0 && lastTapId === currentId) { acaoDuploToque(el); } else { acaoToqueSimples(el); } 
             lastTap = currentTime; lastTapId = currentId;
         } 
-        // Aumentado o pixel de deslize de 25 para 60 para evitar acidentes
         else if (diffX < -60) { acaoDeslizarEsquerda(el); } 
         else if (diffX > 60) { acaoDeslizarDireita(el); }
     }
