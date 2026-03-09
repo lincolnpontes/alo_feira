@@ -18,11 +18,15 @@
         
         .app-container { width: 100%; max-width: 100%; height: 100%; background-color: #ffffff; display: flex; flex-direction: column; position: absolute; top: 0; left: 0; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         
-        /* SPLASH SCREEN */
+        /* SPLASH SCREEN & LOADING OVERLAY */
         #splashScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #1565C0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; transition: opacity 0.5s ease; }
         .splash-logo { width: 90px; height: 90px; margin-bottom: 15px; object-fit: contain; background-color: transparent; }
         .splash-titulo { font-size: 28px; font-weight: bold; letter-spacing: 1px; }
         .splash-versao { font-size: 14px; margin-top: 5px; opacity: 0.8; }
+
+        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px; text-align: center; padding: 20px; box-sizing: border-box; }
+        .spinner { border: 6px solid #f3f3f3; border-top: 6px solid #1565C0; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         /* CABEÇALHO */
         .header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; color: white; transition: background-color 0.3s; flex-shrink: 0; }
@@ -127,7 +131,7 @@
         
         .cat-header { background: #e0e0e0; padding: 4px 15px; font-weight: bold; font-size: 11px; color: #555; text-transform: uppercase; border-bottom: 1px solid #ccc; display: flex; align-items: center; }
         
-        /* Indicador de Sync (Invisível por padrão, opcional se quiser feedback visual sutil) */
+        /* Indicador de Sync */
         #syncIndicador { position: fixed; top: 10px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background-color: #4CAF50; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
     </style>
 </head>
@@ -140,6 +144,11 @@
 </div>
 
 <div id="syncIndicador"></div>
+
+<div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div id="loadingText">Gravando pedido na nuvem...<br><span style="font-size: 14px; font-weight: normal; margin-top: 10px; display: block;">Por favor, aguarde. Não feche o app.</span></div>
+</div>
 
 <div class="app-container">
     <div class="header" id="mainHeader">
@@ -548,7 +557,7 @@
     function parseFloatBr(str) { if(str === '' || str === null || str === undefined) return ''; return parseFloat(String(str).replace(',','.')); }
 
     /* =========================================================================
-       NUVEM E ZONA DE RISCO + SYNC INVISÍVEL (T25)
+       NUVEM E ZONA DE RISCO + SYNC INVISÍVEL
        ========================================================================= */
     function atualizarVisibilidadeAdmin() {
         const btnAdmin = document.getElementById('btnAdmin');
@@ -574,8 +583,12 @@
         if(!db.configs.url) return;
         if(isSyncingFundo && !forcado) return; // Evita que várias sincronizações rodem ao mesmo tempo
         
-        // Se a tela estiver oculta/bloqueada, não gasta internet (a não ser que seja forçado por um botão)
+        // Se a tela estiver oculta/bloqueada, não gasta internet (a não ser que seja forçado)
         if(document.hidden && !forcado) return;
+
+        // PROTEÇÃO DE RASCUNHO: Se o usuário estiver montando um pedido, pausa o radar do fundo para evitar sobrescrita!
+        let temRascunho = db.pedidosAtivos.some(pa => pa.status === 'rascunho' && !pa.excluido);
+        if(temRascunho && db.configs.modo === 'pedido' && !forcado) return;
 
         isSyncingFundo = true;
         let indicador = document.getElementById('syncIndicador');
@@ -591,27 +604,27 @@
                 // Guarda a foto de como o banco estava antes
                 let jsonAntes = JSON.stringify(db.pedidosAtivos);
 
-                // --- SMART MERGE ---
+                // --- SMART MERGE BLINDADO ---
                 let mergedPedidos = new Map();
                 
                 // Joga a nuvem na mesa
                 nuvemDB.pedidosAtivos.forEach(pCloud => mergedPedidos.set(pCloud.idUnico, pCloud));
                 
-                // Joga o local por cima se for mais novo
+                // Joga o local por cima se for mais novo ou se for um RASCUNHO (rascunho nunca é apagado pela nuvem)
                 let pedidosLocais = db.pedidosAtivos || [];
                 pedidosLocais.forEach(pLoc => {
                     let pCloud = mergedPedidos.get(pLoc.idUnico);
                     let tLoc = pLoc.dataStatus || 0;
                     let tCloud = pCloud ? (pCloud.dataStatus || 0) : 0;
                     
-                    if(!pCloud || tLoc > tCloud) {
+                    if(!pCloud || tLoc > tCloud || pLoc.status === 'rascunho') {
                         mergedPedidos.set(pLoc.idUnico, pLoc);
                     }
                 });
 
                 db.pedidosAtivos = Array.from(mergedPedidos.values());
 
-                // Também atualiza os cadastros se a nuvem tiver novidades (geralmente feitos pelo admin)
+                // Atualiza cadastros
                 if(nuvemDB.produtos) db.produtos = nuvemDB.produtos;
                 if(nuvemDB.categorias) db.categorias = nuvemDB.categorias;
                 if(nuvemDB.fornecedores) db.fornecedores = nuvemDB.fornecedores;
@@ -627,7 +640,7 @@
                     if(document.getElementById('modalPedidosHoje').style.display === 'flex') abrirPedidosHoje();
                 }
 
-                // 3. Devolve para a nuvem o banco já fundido e perfeito
+                // 3. Devolve para a nuvem o banco já fundido
                 nuvemDB.pedidosAtivos = db.pedidosAtivos;
                 await fetch(db.configs.url, { 
                     method: 'POST', 
@@ -639,7 +652,6 @@
             }
         } catch(e) {
             if(forcado) alert("Erro de conexão ao sincronizar. O app tentará novamente em breve.");
-            // Se falhar no fundo, é só ignorar. Ele tenta de novo daqui a 20s.
         } finally {
             isSyncingFundo = false;
             indicador.style.opacity = '0';
@@ -686,7 +698,6 @@
         document.getElementById('seletorModo').value = db.configs.modo; 
         document.getElementById('configExigirColab').checked = db.configs.exigirColaborador; 
         alterarModo(db.configs.modo); 
-        // Dispara uma sincronização ao abrir o app
         setTimeout(() => sincronizarFundo(), 1000); 
     }
 
@@ -893,8 +904,51 @@
     function cliqueItemCompra(idUnico) { if(modoSelecaoAtivo) { if(itensSelecionadosRelatorio.has(idUnico)) itensSelecionadosRelatorio.delete(idUnico); else itensSelecionadosRelatorio.add(idUnico); renderizarLista(); } }
 
     /* =========================================================================
-       PEDIDOS DO DIA (HISTÓRICO)
+       PEDIDOS DO DIA E ENVIO COM GARANTIA (HANDSHAKE)
        ========================================================================= */
+    async function enviarPedidosParaCompras() { 
+        if(!db.configs.url) return alert("Por favor, configure a URL do sistema na engrenagem (Configurações Avançadas) primeiro.");
+
+        let rascunhos = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido); 
+        if(rascunhos.length === 0) return;
+
+        // Mostra a tela de carregamento bloqueando tudo
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        
+        // Fazemos um backup local antes de tentar enviar
+        let backupPedidos = JSON.parse(JSON.stringify(db.pedidosAtivos));
+
+        // Aplica o status 'pendente' provisoriamente
+        let agora = Date.now();
+        rascunhos.forEach(pa => { pa.status = 'pendente'; pa.dataStatus = agora; }); 
+        salvarBanco(); 
+
+        try {
+            // Tenta enviar para o Google de forma síncrona/travada
+            let res = await fetch(db.configs.url, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'salvar_banco', dados: db }) 
+            });
+
+            if(!res.ok) throw new Error("Erro na resposta do servidor");
+
+            // SE CHEGOU AQUI: O Google confirmou o recebimento!
+            document.getElementById('loadingOverlay').style.display = 'none';
+            alert("✅ SUCESSO! O pedido foi gravado com segurança na nuvem."); 
+            renderizarLista(); 
+
+        } catch (error) {
+            // SE DEU ERRO (Internet caiu, servidor falhou, etc)
+            // Desfaz a mudança de status e volta tudo para Rascunho
+            db.pedidosAtivos = backupPedidos;
+            salvarBanco();
+            document.getElementById('loadingOverlay').style.display = 'none';
+            alert("❌ FALHA NA CONEXÃO!\nSeu pedido NÃO foi enviado. Por favor, verifique a sua internet e clique em Enviar novamente.\n\nFique tranquilo, os itens continuam marcados na sua tela.");
+            renderizarLista();
+        }
+    }
+
     function abrirPedidosHoje() {
         const modal = document.getElementById('modalPedidosHoje'); const lista = document.getElementById('listaPedidosHoje'); lista.innerHTML = '';
         let hoje = new Date().setHours(0,0,0,0);
@@ -921,7 +975,7 @@
         if(confirm("Deseja apagar definitivamente este pedido feito hoje?")) { 
             db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== idUnico); 
             salvarBanco(); abrirPedidosHoje(); renderizarLista(); 
-            sincronizarFundo(); // Dispara sync logo após excluir
+            sincronizarFundo(); 
         } 
     }
 
@@ -1009,7 +1063,7 @@
             if(pa && !pa.excluido) { 
                 registrarDesfazer(pa); pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; 
                 salvarBanco(); renderizarLista(); 
-                sincronizarFundo(); // Dispara sync logo após ação 
+                sincronizarFundo(); 
             } 
         } 
     }
@@ -1030,7 +1084,7 @@
                     registrarDesfazer(pa);
                     if (pa.status === 'pendente') { pa.status = 'comprado'; pa.dataConclusao = Date.now(); pa.dataStatus = Date.now(); } else if (pa.status === 'pedido_forn') { pa.status = 'entregue'; pa.dataConclusao = Date.now(); pa.dataStatus = Date.now(); }
                     salvarBanco(); renderizarLista();
-                    sincronizarFundo(); // Dispara sync logo após ação 
+                    sincronizarFundo(); 
                 }
             }
         }
@@ -1075,14 +1129,7 @@
         let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
         if(pa) { pa.qtd = qtd; pa.unidade = document.getElementById('editPedidoUnidade').value; pa.obs = document.getElementById('editPedidoObs').value; salvarBanco(); } 
         fecharModal('modalEditarPedido'); renderizarLista(); if(document.getElementById('modalPedidosHoje').style.display === 'flex') { abrirPedidosHoje(); }
-        sincronizarFundo(); // Dispara sync logo após editar
-    }
-    
-    function enviarPedidosParaCompras() { 
-        let rascunhos = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido); let agora = Date.now();
-        rascunhos.forEach(pa => { pa.status = 'pendente'; pa.dataStatus = agora; }); 
-        salvarBanco(); alert("Pedidos enviados com sucesso!"); renderizarLista(); 
-        sincronizarFundo(); // Dispara sync logo após enviar pedidos!
+        sincronizarFundo();
     }
 
     function abrirHistoricoCompra(paId) {
