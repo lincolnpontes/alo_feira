@@ -333,7 +333,6 @@
         </div>
         
         <h3 style="font-size: 16px; color: #d32f2f; margin-top: 25px; margin-bottom: 10px;">Avançado</h3>
-        <button class="btn-danger" style="width: 100%; margin-bottom: 10px;" onclick="solicitarAcessoAvancado()">⚠️ Configurações Avançadas</button>
         
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalPainelUnificado'); renderizarLista();">Fechar</button></div>
     </div>
@@ -345,7 +344,7 @@
         <div class="form-group"><label>URL Google Script:</label><input type="text" id="configUrlApp" placeholder="https://script.google.com/macros/s/..."><button class="btn-action" style="width: 100%; margin-top: 10px; background-color: #4CAF50;" onclick="salvarURL()">💾 Salvar URL</button></div>
         
         <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
-            <button id="btnSalvarNuvem" class="btn-outline" style="margin: 0; width: 100%; font-size: 13px; border-color:#2e7d32; color:#2e7d32; text-align: center;" onclick="sincronizarFundo(true)">☁️ Forçar Sincronização Agora</button>
+            <button id="btnSalvarNuvem" class="btn-action" style="margin: 0; width: 100%; font-size: 15px; margin-bottom: 10px;" onclick="forcarEnvioNuvemCompleto()">☁️ Forçar Envio Completo pra Nuvem</button>
             
             <div style="display: flex; gap: 8px; width: 100%;">
                 <button class="btn-outline" style="margin: 0; flex: 1; font-size: 13px; border-color:#1565C0; color:#1565C0; text-align: center;" onclick="exportarDados()">⬇️ Exportar Dados</button>
@@ -670,10 +669,8 @@
                 });
             }
 
-            if(forcado) alert("Sincronização forçada concluída com sucesso!");
-
         } catch(e) {
-            if(forcado) alert("Erro de conexão ao sincronizar. O app tentará novamente em breve.");
+            console.error("Erro na sincronização de fundo", e);
         } finally {
             isSyncingFundo = false;
             indicador.style.opacity = '0';
@@ -689,52 +686,70 @@
         document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
     }
 
-    // --- FUNÇÃO CORRIGIDA ---
+    // --- NOVA FUNÇÃO DE IMPORTAÇÃO (SIMPLES E DIRETA) ---
     function importarDados(event) {
-        const file = event.target.files[0]; if(!file) return;
-        const reader = new FileReader();
+        const file = event.target.files[0]; 
+        if(!file) return;
         
-        // Colocamos o 'async' aqui para o app ter paciência e esperar a nuvem
-        reader.onload = async function(e) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
             try {
                 const importedDb = JSON.parse(e.target.result);
                 if(importedDb && importedDb.app_id === "alofeira") {
                     
-                    // 1. BLINDAGEM: Salvamos a URL atual para o backup não esmagá-la
+                    // Salva a URL atual para o backup não sobrescrever com nada
                     let urlSalva = db.configs.url; 
                     
-                    // 2. Importa os dados
+                    // Importa os dados pro celular
                     db = importedDb; 
-                    
-                    // 3. Devolve a URL certinha pro sistema
                     if (urlSalva) db.configs.url = urlSalva; 
                     
                     salvarBanco(); 
                     
-                    // 4. MANDA PRA NUVEM ANTES DE RECARREGAR A TELA
-                    if (db.configs.url) {
-                        document.getElementById('loadingOverlay').style.display = 'flex';
-                        document.getElementById('loadingText').innerHTML = "Subindo backup para a nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Isso pode levar alguns segundos. Não feche.</span>";
-                        
-                        // O 'await' obriga o aplicativo a esperar o envio terminar
-                        await sincronizarFundo(true, true);
-                        
-                        document.getElementById('loadingOverlay').style.display = 'none';
-                    } else {
-                        alert("Atenção: Os dados foram importados, mas você precisa configurar a URL do sistema na engrenagem para enviar para a nuvem!");
-                    }
-
-                    alert("✅ Dados importados e salvos com sucesso!"); 
+                    alert("✅ Arquivo carregado no celular!\n\nAgora, clique no botão 'Forçar Envio Completo pra Nuvem' para salvar no Google."); 
                     location.reload(); 
                     
                 } else { 
-                    alert("Arquivo de backup inválido ou de outro sistema."); 
+                    alert("Arquivo de backup inválido."); 
                 }
             } catch(err) { 
                 alert("Erro ao ler o arquivo."); 
             }
         };
         reader.readAsText(file);
+        
+        // ISSO AQUI DESTRAVA O BOTÃO: Permite selecionar o mesmo arquivo de novo se precisar
+        event.target.value = ''; 
+    }
+
+    // --- NOVO MOTOR PARA EMPURRAR PRA NUVEM ---
+    async function forcarEnvioNuvemCompleto() {
+        if(!db.configs.url) return alert("⚠️ Configure a URL do sistema na caixinha acima primeiro!");
+        
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        document.getElementById('loadingText').innerHTML = "Empurrando dados para a nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde e não feche o aplicativo.</span>";
+        
+        try {
+            // Prepara o pacote limpo para enviar
+            let dbParaNuvem = JSON.parse(JSON.stringify(db));
+            dbParaNuvem.pedidosAtivos = dbParaNuvem.pedidosAtivos.filter(p => p.status !== 'rascunho');
+
+            // Bate lá na porta do Google Apps Script
+            let res = await fetch(db.configs.url, { 
+                method: 'POST', 
+                redirect: "follow",
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'salvar_banco', dados: dbParaNuvem }) 
+            });
+
+            if(!res.ok) throw new Error("Falha no servidor");
+            
+            alert("✅ TUDO SALVO! O backup foi gravado com sucesso na nuvem.");
+        } catch(e) {
+            alert("❌ Falha na conexão com a nuvem. Verifique a internet ou a URL e tente novamente.");
+        } finally {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
     }
 
     async function excluirTodoHistorico() { 
