@@ -198,7 +198,7 @@
         <div class="modal-actions" style="display: flex; gap: 8px;">
             <button class="btn-danger" id="btnSairSistema" style="display:none; flex: 1;" onclick="sairDoSistema()">Sair do App</button>
             <button class="btn-cancel" id="btnCancelColab" style="display:none; flex: 1;" onclick="fecharModal('modalColaboradorObrigatorio')">Cancelar</button>
-            <button class="btn-action" style="flex: 2;" onclick="definirColaboradorAtivo()">Entrar</button>
+            <button class="btn-action" style="flex: 1;" onclick="definirColaboradorAtivo()">Entrar</button>
         </div>
     </div>
 </div>
@@ -513,7 +513,7 @@
             app_id: "alofeira", 
             restaurante: { nome: "", cnpj: "", rua: "", numero: "", bairro: "", cidade: "", uf: "PB", ponto: "" },
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
-            configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false }
+            configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false, pausarSync: false }
         };
         let salvo = localStorage.getItem('alofeira_v1');
         return salvo ? JSON.parse(salvo) : base;
@@ -576,9 +576,12 @@
 
     function salvarURL() { const inputUrl = document.getElementById('configUrlApp').value.trim(); if(!inputUrl) return alert("Digite a URL!"); db.configs.url = inputUrl; salvarBanco(); sincronizarFundo(true); }
     
-    // O motor blindado definitivo: Só sobe para a nuvem se tiver mudança real no celular
+    // O motor blindado definitivo
     async function sincronizarFundo(forcado = false, forcarPush = false) {
         if(!db.configs.url) return;
+        
+        // SE ACABOU DE IMPORTAR UM BACKUP, TRAVA O RADAR PRA NÃO APAGAR O CELULAR
+        if(db.configs && db.configs.pausarSync && !forcado && !forcarPush) return;
         
         if(isSyncingFundo) {
             if(forcado) alert("🔄 O sistema já está processando dados com a nuvem no momento. Aguarde alguns segundos.");
@@ -657,7 +660,7 @@
                 }
             }
             
-            // --- A MÁGICA T30: Só envia dados de volta se algo localmente for novo ou for um comando do sistema ---
+            // --- A MÁGICA T30 ---
             if (precisaAtualizarNuvem || forcarPush || forcado) {
                 let dbParaNuvem = JSON.parse(JSON.stringify(db));
                 dbParaNuvem.pedidosAtivos = dbParaNuvem.pedidosAtivos.filter(p => p.status !== 'rascunho');
@@ -687,7 +690,7 @@
         document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
     }
 
-    // --- NOVA FUNÇÃO DE IMPORTAÇÃO (SIMPLES E DIRETA) ---
+    // --- FUNÇÃO DE IMPORTAÇÃO COM A TRAVA DE SEGURANÇA ---
     function importarDados(event) {
         const file = event.target.files[0]; 
         if(!file) return;
@@ -698,16 +701,17 @@
                 const importedDb = JSON.parse(e.target.result);
                 if(importedDb && importedDb.app_id === "alofeira") {
                     
-                    // Salva a URL atual para o backup não sobrescrever com nada
                     let urlSalva = db.configs.url; 
                     
-                    // Importa os dados pro celular
                     db = importedDb; 
                     if (urlSalva) db.configs.url = urlSalva; 
                     
+                    if(!db.configs) db.configs = {};
+                    db.configs.pausarSync = true; // AQUI TÁ O CADEADO! O radar fica cego.
+                    
                     salvarBanco(); 
                     
-                    alert("✅ Arquivo carregado no celular!\n\nAgora, clique no botão 'Forçar Envio Completo pra Nuvem' para salvar no Google."); 
+                    alert("✅ Arquivo carregado no celular!\n\nAgora, vá na Engrenagem -> Avançado e clique no botão 'Forçar Envio Completo pra Nuvem' para salvar lá."); 
                     location.reload(); 
                     
                 } else { 
@@ -719,11 +723,10 @@
         };
         reader.readAsText(file);
         
-        // ISSO AQUI DESTRAVA O BOTÃO: Permite selecionar o mesmo arquivo de novo se precisar
         event.target.value = ''; 
     }
 
-    // --- NOVO MOTOR PARA EMPURRAR PRA NUVEM ---
+    // --- MOTOR PARA EMPURRAR PRA NUVEM E DESTRAVAR O RADAR ---
     async function forcarEnvioNuvemCompleto() {
         if(!db.configs.url) return alert("⚠️ Configure a URL do sistema na caixinha acima primeiro!");
         
@@ -731,11 +734,9 @@
         document.getElementById('loadingText').innerHTML = "Empurrando dados para a nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde e não feche o aplicativo.</span>";
         
         try {
-            // Prepara o pacote limpo para enviar
             let dbParaNuvem = JSON.parse(JSON.stringify(db));
             dbParaNuvem.pedidosAtivos = dbParaNuvem.pedidosAtivos.filter(p => p.status !== 'rascunho');
 
-            // Bate lá na porta do Google Apps Script
             let res = await fetch(db.configs.url, { 
                 method: 'POST', 
                 redirect: "follow",
@@ -744,6 +745,10 @@
             });
 
             if(!res.ok) throw new Error("Falha no servidor");
+            
+            // SE DEU TUDO CERTO, DESTRAVA A NUVEM PRO DIA A DIA
+            db.configs.pausarSync = false;
+            salvarBanco();
             
             alert("✅ TUDO SALVO! O backup foi gravado com sucesso na nuvem.");
         } catch(e) {
