@@ -689,14 +689,50 @@
         document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
     }
 
+    // --- FUNÇÃO CORRIGIDA ---
     function importarDados(event) {
         const file = event.target.files[0]; if(!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
+        
+        // Colocamos o 'async' aqui para o app ter paciência e esperar a nuvem
+        reader.onload = async function(e) {
             try {
                 const importedDb = JSON.parse(e.target.result);
-                if(importedDb && importedDb.app_id === "alofeira") { db = importedDb; salvarBanco(); alert("Dados importados com sucesso!"); sincronizarFundo(true); location.reload(); } else { alert("Arquivo de backup inválido ou de outro sistema."); }
-            } catch(err) { alert("Erro ao ler o arquivo."); }
+                if(importedDb && importedDb.app_id === "alofeira") {
+                    
+                    // 1. BLINDAGEM: Salvamos a URL atual para o backup não esmagá-la
+                    let urlSalva = db.configs.url; 
+                    
+                    // 2. Importa os dados
+                    db = importedDb; 
+                    
+                    // 3. Devolve a URL certinha pro sistema
+                    if (urlSalva) db.configs.url = urlSalva; 
+                    
+                    salvarBanco(); 
+                    
+                    // 4. MANDA PRA NUVEM ANTES DE RECARREGAR A TELA
+                    if (db.configs.url) {
+                        document.getElementById('loadingOverlay').style.display = 'flex';
+                        document.getElementById('loadingText').innerHTML = "Subindo backup para a nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Isso pode levar alguns segundos. Não feche.</span>";
+                        
+                        // O 'await' obriga o aplicativo a esperar o envio terminar
+                        await sincronizarFundo(true, true);
+                        
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                    } else {
+                        alert("Atenção: Os dados foram importados, mas você precisa configurar a URL do sistema na engrenagem para enviar para a nuvem!");
+                    }
+
+                    alert("✅ Dados importados e salvos com sucesso!"); 
+                    location.reload(); 
+                    
+                } else { 
+                    alert("Arquivo de backup inválido ou de outro sistema."); 
+                }
+            } catch(err) { 
+                alert("Erro ao ler o arquivo."); 
+            }
         };
         reader.readAsText(file);
     }
