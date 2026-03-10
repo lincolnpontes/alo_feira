@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0.7</title>
+    <title>Alô Feira v1.0.8</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -150,7 +150,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0.7</div>
+    <div class="splash-versao">v1.0.8</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -334,7 +334,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0.7</div>
+            <div class="versao">v1.0.8</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -561,7 +561,7 @@
             app_id: "alofeira", 
             restaurante: { nome: "", cnpj: "", rua: "", numero: "", bairro: "", cidade: "", uf: "PB", ponto: "" },
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
-            configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: true, colabAtivoId: null, url: "", dadosBaixados: false, pendingSync: false }
+            configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: true, colabAtivoId: null, url: "", dadosBaixados: false, ultimaMudancaLocal: 0 }
         };
         let salvo = localStorage.getItem('alofeira_v1');
         if(salvo) {
@@ -572,7 +572,7 @@
                 });
             }
             if(parsed.categorias) { parsed.categorias.forEach(c => { if(!c.subcategorias) c.subcategorias = []; }); }
-            if(parsed.configs && parsed.configs.pendingSync === undefined) parsed.configs.pendingSync = false;
+            if(parsed.configs && parsed.configs.ultimaMudancaLocal === undefined) parsed.configs.ultimaMudancaLocal = 0;
             return parsed;
         }
         return base;
@@ -581,8 +581,8 @@
     function salvarBanco() { localStorage.setItem('alofeira_v1', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
-    // Trava CADEADO DE SINCRONIZAÇÃO
-    function marcarMudancaEstrutural() { db.configs.pendingSync = true; salvarBanco(); }
+    // BLINDAGEM MÁXIMA: Carimbo de Tempo LWW (Last-Write-Wins)
+    function marcarMudancaEstrutural() { db.configs.ultimaMudancaLocal = Date.now(); salvarBanco(); }
 
     function getCatsPermitidas(colabLogado) {
         if(!colabLogado) return null;
@@ -653,7 +653,7 @@
                 nuvemDB.configs = nuvemDB.configs || {};
                 nuvemDB.configs.url = inputUrl;
                 nuvemDB.configs.dadosBaixados = true;
-                nuvemDB.configs.pendingSync = false; 
+                if(nuvemDB.configs.ultimaMudancaLocal === undefined) nuvemDB.configs.ultimaMudancaLocal = 0;
 
                 db = nuvemDB; 
                 salvarBanco();
@@ -705,17 +705,24 @@
 
                     db.pedidosAtivos = Array.from(mergedPedidos.values());
 
-                    // CADEADO DE SEGURANÇA: Só puxa a estrutura da nuvem se não houver edição local travada
-                    if (!db.configs.pendingSync) {
+                    // CADEADO DE TEMPO (BLINDAGEM LWW): Só aceita a estrutura da nuvem se for igual ou mais nova
+                    let localMod = db.configs.ultimaMudancaLocal || 0;
+                    let cloudMod = (nuvemDB.configs && nuvemDB.configs.ultimaMudancaLocal) ? nuvemDB.configs.ultimaMudancaLocal : 0;
+
+                    if (cloudMod >= localMod || localMod === 0) {
                         if(nuvemDB.produtos) db.produtos = nuvemDB.produtos;
                         if(nuvemDB.categorias) db.categorias = nuvemDB.categorias;
                         if(nuvemDB.fornecedores) db.fornecedores = nuvemDB.fornecedores;
                         if(nuvemDB.colaboradores) db.colaboradores = nuvemDB.colaboradores;
+                        if(nuvemDB.restaurante) db.restaurante = nuvemDB.restaurante;
 
                         if(nuvemDB.configs) {
-                            db.configs.exigirColaborador = nuvemDB.configs.exigirColaborador;
-                            db.configs.senhaAdmin = nuvemDB.configs.senhaAdmin || "1999";
+                            if(nuvemDB.configs.exigirColaborador !== undefined) db.configs.exigirColaborador = nuvemDB.configs.exigirColaborador;
+                            if(nuvemDB.configs.senhaAdmin) db.configs.senhaAdmin = nuvemDB.configs.senhaAdmin;
+                            db.configs.ultimaMudancaLocal = cloudMod;
                         }
+                    } else if (localMod > cloudMod) {
+                        precisaAtualizarNuvem = true; // Nosso celular está mais novo, vamos forçar a nuvem a aceitar!
                     }
 
                     db.configs.dadosBaixados = true;
@@ -730,7 +737,7 @@
                 }
             }
             
-            if (precisaAtualizarNuvem || apenasEmpurrar || forcado || db.configs.pendingSync) {
+            if (precisaAtualizarNuvem || apenasEmpurrar || forcado) {
                 let dbParaNuvem = JSON.parse(JSON.stringify(db));
                 dbParaNuvem.pedidosAtivos = dbParaNuvem.pedidosAtivos.filter(p => p.status !== 'rascunho');
 
@@ -739,7 +746,6 @@
                     body: JSON.stringify({ action: 'salvar_banco', dados: dbParaNuvem }) 
                 });
                 if(response.ok) {
-                    db.configs.pendingSync = false; // DESTRAVA: Nuvem recebeu os dados estruturais!
                     salvarBanco();
                 }
             }
@@ -747,8 +753,7 @@
         finally { isSyncingFundo = false; indicador.style.opacity = '0'; }
     }
 
-    // Se houver trava pendingSync, ele força o PUSH, senão ele puxa normal.
-    setInterval(() => { if(db.configs && db.configs.pendingSync) { sincronizarFundo(false, true); } else { sincronizarFundo(false, false); } }, 20000);
+    setInterval(() => { sincronizarFundo(false, false); }, 20000);
     
     function exportarDados() {
         db.app_id = "alofeira"; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
@@ -766,7 +771,7 @@
                 const importedDb = JSON.parse(e.target.result);
                 if(importedDb && importedDb.app_id === "alofeira") {
                     let urlSalva = db.configs.url; db = importedDb; if (urlSalva) db.configs.url = urlSalva; 
-                    if(!db.configs) db.configs = {}; db.configs.pendingSync = true; salvarBanco(); 
+                    if(!db.configs) db.configs = {}; db.configs.ultimaMudancaLocal = Date.now(); salvarBanco(); 
                     alert("✅ Arquivo carregado no celular!\n\nAgora, vá na Engrenagem -> Avançado e clique no botão 'Forçar Envio Completo pra Nuvem' para salvar lá."); 
                     location.reload(); 
                 } else { alert("Arquivo de backup inválido."); }
@@ -791,7 +796,7 @@
             });
 
             if(!res.ok) throw new Error("Falha no servidor");
-            db.configs.pendingSync = false; salvarBanco();
+            salvarBanco();
             alert("✅ TUDO SALVO! O backup foi gravado com sucesso na nuvem.");
         } catch(e) { alert("❌ Falha na conexão com a nuvem. Verifique a internet ou a URL e tente novamente."); } 
         finally { document.getElementById('loadingOverlay').style.display = 'none'; }
@@ -815,7 +820,7 @@
                         body: JSON.stringify({ action: 'salvar_banco', dados: dbParaNuvem }) 
                     });
                     if(!res.ok) throw new Error("Erro de resposta");
-                    db.configs.pendingSync = false; salvarBanco();
+                    salvarBanco();
                     alert("✅ Histórico de pedidos apagado localmente e na nuvem com sucesso!"); 
                 } catch(e) { alert("❌ Os pedidos foram apagados no celular, mas houve falha na conexão ao apagar na nuvem."); } 
                 finally { isSyncingFundo = false; document.getElementById('loadingOverlay').style.display = 'none'; }
@@ -1526,8 +1531,29 @@
             if (tipo === 'categorias') { 
                 titulo.innerText = "Categorias"; btnNovo.onclick = () => abrirFormCategoria(null); 
                 db.categorias.forEach((c, index) => { 
-                    let subList = (c.subcategorias && c.subcategorias.length > 0) ? `<div style="margin-top:6px; font-size:11px; color:#666;">↳ ${c.subcategorias.join(', ')}</div>` : '';
-                    lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><span class="color-preview" style="background:${c.cor}; color:${c.corTexto}; padding:2px 6px; border-radius:4px;">${c.nome}</span>${subList}</div><div class="gerenciar-actions"><button onclick="moverCategoria(${index}, -1)">⬆️</button><button onclick="moverCategoria(${index}, 1)">⬇️</button><button onclick="abrirFormCategoria('${c.id}')">✏️</button><button onclick="excluirItem('categorias', '${c.id}')">🗑️</button></div></div>`; 
+                    let subcatsHtml = '';
+                    if (c.subcategorias && c.subcategorias.length > 0) {
+                        subcatsHtml = `<div style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">`;
+                        c.subcategorias.forEach(sub => {
+                            subcatsHtml += `<div style="background-color: ${c.cor}; color: ${c.corTexto}; padding: 4px 10px; border-radius: 4px; font-size: 12px; margin-left: 20px; opacity: 0.85; display: inline-block; width: fit-content;">↳ ${sub}</div>`;
+                        });
+                        subcatsHtml += `</div>`;
+                    }
+                    
+                    lista.innerHTML += `<div class="gerenciar-item" style="flex-direction: column; align-items: stretch; border-bottom: 1px solid #ddd; padding-bottom: 15px; margin-bottom: 5px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="gerenciar-info">
+                                <span class="color-preview" style="background:${c.cor}; color:${c.corTexto}; padding:4px 8px; border-radius:4px; font-weight: bold; font-size: 14px;">${c.nome}</span>
+                            </div>
+                            <div class="gerenciar-actions">
+                                <button onclick="moverCategoria(${index}, -1)">⬆️</button>
+                                <button onclick="moverCategoria(${index}, 1)">⬇️</button>
+                                <button onclick="abrirFormCategoria('${c.id}')">✏️</button>
+                                <button onclick="excluirItem('categorias', '${c.id}')">🗑️</button>
+                            </div>
+                        </div>
+                        ${subcatsHtml}
+                    </div>`; 
                 }); 
             } 
             else if (tipo === 'colaboradores') { 
