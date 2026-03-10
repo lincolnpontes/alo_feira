@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.1.1</title>
+    <title>Alô Feira v1.1.2</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -150,7 +150,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.1.1</div>
+    <div class="splash-versao">v1.1.2</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -255,13 +255,17 @@
         </div>
 
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Preços</h4>
-        <div id="boxHistPrecosModalEdit" style="font-size:13px; margin-bottom:15px; background:#fff3e0; padding:10px; border-radius:5px; max-height: 80px; overflow-y: auto;">
-            <div id="listaHistPrecosModalEdit"></div>
+        <div style="background:#fff3e0; padding:10px; border-radius:5px; margin-bottom:15px;">
+            <div id="resumoHistPrecosEdit"></div>
+            <button onclick="toggleDiv('completoHistPrecosEdit')" style="background:none;border:none;color:#1565C0;font-size:12px;padding:5px 0 0 0;cursor:pointer;">Ver detalhes e excluir...</button>
+            <div id="completoHistPrecosEdit" style="display:none; margin-top:5px; border-top:1px solid #ccc; padding-top:5px; max-height:100px; overflow-y:auto;"></div>
         </div>
 
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Pedidos</h4>
-        <div id="boxHistPedidosModalEdit" style="font-size:13px; margin-bottom:15px; background:#e3f2fd; padding:10px; border-radius:5px; max-height: 100px; overflow-y: auto;">
-            <div id="listaHistPedidosModalEdit"></div>
+        <div style="background:#e3f2fd; padding:10px; border-radius:5px; margin-bottom:15px;">
+            <div id="resumoHistPedidosEdit"></div>
+            <button onclick="toggleDiv('completoHistPedidosEdit')" style="background:none;border:none;color:#1565C0;font-size:12px;padding:5px 0 0 0;cursor:pointer;">Ver detalhes e excluir...</button>
+            <div id="completoHistPedidosEdit" style="display:none; margin-top:5px; border-top:1px solid #ccc; padding-top:5px; max-height:100px; overflow-y:auto;"></div>
         </div>
 
         <div class="modal-actions">
@@ -295,9 +299,6 @@
 
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Edições</h4>
         <div id="histCompraLista" style="font-size:13px; margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px; max-height: 80px; overflow-y: auto;"></div>
-        
-        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Preços</h4>
-        <div id="histPrecosLista" style="font-size:13px; margin-bottom:15px; background:#fff3e0; padding:10px; border-radius:5px; max-height: 80px; overflow-y: auto;"></div>
 
         <div class="modal-actions">
             <button class="btn-cancel" onclick="fecharModal('modalHistoricoCompra')">Cancelar</button>
@@ -349,7 +350,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.1.1</div>
+            <div class="versao">v1.1.2</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -465,14 +466,18 @@
             </div>
         </div>
 
-        <div id="boxHistoricoPrecos" style="font-size:12px; border:1px solid #ccc; border-radius:5px; padding:8px; max-height:120px; overflow-y:auto; background:#fafafa; margin-bottom:10px; display:none;">
-            <strong style="display:block; margin-bottom:5px;">Histórico Gravado de Preços:</strong>
-            <div id="listaPrecosProduto"></div>
+        <div id="boxHistoricoPrecos" style="background:#fafafa; border:1px solid #ccc; border-radius:5px; padding:8px; margin-bottom:10px; display:none;">
+            <strong style="font-size:12px; display:block; margin-bottom:5px;">Histórico Gravado de Preços:</strong>
+            <div id="resumoPrecosProduto" style="font-size:13px; margin-bottom:5px;"></div>
+            <button class="btn-outline" style="border:none; color:#1565C0; padding:0; margin:0; text-align:left; font-size:12px; width:auto;" onclick="toggleDiv('listaPrecosProduto')">Ver detalhes e excluir...</button>
+            <div id="listaPrecosProduto" style="display:none; margin-top:8px; border-top:1px solid #eee; padding-top:8px; max-height:120px; overflow-y:auto;"></div>
         </div>
 
-        <div id="boxHistoricoPedidosProdutoForm" style="font-size:12px; border:1px solid #ccc; border-radius:5px; padding:8px; max-height:120px; overflow-y:auto; background:#e3f2fd; margin-bottom:15px;">
-            <strong style="display:block; margin-bottom:5px;">Histórico de Pedidos:</strong>
-            <div id="listaHistoricoPedidosProdutoForm"></div>
+        <div id="boxHistoricoPedidosProdutoForm" style="background:#e3f2fd; border:1px solid #ccc; border-radius:5px; padding:8px; margin-bottom:15px;">
+            <strong style="font-size:12px; display:block; margin-bottom:5px;">Histórico de Pedidos:</strong>
+            <div id="resumoPedidosProdutoForm" style="font-size:13px; margin-bottom:5px;"></div>
+            <button class="btn-outline" style="border:none; color:#1565C0; padding:0; margin:0; text-align:left; font-size:12px; width:auto;" onclick="toggleDiv('listaHistoricoPedidosProdutoForm')">Ver detalhes e excluir...</button>
+            <div id="listaHistoricoPedidosProdutoForm" style="display:none; margin-top:8px; border-top:1px solid #eee; padding-top:8px; max-height:120px; overflow-y:auto;"></div>
         </div>
 
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormProduto'); abrirGerenciar('produtos', true);">Cancelar</button><button class="btn-action" onclick="salvarProduto()">Salvar Produto</button></div>
@@ -506,7 +511,7 @@
                 <input type="text" id="novaSubcatNome" placeholder="Ex: Bebidas, Sobremesas...">
                 <button class="btn-action" style="flex-shrink:0; padding:10px 15px;" onclick="addFormSubcat()">+</button>
             </div>
-            <div id="listaSubcatsForm" style="display:flex; flex-direction:column; gap:5px; max-height:120px; overflow-y:auto; padding-right:5px;"></div>
+            <div id="listaSubcatsForm" style="display:flex; flex-direction:column; gap:5px; max-height:180px; overflow-y:auto; padding-right:5px;"></div>
         </div>
 
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormCategoria'); abrirGerenciar('categorias', true);">Cancelar</button><button class="btn-action" onclick="salvarCategoria()">Salvar</button></div>
@@ -574,6 +579,7 @@
     let tempPrecosProduto = [];
     let tempFornecedoresProduto = [];
     let tempSubcats = [];
+    let tempRenames = []; // Guarda as renomeações de subcategorias
     let isSyncingFundo = false;
     
     // Variáveis de memória para a tela de Gerenciamento
@@ -629,6 +635,11 @@
         if(diff === 1) return "ontem"; 
         if(diff < 0) return "hoje"; 
         return `há ${diff} dias`;
+    }
+    
+    function toggleDiv(id) {
+        let el = document.getElementById(id);
+        el.style.display = (el.style.display === 'none') ? 'block' : 'none';
     }
 
     /* =========================================================================
@@ -954,7 +965,7 @@
         let temRascunho = false;
         let produtosOrdenados = [...db.produtos];
 
-        // LÓGICA DE ORDENAÇÃO: Ordem Fixa das Categorias -> Subcategoria Nome -> Produto Nome
+        // LÓGICA DE ORDENAÇÃO
         if (categoriaAtual === null) {
             produtosOrdenados.sort((a, b) => {
                 let idxA = db.categorias.findIndex(c => c.id === a.categoria); if(idxA === -1) idxA = 999;
@@ -962,6 +973,14 @@
                 if(idxA !== idxB) return idxA - idxB;
                 
                 let subA = a.subcategoria || ""; let subB = b.subcategoria || "";
+                let cObjA = db.categorias.find(c => c.id === a.categoria);
+                let idxSubA = (cObjA && cObjA.subcategorias && subA) ? cObjA.subcategorias.indexOf(subA) : 999;
+                if(idxSubA === -1) idxSubA = 999;
+                let cObjB = db.categorias.find(c => c.id === b.categoria);
+                let idxSubB = (cObjB && cObjB.subcategorias && subB) ? cObjB.subcategorias.indexOf(subB) : 999;
+                if(idxSubB === -1) idxSubB = 999;
+                
+                if(idxSubA !== idxSubB) return idxSubA - idxSubB;
                 if(subA !== subB) return subA.localeCompare(subB);
                 
                 return a.nome.localeCompare(b.nome);
@@ -969,7 +988,16 @@
         } else { 
             produtosOrdenados.sort((a, b) => {
                 let subA = a.subcategoria || ""; let subB = b.subcategoria || "";
+                let cObjA = db.categorias.find(c => c.id === a.categoria);
+                let idxSubA = (cObjA && cObjA.subcategorias && subA) ? cObjA.subcategorias.indexOf(subA) : 999;
+                if(idxSubA === -1) idxSubA = 999;
+                let cObjB = db.categorias.find(c => c.id === b.categoria);
+                let idxSubB = (cObjB && cObjB.subcategorias && subB) ? cObjB.subcategorias.indexOf(subB) : 999;
+                if(idxSubB === -1) idxSubB = 999;
+                
+                if(idxSubA !== idxSubB) return idxSubA - idxSubB;
                 if(subA !== subB) return subA.localeCompare(subB);
+                
                 return a.nome.localeCompare(b.nome);
             }); 
         }
@@ -1071,6 +1099,14 @@
                     if(idxA !== idxB) return idxA - idxB;
                     
                     let subA = pA && pA.subcategoria ? pA.subcategoria : ""; let subB = pB && pB.subcategoria ? pB.subcategoria : "";
+                    let cObjA = db.categorias.find(c => c.id === (pA ? pA.categoria : null));
+                    let idxSubA = (cObjA && cObjA.subcategorias && subA) ? cObjA.subcategorias.indexOf(subA) : 999;
+                    if(idxSubA === -1) idxSubA = 999;
+                    let cObjB = db.categorias.find(c => c.id === (pB ? pB.categoria : null));
+                    let idxSubB = (cObjB && cObjB.subcategorias && subB) ? cObjB.subcategorias.indexOf(subB) : 999;
+                    if(idxSubB === -1) idxSubB = 999;
+                    
+                    if(idxSubA !== idxSubB) return idxSubA - idxSubB;
                     if(subA !== subB) return subA.localeCompare(subB);
                     
                     return (pA ? pA.nome : "").localeCompare(pB ? pB.nome : "");
@@ -1084,6 +1120,14 @@
                     if (categoriaAtual === null && idxA !== idxB) return idxA - idxB;
                     
                     let subA = pA && pA.subcategoria ? pA.subcategoria : ""; let subB = pB && pB.subcategoria ? pB.subcategoria : "";
+                    let cObjA = db.categorias.find(c => c.id === (pA ? pA.categoria : null));
+                    let idxSubA = (cObjA && cObjA.subcategorias && subA) ? cObjA.subcategorias.indexOf(subA) : 999;
+                    if(idxSubA === -1) idxSubA = 999;
+                    let cObjB = db.categorias.find(c => c.id === (pB ? pB.categoria : null));
+                    let idxSubB = (cObjB && cObjB.subcategorias && subB) ? cObjB.subcategorias.indexOf(subB) : 999;
+                    if(idxSubB === -1) idxSubB = 999;
+                    
+                    if(idxSubA !== idxSubB) return idxSubA - idxSubB;
                     if(subA !== subB) return subA.localeCompare(subB);
                     
                     return (pA ? pA.nome : "").localeCompare(pB ? pB.nome : "");
@@ -1375,10 +1419,37 @@
                 else if (pa.status === 'pedido_forn' || pa.status === 'comprado') { if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
                 else if (pa.status === 'pendente') { pa.status = 'cancelado'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); }
                 else if (pa.status === 'cancelado') { 
-                    // ITEM EXCLUIDO DO MODO COMPRAS (Vai aparecer no modo Pedidos como Excluído)
+                    // ITEM EXCLUIDO DO MODO COMPRAS
                     pa.excluido = true; pa.excluidoCompras = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); 
                 }
             } 
+        }
+    }
+
+    /* =========================================================================
+       EXCLUSÃO INDIVIDUAL DE HISTÓRICOS (Preço e Pedido)
+       ========================================================================= */
+    function deletarPrecoDireto(pId, idx, paId) {
+        if(confirm("Excluir este preço do histórico?")) {
+            let p = db.produtos.find(x => x.id === pId);
+            if(p && p.historicoPrecos) {
+                p.historicoPrecos.splice(idx, 1);
+                salvarBanco(); sincronizarFundo(false, true);
+                if(paId || document.getElementById('modalEditarPedido').style.display === 'flex') abrirModalEditarPedido(paId, pId);
+                else abrirFormProduto(pId);
+            }
+        }
+    }
+
+    function deletarPedidoDireto(idUnico, pId, paId) {
+        if(confirm("Excluir este pedido do histórico geral?")) {
+            let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico);
+            if(pa) {
+                pa.excluido = true; pa.excluidoCompras = true; pa.dataExclusao = Date.now();
+                salvarBanco(); sincronizarFundo(false, true);
+                if(paId || document.getElementById('modalEditarPedido').style.display === 'flex') abrirModalEditarPedido(paId, pId);
+                else abrirFormProduto(pId);
+            }
         }
     }
 
@@ -1403,28 +1474,43 @@
             document.getElementById('editPedidoId').value = ''; 
         }
 
-        // Histórico de Preços
-        let htmlPrecos = "<ul>"; 
-        if(p.historicoPrecos && p.historicoPrecos.length > 0) { 
-            let rev = [...p.historicoPrecos].reverse(); 
-            rev.forEach(h => { htmlPrecos += `<li>${h.data}: <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></li>`; }); 
-        } else { htmlPrecos += "<li>Sem histórico</li>"; } 
-        htmlPrecos += "</ul>"; 
-        document.getElementById('listaHistPrecosModalEdit').innerHTML = htmlPrecos;
-
-        // Histórico de Pedidos
-        let htmlPed = "<ul>";
-        let peds = db.pedidosAtivos.filter(x => x.produtoId === pId && x.status !== 'rascunho').sort((a,b) => (b.dataEnvio||b.dataStatus||0) - (a.dataEnvio||a.dataStatus||0));
-        if(peds.length > 0) {
-            peds.slice(0, 10).forEach(paInfo => {
-                let d = formatarDataHora(paInfo.dataEnvio || paInfo.dataStatus);
-                htmlPed += `<li>${d} - <b>${paInfo.qtd} ${paInfo.unidade}</b> (${paInfo.status})</li>`;
+        // Histórico de Preços (Com Resumo)
+        let revPrecos = (p.historicoPrecos && p.historicoPrecos.length > 0) ? [...p.historicoPrecos].reverse() : [];
+        let htmlPrecosResumo = ""; let htmlPrecosCompleto = "";
+        
+        if(revPrecos.length > 0) {
+            htmlPrecosResumo = `<div style="font-size:13px; color:#333;">Último Preço: ${revPrecos[0].data} - <b style="color:#e65100;">R$ ${revPrecos[0].preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></div>`;
+            revPrecos.forEach((h, i) => {
+                let realIdx = p.historicoPrecos.length - 1 - i;
+                htmlPrecosCompleto += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:13px;"><span>${h.data} - <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></span> <button onclick="deletarPrecoDireto('${pId}', ${realIdx}, '${paId || ''}')" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
             });
         } else {
-            htmlPed += "<li>Sem histórico de pedidos</li>";
+            htmlPrecosResumo = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
+            htmlPrecosCompleto = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
         }
-        htmlPed += "</ul>";
-        document.getElementById('listaHistPedidosModalEdit').innerHTML = htmlPed;
+
+        // Histórico de Pedidos (Com Resumo)
+        let peds = db.pedidosAtivos.filter(x => x.produtoId === pId && x.status !== 'rascunho' && !x.excluido).sort((a,b) => (b.dataEnvio||b.dataStatus||0) - (a.dataEnvio||a.dataStatus||0));
+        let htmlPedResumo = ""; let htmlPedCompleto = "";
+        
+        if(peds.length > 0) {
+            let lastP = peds[0];
+            htmlPedResumo = `<div style="font-size:13px; color:#333;">Último Pedido: ${formatarDataHora(lastP.dataEnvio || lastP.dataStatus)} - <b style="color:#1565C0;">${lastP.qtd} ${lastP.unidade}</b></div>`;
+            peds.slice(0, 15).forEach(paInfo => {
+                htmlPedCompleto += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:12px;"><span>${formatarDataHora(paInfo.dataEnvio || paInfo.dataStatus)} - <b>${paInfo.qtd} ${paInfo.unidade}</b> (${paInfo.status})</span> <button onclick="deletarPedidoDireto('${paInfo.idUnico}', '${pId}', '${paId || ''}')" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
+            });
+        } else {
+            htmlPedResumo = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
+            htmlPedCompleto = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
+        }
+
+        document.getElementById('resumoHistPrecosEdit').innerHTML = htmlPrecosResumo;
+        document.getElementById('completoHistPrecosEdit').innerHTML = htmlPrecosCompleto;
+        document.getElementById('completoHistPrecosEdit').style.display = 'none';
+
+        document.getElementById('resumoHistPedidosEdit').innerHTML = htmlPedResumo;
+        document.getElementById('completoHistPedidosEdit').innerHTML = htmlPedCompleto;
+        document.getElementById('completoHistPedidosEdit').style.display = 'none';
 
         document.getElementById('modalEditarPedido').style.display = 'flex'; 
     }
@@ -1458,7 +1544,6 @@
         document.getElementById('histMarcasLista').innerHTML = htmlMarcas;
 
         let htmlEdicao = "<ul>"; if(pa.historico) pa.historico.forEach(h => { htmlEdicao += `<li>${h.data} - ${h.msg}</li>`; }); else htmlEdicao += "<li>Sem histórico</li>"; htmlEdicao += "</ul>"; document.getElementById('histCompraLista').innerHTML = htmlEdicao;
-        let htmlPrecos = "<ul>"; if(p && p.historicoPrecos && p.historicoPrecos.length > 0) { let rev = [...p.historicoPrecos].reverse(); rev.forEach(h => { htmlPrecos += `<li>${h.data}: R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</li>`; }); } else { htmlPrecos += "<li>Sem histórico</li>"; } htmlPrecos += "</ul>"; document.getElementById('histPrecosLista').innerHTML = htmlPrecos;
         document.getElementById('modalHistoricoCompra').style.display = 'flex';
     }
 
@@ -1606,26 +1691,8 @@
             if (tipo === 'categorias') { 
                 titulo.innerText = "Categorias"; btnNovo.onclick = () => abrirFormCategoria(null); 
                 db.categorias.forEach((c, index) => { 
-                    let subcatsHtml = '';
-                    if (c.subcategorias && c.subcategorias.length > 0) {
-                        subcatsHtml = `<div style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">`;
-                        c.subcategorias.forEach((sub, subIndex) => {
-                            subcatsHtml += `
-                            <div style="background-color: ${c.cor}; color: ${c.corTexto}; padding: 4px 10px; border-radius: 4px; font-size: 12px; margin-left: 20px; opacity: 0.85; display: flex; align-items: center; justify-content: space-between;">
-                                <span>▪ ${sub}</span>
-                                <div class="gerenciar-actions" style="display:flex; gap:2px;">
-                                    <button style="font-size:11px; padding:2px 5px;" onclick="moverSubcategoria('${c.id}', ${subIndex}, -1)">⬆️</button>
-                                    <button style="font-size:11px; padding:2px 5px;" onclick="moverSubcategoria('${c.id}', ${subIndex}, 1)">⬇️</button>
-                                    <button style="font-size:11px; padding:2px 5px;" onclick="editarSubcategoria('${c.id}', ${subIndex})">✏️</button>
-                                    <button style="font-size:11px; padding:2px 5px;" onclick="excluirSubcategoria('${c.id}', ${subIndex})">🗑️</button>
-                                </div>
-                            </div>`;
-                        });
-                        subcatsHtml += `</div>`;
-                    }
-                    
-                    lista.innerHTML += `<div class="gerenciar-item" style="flex-direction: column; align-items: stretch; border-bottom: 1px solid #ddd; padding-bottom: 15px; margin-bottom: 5px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                    lista.innerHTML += `<div class="gerenciar-item" style="border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 5px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                             <div class="gerenciar-info">
                                 <span class="color-preview" style="background:${c.cor}; color:${c.corTexto}; padding:4px 8px; border-radius:4px; font-weight: bold; font-size: 14px;">${c.nome}</span>
                             </div>
@@ -1636,7 +1703,6 @@
                                 <button onclick="excluirItem('categorias', '${c.id}')">🗑️</button>
                             </div>
                         </div>
-                        ${subcatsHtml}
                     </div>`; 
                 }); 
             } 
@@ -1689,40 +1755,6 @@
         marcarMudancaEstrutural(); abrirGerenciar('categorias', true); sincronizarFundo(false, true);
     }
     
-    function moverSubcategoria(catId, subIndex, direcao) {
-        let cat = db.categorias.find(c => c.id === catId);
-        if(!cat || !cat.subcategorias) return;
-        if (direcao === -1 && subIndex > 0) { 
-            let temp = cat.subcategorias[subIndex]; cat.subcategorias[subIndex] = cat.subcategorias[subIndex - 1]; cat.subcategorias[subIndex - 1] = temp; 
-        } else if (direcao === 1 && subIndex < cat.subcategorias.length - 1) { 
-            let temp = cat.subcategorias[subIndex]; cat.subcategorias[subIndex] = cat.subcategorias[subIndex + 1]; cat.subcategorias[subIndex + 1] = temp; 
-        }
-        marcarMudancaEstrutural(); abrirGerenciar('categorias', true); sincronizarFundo(false, true);
-    }
-
-    function editarSubcategoria(catId, subIndex) {
-        let cat = db.categorias.find(c => c.id === catId);
-        if(!cat || !cat.subcategorias) return;
-        let novoNome = prompt("Editar Subcategoria:", cat.subcategorias[subIndex]);
-        if(novoNome !== null && novoNome.trim() !== "") {
-            let nomeAntigo = cat.subcategorias[subIndex];
-            cat.subcategorias[subIndex] = novoNome.trim();
-            db.produtos.forEach(p => { if(p.categoria === catId && p.subcategoria === nomeAntigo) { p.subcategoria = novoNome.trim(); } });
-            marcarMudancaEstrutural(); abrirGerenciar('categorias', true); sincronizarFundo(false, true);
-        }
-    }
-
-    function excluirSubcategoria(catId, subIndex) {
-        let cat = db.categorias.find(c => c.id === catId);
-        if(!cat || !cat.subcategorias) return;
-        if(confirm(`Tem certeza que deseja excluir a subcategoria "${cat.subcategorias[subIndex]}"? Os produtos continuarão na categoria mãe.`)) {
-            let nomeAntigo = cat.subcategorias[subIndex];
-            cat.subcategorias.splice(subIndex, 1);
-            db.produtos.forEach(p => { if(p.categoria === catId && p.subcategoria === nomeAntigo) { p.subcategoria = ""; } });
-            marcarMudancaEstrutural(); abrirGerenciar('categorias', true); sincronizarFundo(false, true);
-        }
-    }
-
     function excluirItem(tipo, id) { if(confirm("Tem certeza?")) { db[tipo] = db[tipo].filter(x => x.id !== id); marcarMudancaEstrutural(); abrirGerenciar(tipo, true); renderizarLista(); sincronizarFundo(false, true); } }
 
     function duplicarProduto(id) {
@@ -1735,11 +1767,7 @@
 
     function salvarRestaurante() { db.restaurante.nome = document.getElementById('restNome').value; db.restaurante.cnpj = document.getElementById('restCNPJ').value; db.restaurante.rua = document.getElementById('restRua').value; db.restaurante.numero = document.getElementById('restNum').value; db.restaurante.bairro = document.getElementById('restBairro').value; db.restaurante.cidade = document.getElementById('restCidade').value; db.restaurante.uf = document.getElementById('restUF').value; db.restaurante.ponto = document.getElementById('restPonto').value; marcarMudancaEstrutural(); fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display = 'flex'; sincronizarFundo(false, true); }
 
-    /* LÓGICA DE PREÇOS PRODUTO E FORNECEDORES VINCULADOS */
-    function renderizarPrecosTemporarios() { const box = document.getElementById('boxHistoricoPrecos'); const list = document.getElementById('listaPrecosProduto'); list.innerHTML = ''; if(tempPrecosProduto.length === 0) { box.style.display = 'none'; } else { box.style.display = 'block'; [...tempPrecosProduto].reverse().forEach((p, realIdxReverso) => { let realIdx = tempPrecosProduto.length - 1 - realIdxReverso; list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:4px 0;"><span>${p.data}: <b>R$ ${p.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</b></span><div><button onclick="editarPrecoProduto(${realIdx})" style="background:none;border:none;cursor:pointer;font-size:14px;">✏️</button><button onclick="excluirPrecoProduto(${realIdx})" style="background:none;border:none;cursor:pointer;font-size:14px;">🗑️</button></div></div>`; }); } }
-    function editarPrecoProduto(idx) { let nval = prompt("Editar Preço (apenas números e vírgula):", tempPrecosProduto[idx].preco.toLocaleString('pt-BR', {minimumFractionDigits: 2})); if(nval !== null && nval.trim() !== "") { tempPrecosProduto[idx].preco = parseFloatBr(nval); renderizarPrecosTemporarios(); } }
-    function excluirPrecoProduto(idx) { if(confirm("Excluir este preço do histórico?")) { tempPrecosProduto.splice(idx, 1); renderizarPrecosTemporarios(); } }
-
+    /* LÓGICA DE PREÇOS PRODUTO E FORNECEDORES VINCULADOS (FORMULÁRIO PRODUTO) */
     function renderizarFornecedoresVinculados() { const box = document.getElementById('listaFornecedoresVinculados'); box.innerHTML = ''; if(tempFornecedoresProduto.length === 0) { box.innerHTML = '<span style="font-size:12px; color:#999;">Nenhum fornecedor vinculado.</span>'; return; } tempFornecedoresProduto.forEach(fId => { let f = db.fornecedores.find(x => x.id === fId); if(f) { box.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:#e3f2fd; padding:6px 10px; border-radius:4px; font-size:13px; color:#1565C0; font-weight:bold;"><span>${f.nome}</span><button onclick="removerFornecedorVinculado('${f.id}')" style="background:none; border:none; cursor:pointer; color:#d32f2f; font-size:16px;">×</button></div>`; } }); }
     function removerFornecedorVinculado(id) { tempFornecedoresProduto = tempFornecedoresProduto.filter(x => x !== id); renderizarFornecedoresVinculados(); }
 
@@ -1760,7 +1788,6 @@
         document.getElementById('prodPrecoData').value = getHojeSTR(); 
         
         let p = null; 
-        let htmlHistPed = "<ul>";
         
         if(id) { 
             p = db.produtos.find(x => x.id === id); 
@@ -1776,35 +1803,136 @@
             tempPrecosProduto = p.historicoPrecos ? JSON.parse(JSON.stringify(p.historicoPrecos)) : []; 
             tempFornecedoresProduto = p.fornecedores ? JSON.parse(JSON.stringify(p.fornecedores)) : []; 
             atualizarComboSubcat(p.subcategoria); 
-
-            let peds = db.pedidosAtivos.filter(x => x.produtoId === id && x.status !== 'rascunho').sort((a,b) => (b.dataEnvio||b.dataStatus||0) - (a.dataEnvio||a.dataStatus||0));
-            if(peds.length > 0) {
-                peds.slice(0, 10).forEach(paInfo => {
-                    let d = formatarDataHora(paInfo.dataEnvio || paInfo.dataStatus);
-                    htmlHistPed += `<li>${d} - <b>${paInfo.qtd} ${paInfo.unidade}</b> (${paInfo.status})</li>`;
-                });
-            } else { htmlHistPed += "<li>Nenhum pedido realizado</li>"; }
+            
+            document.getElementById('boxHistoricoPrecos').style.display = 'block';
+            document.getElementById('boxHistoricoPedidosProdutoForm').style.display = 'block';
 
         } else { 
             document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = ''; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodQtdPadrao').value = ''; tempPrecosProduto = []; tempFornecedoresProduto = []; atualizarComboSubcat(); 
-            htmlHistPed += "<li>Produto novo (sem histórico)</li>";
+            document.getElementById('boxHistoricoPrecos').style.display = 'none';
+            document.getElementById('boxHistoricoPedidosProdutoForm').style.display = 'none';
         } 
-        
-        htmlHistPed += "</ul>";
-        document.getElementById('listaHistoricoPedidosProdutoForm').innerHTML = htmlHistPed;
 
-        renderizarFornecedoresVinculados(); renderizarPrecosTemporarios(); document.getElementById('modalFormProduto').style.display = 'flex'; 
+        // RENDER HISTORICOS FORMULÁRIO (RESUMO / COMPLETO)
+        let htmlPrecosResumoForm = ""; let htmlPrecosCompletoForm = "";
+        if(tempPrecosProduto.length > 0) {
+            let revPrecos = [...tempPrecosProduto].reverse();
+            htmlPrecosResumoForm = `<div style="font-size:13px; color:#333;">Último Preço: ${revPrecos[0].data} - <b style="color:#e65100;">R$ ${revPrecos[0].preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></div>`;
+            revPrecos.forEach((h, i) => {
+                let realIdx = tempPrecosProduto.length - 1 - i;
+                htmlPrecosCompletoForm += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:13px;"><span>${h.data} - <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></span> <button onclick="deletarPrecoDireto('${id}', ${realIdx}, null)" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
+            });
+        } else {
+            htmlPrecosResumoForm = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
+            htmlPrecosCompletoForm = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
+            document.getElementById('boxHistoricoPrecos').style.display = 'none';
+        }
+
+        let htmlPedResumoForm = ""; let htmlPedCompletoForm = "";
+        let peds = db.pedidosAtivos.filter(x => x.produtoId === id && x.status !== 'rascunho' && !x.excluido).sort((a,b) => (b.dataEnvio||b.dataStatus||0) - (a.dataEnvio||a.dataStatus||0));
+        
+        if(peds.length > 0) {
+            let lastP = peds[0];
+            htmlPedResumoForm = `<div style="font-size:13px; color:#333;">Último Pedido: ${formatarDataHora(lastP.dataEnvio || lastP.dataStatus)} - <b style="color:#1565C0;">${lastP.qtd} ${lastP.unidade}</b></div>`;
+            peds.slice(0, 15).forEach(paInfo => {
+                htmlPedCompletoForm += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:12px;"><span>${formatarDataHora(paInfo.dataEnvio || paInfo.dataStatus)} - <b>${paInfo.qtd} ${paInfo.unidade}</b> (${paInfo.status})</span> <button onclick="deletarPedidoDireto('${paInfo.idUnico}', '${id}', null)" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
+            });
+        } else {
+            htmlPedResumoForm = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
+            htmlPedCompletoForm = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
+            document.getElementById('boxHistoricoPedidosProdutoForm').style.display = 'none';
+        }
+
+        document.getElementById('resumoPrecosProduto').innerHTML = htmlPrecosResumoForm;
+        document.getElementById('listaPrecosProduto').innerHTML = htmlPrecosCompletoForm;
+        document.getElementById('listaPrecosProduto').style.display = 'none';
+
+        document.getElementById('resumoPedidosProdutoForm').innerHTML = htmlPedResumoForm;
+        document.getElementById('listaHistoricoPedidosProdutoForm').innerHTML = htmlPedCompletoForm;
+        document.getElementById('listaHistoricoPedidosProdutoForm').style.display = 'none';
+
+        renderizarFornecedoresVinculados(); 
+        document.getElementById('modalFormProduto').style.display = 'flex'; 
     }
     
     function salvarProduto() { const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : ''; if(pVal > 0) { tempPrecosProduto.push({ data: pData, preco: pVal }); } const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, subcategoria: document.getElementById('prodSubcategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: tempFornecedoresProduto }; const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo); marcarMudancaEstrutural(); fecharModal('modalFormProduto'); abrirGerenciar('produtos', true); renderizarLista(); sincronizarFundo(false, true); }
 
-    function renderFormSubcats() { const list = document.getElementById('listaSubcatsForm'); list.innerHTML = ''; tempSubcats.forEach((s, i) => { list.innerHTML += `<div style="display:flex; justify-content:space-between; background:#f0f0f0; padding:5px 10px; border-radius:4px;"><input type="hidden" class="subcat-item-val" value="${s}"><span style="font-size:13px;">${s}</span><button onclick="removerFormSubcat(${i})" style="border:none;background:none;color:#d32f2f;cursor:pointer;font-weight:bold;">✕</button></div>`; }); }
+    function renderFormSubcats() { 
+        const list = document.getElementById('listaSubcatsForm'); 
+        list.innerHTML = ''; 
+        tempSubcats.forEach((s, i) => { 
+            list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:#f0f0f0; padding:6px 10px; border-radius:4px; margin-bottom:4px;">
+                <span style="font-size:13px; font-weight:bold; color:#333;">${s}</span>
+                <div style="display:flex; gap:2px;">
+                    <button onclick="moverFormSubcat(${i}, -1)" style="border:none;background:#e0e0e0;border-radius:3px;cursor:pointer;font-size:12px;padding:4px 6px;">⬆️</button>
+                    <button onclick="moverFormSubcat(${i}, 1)" style="border:none;background:#e0e0e0;border-radius:3px;cursor:pointer;font-size:12px;padding:4px 6px;">⬇️</button>
+                    <button onclick="editarFormSubcat(${i})" style="border:none;background:#e0e0e0;border-radius:3px;cursor:pointer;font-size:12px;padding:4px 6px;">✏️</button>
+                    <button onclick="removerFormSubcat(${i})" style="border:none;background:#ffcdd2;color:#d32f2f;border-radius:3px;cursor:pointer;font-weight:bold;font-size:12px;padding:4px 6px;">✕</button>
+                </div>
+            </div>`; 
+        }); 
+    }
+    
     function addFormSubcat() { let val = document.getElementById('novaSubcatNome').value.trim(); if(val) { tempSubcats.push(val); renderFormSubcats(); document.getElementById('novaSubcatNome').value = ''; } }
+    
+    function moverFormSubcat(idx, dir) {
+        if(dir === -1 && idx > 0) { let t = tempSubcats[idx]; tempSubcats[idx] = tempSubcats[idx-1]; tempSubcats[idx-1] = t; }
+        if(dir === 1 && idx < tempSubcats.length-1) { let t = tempSubcats[idx]; tempSubcats[idx] = tempSubcats[idx+1]; tempSubcats[idx+1] = t; }
+        renderFormSubcats();
+    }
+    
+    function editarFormSubcat(idx) {
+        let n = prompt("Novo nome para a subcategoria:", tempSubcats[idx]);
+        if(n && n.trim() !== "") {
+            tempRenames.push({old: tempSubcats[idx], new: n.trim()});
+            tempSubcats[idx] = n.trim();
+            renderFormSubcats();
+        }
+    }
+
     function removerFormSubcat(idx) { tempSubcats.splice(idx, 1); renderFormSubcats(); }
 
-    function abrirFormCategoria(id) { fecharModal('modalListagem'); document.getElementById('novaSubcatNome').value = ''; if(id) { const c = db.categorias.find(x => x.id === id); document.getElementById('catId').value = id; document.getElementById('catNome').value = c.nome; document.getElementById('catCor').value = c.cor; document.getElementById('catCorTexto').value = c.corTexto; tempSubcats = c.subcategorias ? [...c.subcategorias] : []; } else { document.getElementById('catId').value = ''; document.getElementById('catNome').value = ''; document.getElementById('catCor').value = '#1565C0'; document.getElementById('catCorTexto').value = '#ffffff'; tempSubcats = []; } renderFormSubcats(); document.getElementById('modalFormCategoria').style.display = 'flex'; }
+    function abrirFormCategoria(id) { 
+        fecharModal('modalListagem'); 
+        document.getElementById('novaSubcatNome').value = ''; 
+        tempRenames = []; 
+        if(id) { 
+            const c = db.categorias.find(x => x.id === id); 
+            document.getElementById('catId').value = id; 
+            document.getElementById('catNome').value = c.nome; 
+            document.getElementById('catCor').value = c.cor; 
+            document.getElementById('catCorTexto').value = c.corTexto; 
+            tempSubcats = c.subcategorias ? [...c.subcategorias] : []; 
+        } else { 
+            document.getElementById('catId').value = ''; 
+            document.getElementById('catNome').value = ''; 
+            document.getElementById('catCor').value = '#1565C0'; 
+            document.getElementById('catCorTexto').value = '#ffffff'; 
+            tempSubcats = []; 
+        } 
+        renderFormSubcats(); 
+        document.getElementById('modalFormCategoria').style.display = 'flex'; 
+    }
     
-    function salvarCategoria() { const id = document.getElementById('catId').value || 'c_'+Date.now(); const novo = { id: id, nome: document.getElementById('catNome').value, cor: document.getElementById('catCor').value, corTexto: document.getElementById('catCorTexto').value, subcategorias: tempSubcats }; const idx = db.categorias.findIndex(x => x.id === id); if(idx >= 0) db.categorias[idx] = novo; else db.categorias.push(novo); marcarMudancaEstrutural(); fecharModal('modalFormCategoria'); abrirGerenciar('categorias', true); renderizarLista(); sincronizarFundo(false, true); }
+    function salvarCategoria() { 
+        const id = document.getElementById('catId').value || 'c_'+Date.now(); 
+        
+        if(tempRenames.length > 0) {
+            db.produtos.forEach(p => {
+                if(p.categoria === id) {
+                    let rename = tempRenames.find(r => r.old === p.subcategoria);
+                    if(rename) p.subcategoria = rename.new;
+                }
+            });
+        }
+
+        const novo = { id: id, nome: document.getElementById('catNome').value, cor: document.getElementById('catCor').value, corTexto: document.getElementById('catCorTexto').value, subcategorias: tempSubcats }; 
+        const idx = db.categorias.findIndex(x => x.id === id); 
+        if(idx >= 0) db.categorias[idx] = novo; 
+        else db.categorias.push(novo); 
+        
+        marcarMudancaEstrutural(); fecharModal('modalFormCategoria'); abrirGerenciar('categorias', true); renderizarLista(); sincronizarFundo(false, true); 
+    }
 
     function abrirFormColaborador(id) { fecharModal('modalListagem'); const box = document.getElementById('colabCategoriasBox'); box.innerHTML = ''; const c = id ? db.colaboradores.find(x => x.id === id) : null; document.getElementById('colabIsAdmin').checked = c ? (c.isAdmin || false) : false; document.getElementById('colabApenasReceber').checked = c ? (c.apenasReceber || false) : false; db.categorias.forEach(cat => { let checkPed = (!c || (c.catsPermitidasPedido !== undefined ? c.catsPermitidasPedido.includes(cat.id) : (c.catsPermitidas ? c.catsPermitidas.includes(cat.id) : true))) ? 'checked' : ''; let checkComp = (!c || (c.catsPermitidasCompras !== undefined ? c.catsPermitidasCompras.includes(cat.id) : (c.catsPermitidas ? c.catsPermitidas.includes(cat.id) : true))) ? 'checked' : ''; box.innerHTML += `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #ddd; padding-bottom:6px;"><span style="font-weight:bold; font-size:12px; flex:1; color:#333;">${cat.nome}</span><div style="display:flex; gap:15px;"><label style="display:flex; flex-direction:column; align-items:center; font-size:9px; color:#555; gap:2px;"><div class="switch" style="margin:0;"><input type="checkbox" value="${cat.id}" class="chk-cat-pedido" ${checkPed}><span class="slider"></span></div>Pedidos</label><label style="display:flex; flex-direction:column; align-items:center; font-size:9px; color:#555; gap:2px;"><div class="switch" style="margin:0;"><input type="checkbox" value="${cat.id}" class="chk-cat-compras" ${checkComp}><span class="slider"></span></div>Compras</label></div></div>`; }); document.getElementById('colabId').value = id || ''; document.getElementById('colabNome').value = c ? c.nome : ''; document.getElementById('colabSenha').value = c ? c.senha : ''; document.getElementById('modalFormColaborador').style.display = 'flex'; }
     
