@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0</title>
+    <title>Alô Feira v2.0</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -68,7 +68,6 @@
         .status-entregue { border-left: 6px solid #1b5e20; background-color: #c8e6c9; } 
         .item-pedido-rascunho { border-left: 4px solid #1565C0; background-color: #e3f2fd; }
 
-        /* BADGES MODO PEDIDO */
         .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; color: white; display: inline-block; }
         .bg-pendente { background-color: #f57f17; }
         .bg-pedido_forn { background-color: #9c27b0; }
@@ -94,10 +93,11 @@
         .input-cor::-webkit-color-swatch { border: none; border-radius: 8px; }
 
         .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
-        .btn-cancel, .btn-action, .btn-danger, .btn-whatsapp { padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; flex: 1; text-align: center; border: none; font-size: 14px; }
+        .btn-cancel, .btn-action, .btn-danger, .btn-whatsapp, .btn-drive { padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; flex: 1; text-align: center; border: none; font-size: 14px; }
         .btn-cancel { background: #eee; color: #333; }
         .btn-action { background: #1565C0; color: white; }
         .btn-danger { background: #d32f2f; color: white; }
+        .btn-drive { background: #fbbc04; color: #333; width: 100%; font-size: 15px; margin-bottom: 10px; }
         .btn-whatsapp { background: #25d366; color: white; position: relative; display: flex; align-items: center; justify-content: center; width: 100%; font-size: 16px; }
         .btn-whatsapp .icon { position: absolute; left: 15px; font-size: 20px; }
         
@@ -111,14 +111,16 @@
         input:checked + .slider { background-color: #1565C0; }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        /* FABs */
+        /* FABs E BOTÃO DE ENVIO COM CANCELAR */
         .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 90; }
         .fab { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; color: white; border: none; transition: background-color 0.3s; }
         .fab-zap { background-color: #25d366; }
         .fab-select { background-color: #ab47bc; }
         .fab-undo { background-color: #607d8b; display: none; }
         
-        .btn-enviar-pedidos { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 15px; background-color: #1565C0; color: white; font-weight: bold; font-size: 16px; border: none; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 90; text-align: center; }
+        .container-envio-rodape { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; display: flex; gap: 10px; z-index: 90; }
+        .btn-enviar-pedidos { flex: 1; padding: 15px; background-color: #1565C0; color: white; font-weight: bold; font-size: 16px; border: none; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; text-align: center; }
+        .btn-cancelar-selecao { width: 55px; background-color: #d32f2f; color: white; font-weight: bold; font-size: 22px; border: none; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
         .gerenciar-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
         .gerenciar-info { flex: 1; font-size: 13px; }
@@ -131,7 +133,12 @@
         
         .cat-header { background: #e0e0e0; padding: 4px 15px; font-weight: bold; font-size: 11px; color: #555; text-transform: uppercase; border-bottom: 1px solid #ccc; display: flex; align-items: center; }
         
-        /* Indicador de Sync */
+        /* ALFABETO E FILTRO NO GERENCIAR */
+        .letra-separador { background: #e0e0e0; padding: 4px 10px; font-weight: bold; font-size: 14px; color: #333; margin-top: 10px; border-radius: 4px; }
+        .sidebar-alfabeto { position: absolute; right: 2px; top: 130px; bottom: 20px; width: 22px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; font-size: 10px; font-weight: bold; color: #1565C0; z-index: 10; background: rgba(255,255,255,0.8); border-radius: 10px; padding: 5px 0; }
+        .sidebar-alfabeto div { cursor: pointer; width: 100%; text-align: center; padding: 2px 0; }
+        .sidebar-alfabeto div:active { background: #1565C0; color: white; border-radius: 3px; }
+
         #syncIndicador { position: fixed; top: 10px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background-color: #4CAF50; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
     </style>
 </head>
@@ -140,14 +147,14 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0</div>
+    <div class="splash-versao">v2.0</div>
 </div>
 
 <div id="syncIndicador"></div>
 
 <div id="loadingOverlay">
     <div class="spinner"></div>
-    <div id="loadingText">Sincronizando banco de dados...<br><span style="font-size: 14px; font-weight: normal; margin-top: 10px; display: block;">Por favor, aguarde. Não feche o app.</span></div>
+    <div id="loadingText">Gravando na nuvem...<br><span style="font-size: 14px; font-weight: normal; margin-top: 10px; display: block;">Por favor, aguarde. Não feche o app.</span></div>
 </div>
 
 <div class="app-container">
@@ -171,7 +178,10 @@
         </div>
     </div>
 
-    <button class="btn-enviar-pedidos" id="btnEnviarPedidos" style="display: none;" onclick="enviarPedidosParaCompras()">Enviar Pedido(s)</button>
+    <div class="container-envio-rodape" id="containerBotoesEnvio" style="display: none;">
+        <button class="btn-enviar-pedidos" onclick="enviarPedidosParaCompras()">Enviar Pedido</button>
+        <button class="btn-cancelar-selecao" onclick="cancelarRascunhos()">✕</button>
+    </div>
 
     <div class="fab-container" id="fabContainer" style="display: none;">
         <button class="fab fab-undo" onclick="desfazerAcao()" id="btnDesfazer">↩️</button>
@@ -183,9 +193,13 @@
 <div class="modal-overlay" id="modalPedidosHoje">
     <div class="modal">
         <div class="modal-title">Pedidos Enviados Hoje</div>
-        <div id="listaPedidosHoje" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharModal('modalPedidosHoje')" style="width: 100%;">Fechar</button>
+        <div id="listaPedidosHoje" style="max-height: 50vh; overflow-y: auto; padding-right: 5px;"></div>
+        
+        <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+            <button class="btn-drive" onclick="exportarParaDrive()">📂 Exportar .TXT (Google Drive)</button>
+            <div class="modal-actions" style="margin-top: 0;">
+                <button class="btn-cancel" onclick="fecharModal('modalPedidosHoje')" style="width: 100%;">Fechar</button>
+            </div>
         </div>
     </div>
 </div>
@@ -317,7 +331,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0</div>
+            <div class="versao">v2.0</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -364,11 +378,21 @@
 </div>
 
 <div class="modal-overlay" id="modalListagem">
-    <div class="modal">
-        <div class="modal-title" id="tituloListagem">Gerenciar</div>
-        <button class="btn-action" id="btnNovoListagem" style="width: 100%; margin-bottom: 15px;">+ Novo</button>
-        <div id="conteudoListagem" style="max-height: 50vh; overflow-y: auto;"></div>
-        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalListagem'); document.getElementById('modalPainelUnificado').style.display='flex';">Voltar</button></div>
+    <div class="modal" style="position: relative; width: 95%; overflow: hidden; display: flex; flex-direction: column;">
+        <div class="modal-title" id="tituloListagem" style="flex-shrink: 0;">Gerenciar</div>
+        
+        <div class="form-group" id="filtroGerenciarCatBox" style="display: none; flex-shrink: 0;">
+            <select id="filtroGerenciarCat" onchange="renderizarFiltroGerenciar()">
+                </select>
+        </div>
+
+        <button class="btn-action" id="btnNovoListagem" style="width: 100%; margin-bottom: 15px; flex-shrink: 0;">+ Novo</button>
+        
+        <div id="conteudoListagem" style="flex: 1; overflow-y: auto; padding-right: 25px; min-height: 40vh;"></div>
+        
+        <div class="sidebar-alfabeto" id="sidebarAlfabeto" style="display: none;"></div>
+
+        <div class="modal-actions" style="flex-shrink: 0;"><button class="btn-cancel" onclick="fecharModal('modalListagem'); document.getElementById('modalPainelUnificado').style.display='flex';" style="width: 100%;">Voltar</button></div>
     </div>
 </div>
 
@@ -607,7 +631,7 @@
         }
     }
     
-    // O motor invisível (O Tanque de Guerra agora fala a mesma língua da Planilha)
+    // O motor invisível
     async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
         if(!db.configs.url) return;
         
@@ -630,7 +654,6 @@
         try {
             let precisaAtualizarNuvem = false;
 
-            // Só puxa da nuvem se não for uma ordem direta de empurrar (como ao salvar um produto novo)
             if (!apenasEmpurrar) {
                 let fetchUrl = db.configs.url + (db.configs.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
                 let res = await fetch(fetchUrl, { redirect: "follow", cache: "no-store" }); 
@@ -658,7 +681,6 @@
                         let tLoc = pLoc.dataStatus || 0;
                         let tCloud = pCloud ? (pCloud.dataStatus || 0) : 0;
                         
-                        // Se o celular tiver uma ação mais recente que a nuvem, ele manda atualizar a nuvem
                         if(!pCloud || tLoc > tCloud) {
                             mergedPedidos.set(pLoc.idUnico, pLoc);
                             precisaAtualizarNuvem = true; 
@@ -694,7 +716,6 @@
                 }
             }
             
-            // Empurra para a nuvem se forçado, se houver alteração local, ou se for salvamento direto
             if (precisaAtualizarNuvem || apenasEmpurrar || forcado) {
                 let dbParaNuvem = JSON.parse(JSON.stringify(db));
                 dbParaNuvem.pedidosAtivos = dbParaNuvem.pedidosAtivos.filter(p => p.status !== 'rascunho');
@@ -784,10 +805,8 @@
 
     async function excluirTodoHistorico() { 
         let frase = document.getElementById('inputExcluirTudo').value.trim().toLowerCase(); 
-        
         if(frase === "quero excluir todo o histórico") { 
             if(isSyncingFundo) return alert("⏳ Aguarde o sistema terminar de conversar com a nuvem antes de apagar o histórico.");
-            
             if(!confirm("⚠️ TEM CERTEZA? Isso vai apagar todos os pedidos de TODOS os aparelhos conectados. Essa ação não afeta produtos ou categorias.")) return;
 
             db.pedidosAtivos = []; 
@@ -816,26 +835,16 @@
                     document.getElementById('loadingOverlay').style.display = 'none';
                     document.getElementById('loadingText').innerHTML = "Gravando pedido na nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde. Não feche o app.</span>";
                 }
-            } else {
-                alert("✅ Histórico apagado localmente (Sistema não está conectado).");
-            }
-            
-            document.getElementById('inputExcluirTudo').value = ''; 
-            fecharModal('modalConfigAvancadas');
-            renderizarLista(); 
-            
-        } else { 
-            alert("Frase incorreta."); 
-        } 
+            } else { alert("✅ Histórico apagado localmente (Sistema não está conectado)."); }
+            document.getElementById('inputExcluirTudo').value = ''; fecharModal('modalConfigAvancadas'); renderizarLista(); 
+        } else { alert("Frase incorreta."); } 
     }
 
     function forcarAtualizacao() { 
         if(confirm("Deseja forçar a atualização do aplicativo? Isso vai tentar baixar a versão mais nova do sistema sem apagar seus dados, produtos ou URL.")) {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                    for(let registration of registrations) {
-                        registration.update(); 
-                    }
+                    for(let registration of registrations) { registration.update(); }
                 });
             }
             window.location.href = window.location.pathname + '?nocache=' + new Date().getTime();
@@ -890,7 +899,7 @@
             document.getElementById('fabContainer').style.display = 'none'; document.getElementById('btnHistHoje').style.display = 'inline-block';
         } else { 
             dicas.innerHTML = "<div>👉 Deslize: Avançar Status</div><div>👈 Deslize: Voltar Status</div><div>👆 Segure: P/ Fornecedor</div><div>✌️ 2 Toques: Detalhes</div>"; 
-            document.getElementById('fabContainer').style.display = 'flex'; document.getElementById('btnEnviarPedidos').style.display = 'none'; document.getElementById('btnHistHoje').style.display = 'none';
+            document.getElementById('fabContainer').style.display = 'flex'; document.getElementById('containerBotoesEnvio').style.display = 'none'; document.getElementById('btnHistHoje').style.display = 'none';
         }
         document.getElementById('btnModoSelecao').style.backgroundColor = '#ab47bc';
         atualizarVisibilidadeAdmin(); salvarBanco(); atualizarBotaoDesfazer(); renderizarFiltros(); renderizarLista();
@@ -978,7 +987,7 @@
                 </li>`;
                 itensMostrados++;
             });
-            document.getElementById('btnEnviarPedidos').style.display = temRascunho ? 'block' : 'none';
+            document.getElementById('containerBotoesEnvio').style.display = temRascunho ? 'flex' : 'none';
 
         } else {
             // MODO COMPRAS
@@ -1061,18 +1070,24 @@
     function cliqueItemCompra(idUnico) { if(modoSelecaoAtivo) { if(itensSelecionadosRelatorio.has(idUnico)) itensSelecionadosRelatorio.delete(idUnico); else itensSelecionadosRelatorio.add(idUnico); renderizarLista(); } }
 
     /* =========================================================================
-       PEDIDOS DO DIA E ENVIO COM GARANTIA (HANDSHAKE)
+       PEDIDOS DO DIA E CANCELAMENTO (BOTÕES DE RODAPÉ)
        ========================================================================= */
+    function cancelarRascunhos() {
+        if(confirm("Deseja realmente cancelar a seleção e remover os rascunhos?")) {
+            db.pedidosAtivos = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho');
+            salvarBanco();
+            renderizarLista();
+        }
+    }
+
     async function enviarPedidosParaCompras() { 
         if(!db.configs.url) return alert("Por favor, configure a URL do sistema na engrenagem (Configurações Avançadas) primeiro.");
-
         let rascunhos = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido); 
         if(rascunhos.length === 0) return;
 
-        if (isSyncingFundo) {
-            alert("⏳ O radar do aplicativo está checando a nuvem agora. Aguarde 3 segundinhos e clique em Enviar novamente.");
-            return;
-        }
+        if(!confirm("Deseja enviar os itens selecionados?")) return;
+
+        if (isSyncingFundo) { return alert("⏳ O radar do aplicativo está checando a nuvem agora. Aguarde 3 segundinhos e clique em Enviar novamente."); }
 
         isSyncingFundo = true; 
         document.getElementById('loadingOverlay').style.display = 'flex';
@@ -1103,7 +1118,7 @@
             db.pedidosAtivos = backupPedidos;
             salvarBanco();
             document.getElementById('loadingOverlay').style.display = 'none';
-            alert("❌ FALHA NA CONEXÃO!\nSeu pedido NÃO foi enviado. Por favor, verifique a sua internet e clique em Enviar novamente.\n\nFique tranquilo, os itens continuam marcados na sua tela.");
+            alert("❌ FALHA NA CONEXÃO!\nSeu pedido NÃO foi enviado. Por favor, verifique a sua internet e tente novamente.");
             renderizarLista();
         } finally {
             isSyncingFundo = false; 
@@ -1137,21 +1152,85 @@
     function excluirPedidoHoje(idUnico) { 
         if(confirm("Deseja apagar definitivamente este pedido feito hoje?")) { 
             let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico);
-            if(pa) {
-                pa.excluido = true;
-                pa.status = 'excluido';
-                pa.dataExclusao = Date.now();
-                pa.dataStatus = Date.now();
-                salvarBanco();
-                abrirPedidosHoje();
-                renderizarLista();
-                sincronizarFundo(false, true); 
-            }
+            if(pa) { pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); salvarBanco(); abrirPedidosHoje(); renderizarLista(); sincronizarFundo(false, true); }
         } 
     }
 
+    // NOVA FUNÇÃO: EXPORTAR PARA GOOGLE DRIVE
+    async function exportarParaDrive() {
+        if(!db.configs.url) return alert("Configure a URL do sistema na engrenagem primeiro!");
+        
+        let hoje = new Date().setHours(0,0,0,0);
+        let itensHoje = db.pedidosAtivos.filter(pa => { if(pa.status === 'rascunho' || pa.excluido) return false; let dataPa = pa.dataStatus ? new Date(pa.dataStatus).setHours(0,0,0,0) : 0; return dataPa === hoje; });
+        
+        if (itensHoje.length === 0) return alert("Nenhum pedido foi enviado hoje para ser exportado.");
+
+        let grupos = {};
+        itensHoje.forEach(pa => {
+            const p = db.produtos.find(x => x.id === pa.produtoId);
+            if (!p) return;
+            let cId = p.categoria || "sem_cat";
+            if(!grupos[cId]) grupos[cId] = [];
+            grupos[cId].push({ pa: pa, p: p });
+        });
+
+        let blocosTexto = [];
+        db.categorias.forEach(cat => {
+            if (grupos[cat.id] && grupos[cat.id].length > 0) {
+                let txt = `> *${cat.nome}*\n`;
+                let linhas = grupos[cat.id].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => {
+                    let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-';
+                    let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : '';
+                    return `▪ ${item.p.nome} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`;
+                });
+                blocosTexto.push(txt + linhas.join('\n'));
+            }
+        });
+
+        if (grupos["sem_cat"] && grupos["sem_cat"].length > 0) {
+            let txt = `> *Outros*\n`;
+            let linhas = grupos["sem_cat"].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => {
+                let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-';
+                let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : '';
+                return `▪ ${item.p.nome} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`;
+            });
+            blocosTexto.push(txt + linhas.join('\n'));
+        }
+
+        const textoFinal = blocosTexto.join('\n\n');
+        
+        const d = new Date();
+        const dataBrFormatada = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+        const nomeRes = db.restaurante.nome || "Restaurante";
+
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        document.getElementById('loadingText').innerHTML = "Gerando arquivo no Drive...";
+
+        try {
+            const res = await fetch(db.configs.url, {
+                method: 'POST',
+                redirect: "follow",
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'exportar_drive', restaurante: nomeRes, dataBr: dataBrFormatada, texto: textoFinal })
+            });
+
+            if(!res.ok) throw new Error("Falha no servidor");
+            let respJSON = await res.json();
+            
+            if(respJSON.status === 'ok') {
+                alert(`✅ Relatório exportado com sucesso para a raiz do seu Google Drive!\nNome do arquivo: Pedido - ${nomeRes} - ${dataBrFormatada}.txt`);
+            } else {
+                throw new Error(respJSON.msg);
+            }
+        } catch(e) {
+            alert("❌ Erro ao exportar para o Drive. Certifique-se de que autorizou o App Script a acessar seu Drive.");
+        } finally {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+    }
+
     /* =========================================================================
-       SISTEMA DE DESFAZER (UNDO)
+       SISTEMA DE DESFAZER E GESTOS (MANTIDOS)
        ========================================================================= */
     function registrarDesfazer(pa) { pilhaDesfazer.push(JSON.parse(JSON.stringify(pa))); atualizarBotaoDesfazer(); }
     function desfazerAcao() {
@@ -1160,36 +1239,20 @@
     }
     function atualizarBotaoDesfazer() { const btn = document.getElementById('btnDesfazer'); if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0) { btn.style.display = 'flex'; } else { btn.style.display = 'none'; } }
 
-    /* =========================================================================
-       GESTOS E RESTRIÇÕES 
-       ========================================================================= */
     let touchStartX = 0; let touchStartY = 0; let pressTimer; let isLongPress = false; let lastTap = 0; let lastTapId = null; let isScrolling = false;
 
-    function handleTouchStart(e, el) { 
-        touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; isLongPress = false; isScrolling = false;
-        pressTimer = setTimeout(() => { if (!isScrolling) { isLongPress = true; acaoSegurar(el); } }, 600); 
-    }
-    
-    function handleTouchMove(e) { 
-        let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY); let diffX = Math.abs(e.changedTouches[0].screenX - touchStartX);
-        if (diffY > 40 || diffX > 20) { isScrolling = true; clearTimeout(pressTimer); }
-    }
-    
+    function handleTouchStart(e, el) { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; isLongPress = false; isScrolling = false; pressTimer = setTimeout(() => { if (!isScrolling) { isLongPress = true; acaoSegurar(el); } }, 600); }
+    function handleTouchMove(e) { let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY); let diffX = Math.abs(e.changedTouches[0].screenX - touchStartX); if (diffY > 40 || diffX > 20) { isScrolling = true; clearTimeout(pressTimer); } }
     function handleTouchEnd(e, el) { 
-        clearTimeout(pressTimer); 
-        if(isLongPress || modoSelecaoAtivo) return;
-        
+        clearTimeout(pressTimer); if(isLongPress || modoSelecaoAtivo) return;
         let diffX = e.changedTouches[0].screenX - touchStartX; let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
-
         if (diffY > 40 || (isScrolling && Math.abs(diffX) < 40)) return;
-
         if (Math.abs(diffX) < 30) {
             let currentTime = new Date().getTime(); let tapLength = currentTime - lastTap; let currentId = el.getAttribute('data-id');
             if (tapLength < 350 && tapLength > 0 && lastTapId === currentId) { acaoDuploToque(el); } else { acaoToqueSimples(el); } 
             lastTap = currentTime; lastTapId = currentId;
         } 
-        else if (diffX < -60) { acaoDeslizarEsquerda(el); } 
-        else if (diffX > 60) { acaoDeslizarDireita(el); }
+        else if (diffX < -60) { acaoDeslizarEsquerda(el); } else if (diffX > 60) { acaoDeslizarDireita(el); }
     }
 
     function getPermissaoColab() { let c = db.colaboradores.find(col => col.id === db.configs.colabAtivoId); return c ? (c.apenasReceber || false) : false; }
@@ -1201,29 +1264,24 @@
                 const p = db.produtos.find(x => x.id === pId); if(!p) return;
                 let qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; 
                 let un = p.unidades[0] || ''; let obsPad = p.obsPadrao || '';
-                
                 let novoPedId = 'pa_' + Date.now();
                 db.pedidosAtivos.push({ idUnico: novoPedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco(); 
-                
                 el.setAttribute('data-pedid', novoPedId); el.classList.add('item-pedido-rascunho');
                 let infoDir = el.querySelector('.info-direita');
                 if(infoDir) { infoDir.innerHTML = `<div class="status-badge bg-rascunho" style="margin-bottom: 2px;">Rascunho</div><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${qtd} ${un}</span>`; }
-                document.getElementById('btnEnviarPedidos').style.display = 'block';
+                document.getElementById('containerBotoesEnvio').style.display = 'flex';
             } 
         } 
     }
     
     function acaoDuploToque(el) {
         if(db.configs.modo === 'pedido') { 
-            const pId = el.getAttribute('data-id');
-            const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === pId && !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
-            const pedidoEditavel = pedidosDeste[pedidosDeste.length-1];
-            if(pedidoEditavel) { abrirModalEditarPedido(pedidoEditavel.idUnico); }
+            const pId = el.getAttribute('data-id'); const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === pId && !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
+            const pedidoEditavel = pedidosDeste[pedidosDeste.length-1]; if(pedidoEditavel) { abrirModalEditarPedido(pedidoEditavel.idUnico); }
         } else {
             if (getPermissaoColab()) return alert("Seu perfil não permite editar os detalhes das compras.");
-            const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
-            if(pa && !pa.excluido) { abrirHistoricoCompra(paId); }
+            const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && !pa.excluido) { abrirHistoricoCompra(paId); }
         }
     }
     
@@ -1231,11 +1289,7 @@
         if(db.configs.modo === 'compras') { 
             if (getPermissaoColab()) return; 
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
-            if(pa && !pa.excluido) { 
-                registrarDesfazer(pa); pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; 
-                salvarBanco(); renderizarLista(); 
-                sincronizarFundo(false, true); 
-            } 
+            if(pa && !pa.excluido) { registrarDesfazer(pa); pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } 
         } 
     }
     
@@ -1245,17 +1299,12 @@
             if(pa) {
                 if(pa.excluido) {
                     if (apenasReceber) return alert("Seu perfil não permite alterar itens excluídos.");
-                    if(confirm("Desfazer exclusão do item e voltar à lista?")) { 
-                        registrarDesfazer(pa); pa.excluido = false; pa.status = 'pendente'; pa.dataStatus = Date.now(); 
-                        salvarBanco(); renderizarLista(); 
-                        sincronizarFundo(false, true); 
-                    }
+                    if(confirm("Desfazer exclusão do item e voltar à lista?")) { registrarDesfazer(pa); pa.excluido = false; pa.status = 'pendente'; pa.dataStatus = Date.now(); salvarBanco(); renderizarLista(); sincronizarFundo(false, true); }
                 } else {
-                    if (apenasReceber && pa.status !== 'pedido_forn') { return alert("Seu perfil só permite dar recebido em itens marcados como 'Pedido ao Fornecedor'."); }
+                    if (apenasReceber && pa.status !== 'pedido_forn') return alert("Seu perfil só permite dar recebido em itens marcados como 'Pedido ao Fornecedor'.");
                     registrarDesfazer(pa);
                     if (pa.status === 'pendente') { pa.status = 'comprado'; pa.dataConclusao = Date.now(); pa.dataStatus = Date.now(); } else if (pa.status === 'pedido_forn') { pa.status = 'entregue'; pa.dataConclusao = Date.now(); pa.dataStatus = Date.now(); }
-                    salvarBanco(); renderizarLista();
-                    sincronizarFundo(false, true); 
+                    salvarBanco(); renderizarLista(); sincronizarFundo(false, true); 
                 }
             }
         }
@@ -1270,7 +1319,7 @@
                     db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== pedId); salvarBanco(); 
                     el.setAttribute('data-pedid', ''); el.classList.remove('item-pedido-rascunho'); el.classList.remove('item-pedido-ativo');
                     let infoDir = el.querySelector('.info-direita'); if(infoDir) infoDir.innerHTML = '';
-                    let temRascunho = db.pedidosAtivos.some(x => x.status === 'rascunho' && !x.excluido); if(!temRascunho) document.getElementById('btnEnviarPedidos').style.display = 'none';
+                    let temRascunho = db.pedidosAtivos.some(x => x.status === 'rascunho' && !x.excluido); if(!temRascunho) document.getElementById('containerBotoesEnvio').style.display = 'none';
                 } 
             } 
         } else { 
@@ -1285,9 +1334,6 @@
         }
     }
 
-    /* =========================================================================
-       OPERAÇÕES DE PEDIDO E COMPRAS (DETALHES)
-       ========================================================================= */
     function abrirModalEditarPedido(paId) { 
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); 
         document.getElementById('editPedidoId').value = paId; document.getElementById('editPedidoQtd').value = pa.qtd; document.getElementById('editPedidoObs').value = pa.obs || '';
@@ -1305,8 +1351,7 @@
 
     function abrirHistoricoCompra(paId) {
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(prod => prod.id === pa.produtoId);
-        document.getElementById('histCompraId').value = paId;
-        document.getElementById('histCompraQtd').value = pa.qtd; document.getElementById('histCompraObs').value = pa.obs || '';
+        document.getElementById('histCompraId').value = paId; document.getElementById('histCompraQtd').value = pa.qtd; document.getElementById('histCompraObs').value = pa.obs || '';
         const selUn = document.getElementById('histCompraUnd'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); 
 
         let htmlDataConclusao = "";
@@ -1330,16 +1375,13 @@
         let pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return;
         if(!pa.marcasSelecionadas) pa.marcasSelecionadas = [];
         if(isChecked) { if(!pa.marcasSelecionadas.includes(marca)) pa.marcasSelecionadas.push(marca); } else { pa.marcasSelecionadas = pa.marcasSelecionadas.filter(m => m !== marca); }
-        salvarBanco(); renderizarLista(); 
-        sincronizarFundo(false, true);
+        salvarBanco(); renderizarLista(); sincronizarFundo(false, true);
     }
 
     function salvarDetalhesCompra() {
-        const paId = document.getElementById('histCompraId').value; const qtd = parseFloatBr(document.getElementById('histCompraQtd').value); 
-        let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
+        const paId = document.getElementById('histCompraId').value; const qtd = parseFloatBr(document.getElementById('histCompraQtd').value); let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
         if(pa) { registrarDesfazer(pa); pa.qtd = qtd; pa.unidade = document.getElementById('histCompraUnd').value; pa.obs = document.getElementById('histCompraObs').value; pa.historico = pa.historico || []; pa.historico.push({ data: new Date().toLocaleString(), msg: `Editado em compras: ${qtd} ${pa.unidade}` }); salvarBanco(); } 
-        fecharModal('modalHistoricoCompra'); renderizarLista(); 
-        sincronizarFundo(false, true);
+        fecharModal('modalHistoricoCompra'); renderizarLista(); sincronizarFundo(false, true);
     }
 
     /* =========================================================================
@@ -1347,100 +1389,52 @@
        ========================================================================= */
     function abrirModalRelatorio() {
         if(itensSelecionadosRelatorio.size === 0) return alert("Selecione os itens marcando o botão ☑️ primeiro.");
-        const selForn = document.getElementById('relatFornecedor'); selForn.innerHTML = '<option value="">-- Todos --</option>'; 
-        let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome)); fornOrdem.forEach(f => selForn.innerHTML += `<option value="${f.id}">${f.nome} (Vend: ${f.vendedor || 'N/A'})</option>`);
-        const selColab = document.getElementById('relatColaborador'); selColab.innerHTML = ''; 
-        let colabOrdem = [...db.colaboradores].sort((a,b) => a.nome.localeCompare(b.nome)); colabOrdem.forEach(c => selColab.innerHTML += `<option value="${c.id}" ${c.id === db.configs.colabAtivoId ? 'selected' : ''}>${c.nome}</option>`);
+        const selForn = document.getElementById('relatFornecedor'); selForn.innerHTML = '<option value="">-- Todos --</option>'; let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome)); fornOrdem.forEach(f => selForn.innerHTML += `<option value="${f.id}">${f.nome} (Vend: ${f.vendedor || 'N/A'})</option>`);
+        const selColab = document.getElementById('relatColaborador'); selColab.innerHTML = ''; let colabOrdem = [...db.colaboradores].sort((a,b) => a.nome.localeCompare(b.nome)); colabOrdem.forEach(c => selColab.innerHTML += `<option value="${c.id}" ${c.id === db.configs.colabAtivoId ? 'selected' : ''}>${c.nome}</option>`);
         document.getElementById('modalRelatorio').style.display = 'flex'; gerarTextoRelatorio();
     }
     
-    function toggleExclusivoRelatorio(tipo) {
-        if(tipo === 'cotacao' && document.getElementById('relatToggleItens').checked) {
-            document.getElementById('relatTogglePedido').checked = false;
-        } else if (tipo === 'pedido' && document.getElementById('relatTogglePedido').checked) {
-            document.getElementById('relatToggleItens').checked = false;
-        }
-    }
+    function toggleExclusivoRelatorio(tipo) { if(tipo === 'cotacao' && document.getElementById('relatToggleItens').checked) { document.getElementById('relatTogglePedido').checked = false; } else if (tipo === 'pedido' && document.getElementById('relatTogglePedido').checked) { document.getElementById('relatToggleItens').checked = false; } }
 
     function gerarTextoRelatorio() {
-        const fornId = document.getElementById('relatFornecedor').value; 
-        const res = db.restaurante; 
-        const forn = db.fornecedores.find(f => f.id === fornId);
-        
-        const incluirCabecalho = document.getElementById('relatToggleCab').checked; 
-        const agruparCat = document.getElementById('relatToggleCat').checked;
-        const isCotacao = document.getElementById('relatToggleItens').checked;
-        const isPedido = document.getElementById('relatTogglePedido').checked;
-        
+        const fornId = document.getElementById('relatFornecedor').value; const res = db.restaurante; const forn = db.fornecedores.find(f => f.id === fornId);
+        const incluirCabecalho = document.getElementById('relatToggleCab').checked; const agruparCat = document.getElementById('relatToggleCat').checked; const isCotacao = document.getElementById('relatToggleItens').checked; const isPedido = document.getElementById('relatTogglePedido').checked;
         let blocos = [];
         
         if (incluirCabecalho) { 
             let cab = `> *${res.nome.toUpperCase()}*\n> CNPJ: ${res.cnpj}\n> End.: ${res.rua}, ${res.numero}\n> ${res.bairro} - ${res.cidade} / ${res.uf}`; 
-            if(res.ponto) cab += `\n> Ponto de referência: ${res.ponto}`; 
-            blocos.push(cab); 
+            if(res.ponto) cab += `\n> Ponto de referência: ${res.ponto}`; blocos.push(cab); 
         }
         
-        if (isCotacao) blocos.push(`*ITENS PARA COTAÇÃO:*`);
-        if (isPedido) blocos.push(`*ITENS DO PEDIDO:*`);
+        if (isCotacao) blocos.push(`*ITENS PARA COTAÇÃO:*`); if (isPedido) blocos.push(`*ITENS DO PEDIDO:*`);
 
-        let itensProcessados = Array.from(itensSelecionadosRelatorio).map(idUnico => {
-            const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico);
-            const p = pa ? db.produtos.find(x => x.id === pa.produtoId) : null;
-            return { pa, p };
-        }).filter(item => item.pa && item.p);
-
+        let itensProcessados = Array.from(itensSelecionadosRelatorio).map(idUnico => { const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); const p = pa ? db.produtos.find(x => x.id === pa.produtoId) : null; return { pa, p }; }).filter(item => item.pa && item.p);
         let blocosItens = [];
 
         if (agruparCat) {
             let grupos = {};
-            itensProcessados.forEach(item => {
-                let cId = item.p.categoria || "sem_cat";
-                if(!grupos[cId]) grupos[cId] = [];
-                grupos[cId].push(item);
-            });
-
+            itensProcessados.forEach(item => { let cId = item.p.categoria || "sem_cat"; if(!grupos[cId]) grupos[cId] = []; grupos[cId].push(item); });
             db.categorias.forEach(cat => {
                 if (grupos[cat.id] && grupos[cat.id].length > 0) {
                     let txtCat = `> *${cat.nome}*\n`;
-                    let linhas = grupos[cat.id].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => {
-                        let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome;
-                        let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : '';
-                        let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : '';
-                        let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-';
-                        return `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`;
-                    });
-                    txtCat += linhas.join('\n');
-                    blocosItens.push(txtCat);
+                    let linhas = grupos[cat.id].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => { let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-'; return `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`; });
+                    txtCat += linhas.join('\n'); blocosItens.push(txtCat);
                 }
             });
-            
             if (grupos["sem_cat"] && grupos["sem_cat"].length > 0) {
                 let txtCat = `> *Outros*\n`;
-                let linhas = grupos["sem_cat"].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => {
-                    let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome;
-                    let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-';
-                    return `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`;
-                });
-                txtCat += linhas.join('\n');
-                blocosItens.push(txtCat);
+                let linhas = grupos["sem_cat"].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => { let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-'; return `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`; });
+                txtCat += linhas.join('\n'); blocosItens.push(txtCat);
             }
         } else {
-            let linhas = itensProcessados.map(item => {
-                let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome;
-                let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-';
-                return `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`;
-            });
+            let linhas = itensProcessados.map(item => { let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-'; return `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`; });
             if(linhas.length > 0) blocosItens.push(linhas.join('\n'));
         }
 
-        if (blocosItens.length > 0) {
-            blocos.push(blocosItens.join('\n\n'));
-        }
-
+        if (blocosItens.length > 0) blocos.push(blocosItens.join('\n\n'));
         document.getElementById('relatTexto').value = blocos.join('\n\n');
         
-        const btnZap = document.querySelector('.btn-whatsapp'); 
-        if(forn && forn.telefone) { btnZap.dataset.tel = forn.telefone; } else { btnZap.dataset.tel = ""; }
+        const btnZap = document.querySelector('.btn-whatsapp'); if(forn && forn.telefone) { btnZap.dataset.tel = forn.telefone; } else { btnZap.dataset.tel = ""; }
     }
     
     function enviarWhatsAppAPI() {
@@ -1450,7 +1444,7 @@
     }
 
     /* =========================================================================
-       ADMIN & CRUDS
+       ADMIN & CRUDS & FILTROS DE GERENCIAR E ALFABETO
        ========================================================================= */
     function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
     function abrirAdmin() { document.getElementById('inputSenhaAdmin').value = ''; document.getElementById('modalSenhaAdmin').style.display = 'flex'; setTimeout(() => document.getElementById('inputSenhaAdmin').focus(), 100); }
@@ -1458,32 +1452,84 @@
     
     function abrirGerenciar(tipo) {
         fecharModal('modalPainelUnificado');
-        const lista = document.getElementById('conteudoListagem'); const btnNovo = document.getElementById('btnNovoListagem'); const titulo = document.getElementById('tituloListagem'); lista.innerHTML = '';
+        const lista = document.getElementById('conteudoListagem'); const btnNovo = document.getElementById('btnNovoListagem'); const titulo = document.getElementById('tituloListagem'); 
+        const boxFiltro = document.getElementById('filtroGerenciarCatBox'); const barAlfabeto = document.getElementById('sidebarAlfabeto');
+        lista.innerHTML = '';
+        
         if(tipo === 'restaurante') {
             fecharModal('modalListagem');
             document.getElementById('restNome').value = db.restaurante.nome; document.getElementById('restCNPJ').value = db.restaurante.cnpj; document.getElementById('restRua').value = db.restaurante.rua; document.getElementById('restNum').value = db.restaurante.numero; document.getElementById('restBairro').value = db.restaurante.bairro; document.getElementById('restCidade').value = db.restaurante.cidade; document.getElementById('restUF').value = db.restaurante.uf || 'PB'; document.getElementById('restPonto').value = db.restaurante.ponto;
             document.getElementById('modalFormRestaurante').style.display = 'flex'; return;
         }
+
         if(tipo === 'produtos') { 
             titulo.innerText = "Produtos"; btnNovo.onclick = () => abrirFormProduto(null); 
-            let prodOrdem = [...db.produtos].sort((a,b) => a.nome.localeCompare(b.nome));
-            prodOrdem.forEach((p) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span></div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="duplicarProduto('${p.id}')">📄</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; }); 
+            
+            // Renderiza combo de categorias para filtro
+            const selFiltro = document.getElementById('filtroGerenciarCat');
+            selFiltro.innerHTML = '<option value="todos">-- Todas as Categorias --</option>';
+            db.categorias.forEach(c => selFiltro.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
+            boxFiltro.style.display = 'block';
+            
+            // Renderiza alfabeto
+            barAlfabeto.style.display = 'flex';
+            barAlfabeto.innerHTML = '';
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(l => { barAlfabeto.innerHTML += `<div onclick="rolarParaLetra('${l}')">${l}</div>`; });
+            
+            renderizarFiltroGerenciar(); // chama a função que renderiza a lista com base no filtro
         } 
-        else if (tipo === 'categorias') { 
-            titulo.innerText = "Categorias"; btnNovo.onclick = () => abrirFormCategoria(null); 
-            db.categorias.forEach((c, index) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><span class="color-preview" style="background:${c.cor}; color:${c.corTexto}; padding:2px 6px; border-radius:4px;">${c.nome}</span></div><div class="gerenciar-actions"><button onclick="moverCategoria(${index}, -1)">⬆️</button><button onclick="moverCategoria(${index}, 1)">⬇️</button><button onclick="abrirFormCategoria('${c.id}')">✏️</button><button onclick="excluirItem('categorias', '${c.id}')">🗑️</button></div></div>`; }); 
-        } 
-        else if (tipo === 'colaboradores') { 
-            titulo.innerText = "Colaboradores"; btnNovo.onclick = () => abrirFormColaborador(null); 
-            let colabOrdem = [...db.colaboradores].sort((a,b) => a.nome.localeCompare(b.nome));
-            colabOrdem.forEach((c) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${c.nome}</strong></div><div class="gerenciar-actions"><button onclick="abrirFormColaborador('${c.id}')">✏️</button><button onclick="excluirItem('colaboradores', '${c.id}')">🗑️</button></div></div>`; }); 
-        } 
-        else if (tipo === 'fornecedores') { 
-            titulo.innerText = "Fornecedores"; btnNovo.onclick = () => abrirFormFornecedor(null); 
-            let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome));
-            fornOrdem.forEach((f) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${f.nome}</strong><br><span style="color:#666">${f.telefone}</span></div><div class="gerenciar-actions"><button onclick="abrirFormFornecedor('${f.id}')">✏️</button><button onclick="excluirItem('fornecedores', '${f.id}')">🗑️</button></div></div>`; }); 
+        else {
+            boxFiltro.style.display = 'none';
+            barAlfabeto.style.display = 'none';
+
+            if (tipo === 'categorias') { 
+                titulo.innerText = "Categorias"; btnNovo.onclick = () => abrirFormCategoria(null); 
+                db.categorias.forEach((c, index) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><span class="color-preview" style="background:${c.cor}; color:${c.corTexto}; padding:2px 6px; border-radius:4px;">${c.nome}</span></div><div class="gerenciar-actions"><button onclick="moverCategoria(${index}, -1)">⬆️</button><button onclick="moverCategoria(${index}, 1)">⬇️</button><button onclick="abrirFormCategoria('${c.id}')">✏️</button><button onclick="excluirItem('categorias', '${c.id}')">🗑️</button></div></div>`; }); 
+            } 
+            else if (tipo === 'colaboradores') { 
+                titulo.innerText = "Colaboradores"; btnNovo.onclick = () => abrirFormColaborador(null); 
+                let colabOrdem = [...db.colaboradores].sort((a,b) => a.nome.localeCompare(b.nome));
+                colabOrdem.forEach((c) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${c.nome}</strong></div><div class="gerenciar-actions"><button onclick="abrirFormColaborador('${c.id}')">✏️</button><button onclick="excluirItem('colaboradores', '${c.id}')">🗑️</button></div></div>`; }); 
+            } 
+            else if (tipo === 'fornecedores') { 
+                titulo.innerText = "Fornecedores"; btnNovo.onclick = () => abrirFormFornecedor(null); 
+                let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome));
+                fornOrdem.forEach((f) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${f.nome}</strong><br><span style="color:#666">${f.telefone}</span></div><div class="gerenciar-actions"><button onclick="abrirFormFornecedor('${f.id}')">✏️</button><button onclick="excluirItem('fornecedores', '${f.id}')">🗑️</button></div></div>`; }); 
+            }
         }
         document.getElementById('modalListagem').style.display = 'flex';
+    }
+
+    function renderizarFiltroGerenciar() {
+        const lista = document.getElementById('conteudoListagem');
+        const filtro = document.getElementById('filtroGerenciarCat').value;
+        lista.innerHTML = '';
+        
+        let lastLetra = '';
+        let prodOrdem = [...db.produtos].sort((a,b) => a.nome.localeCompare(b.nome));
+        
+        prodOrdem.forEach((p) => { 
+            if (filtro !== 'todos' && p.categoria !== filtro) return;
+            
+            let letra = p.nome.charAt(0).toUpperCase();
+            if (letra !== lastLetra) {
+                lista.innerHTML += `<div id="ancora_letra_${letra}" class="letra-separador">${letra}</div>`;
+                lastLetra = letra;
+            }
+            
+            lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span></div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="duplicarProduto('${p.id}')">📄</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; 
+        });
+    }
+
+    function rolarParaLetra(letra) {
+        const elemento = document.getElementById('ancora_letra_' + letra);
+        if(elemento) {
+            // Scroll suave dentro do container da lista
+            document.getElementById('conteudoListagem').scrollTo({
+                top: elemento.offsetTop - document.getElementById('conteudoListagem').offsetTop,
+                behavior: 'smooth'
+            });
+        }
     }
 
     function moverCategoria(index, direcao) {
@@ -1495,97 +1541,36 @@
     function excluirItem(tipo, id) { if(confirm("Tem certeza?")) { db[tipo] = db[tipo].filter(x => x.id !== id); salvarBanco(); abrirGerenciar(tipo); renderizarLista(); sincronizarFundo(false, true); } }
 
     function duplicarProduto(id) {
-        let p = db.produtos.find(x => x.id === id); if(!p) return;
-        let copia = JSON.parse(JSON.stringify(p)); copia.id = 'p_' + Date.now(); copia.nome = copia.nome + " (Cópia)"; db.produtos.push(copia);
-        salvarBanco(); abrirGerenciar('produtos'); sincronizarFundo(false, true);
+        if(confirm("Deseja duplicar este produto com os exatos mesmos dados e nome?")) {
+            let p = db.produtos.find(x => x.id === id); if(!p) return;
+            let copia = JSON.parse(JSON.stringify(p)); copia.id = 'p_' + Date.now(); 
+            // Não altero o nome conforme solicitado: copia.nome = copia.nome + " (Cópia)";
+            db.produtos.push(copia);
+            salvarBanco(); abrirGerenciar('produtos'); sincronizarFundo(false, true);
+        }
     }
 
     function salvarRestaurante() { db.restaurante.nome = document.getElementById('restNome').value; db.restaurante.cnpj = document.getElementById('restCNPJ').value; db.restaurante.rua = document.getElementById('restRua').value; db.restaurante.numero = document.getElementById('restNum').value; db.restaurante.bairro = document.getElementById('restBairro').value; db.restaurante.cidade = document.getElementById('restCidade').value; db.restaurante.uf = document.getElementById('restUF').value; db.restaurante.ponto = document.getElementById('restPonto').value; salvarBanco(); fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display = 'flex'; sincronizarFundo(false, true); }
 
     /* LÓGICA DE PREÇOS PRODUTO E FORNECEDORES VINCULADOS */
-    function renderizarPrecosTemporarios() {
-        const box = document.getElementById('boxHistoricoPrecos'); const list = document.getElementById('listaPrecosProduto'); list.innerHTML = '';
-        if(tempPrecosProduto.length === 0) { box.style.display = 'none'; } else {
-            box.style.display = 'block';
-            [...tempPrecosProduto].reverse().forEach((p, realIdxReverso) => { let realIdx = tempPrecosProduto.length - 1 - realIdxReverso; list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:4px 0;"><span>${p.data}: <b>R$ ${p.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</b></span><div><button onclick="editarPrecoProduto(${realIdx})" style="background:none;border:none;cursor:pointer;font-size:14px;">✏️</button><button onclick="excluirPrecoProduto(${realIdx})" style="background:none;border:none;cursor:pointer;font-size:14px;">🗑️</button></div></div>`; });
-        }
-    }
+    function renderizarPrecosTemporarios() { const box = document.getElementById('boxHistoricoPrecos'); const list = document.getElementById('listaPrecosProduto'); list.innerHTML = ''; if(tempPrecosProduto.length === 0) { box.style.display = 'none'; } else { box.style.display = 'block'; [...tempPrecosProduto].reverse().forEach((p, realIdxReverso) => { let realIdx = tempPrecosProduto.length - 1 - realIdxReverso; list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:4px 0;"><span>${p.data}: <b>R$ ${p.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</b></span><div><button onclick="editarPrecoProduto(${realIdx})" style="background:none;border:none;cursor:pointer;font-size:14px;">✏️</button><button onclick="excluirPrecoProduto(${realIdx})" style="background:none;border:none;cursor:pointer;font-size:14px;">🗑️</button></div></div>`; }); } }
     function editarPrecoProduto(idx) { let nval = prompt("Editar Preço (apenas números e vírgula):", tempPrecosProduto[idx].preco.toLocaleString('pt-BR', {minimumFractionDigits: 2})); if(nval !== null && nval.trim() !== "") { tempPrecosProduto[idx].preco = parseFloatBr(nval); renderizarPrecosTemporarios(); } }
     function excluirPrecoProduto(idx) { if(confirm("Excluir este preço do histórico?")) { tempPrecosProduto.splice(idx, 1); renderizarPrecosTemporarios(); } }
 
-    function renderizarFornecedoresVinculados() {
-        const box = document.getElementById('listaFornecedoresVinculados'); box.innerHTML = '';
-        if(tempFornecedoresProduto.length === 0) { box.innerHTML = '<span style="font-size:12px; color:#999;">Nenhum fornecedor vinculado.</span>'; return; }
-        tempFornecedoresProduto.forEach(fId => {
-            let f = db.fornecedores.find(x => x.id === fId);
-            if(f) { box.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:#e3f2fd; padding:6px 10px; border-radius:4px; font-size:13px; color:#1565C0; font-weight:bold;"><span>${f.nome}</span><button onclick="removerFornecedorVinculado('${f.id}')" style="background:none; border:none; cursor:pointer; color:#d32f2f; font-size:16px;">×</button></div>`; }
-        });
-    }
-
+    function renderizarFornecedoresVinculados() { const box = document.getElementById('listaFornecedoresVinculados'); box.innerHTML = ''; if(tempFornecedoresProduto.length === 0) { box.innerHTML = '<span style="font-size:12px; color:#999;">Nenhum fornecedor vinculado.</span>'; return; } tempFornecedoresProduto.forEach(fId => { let f = db.fornecedores.find(x => x.id === fId); if(f) { box.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:#e3f2fd; padding:6px 10px; border-radius:4px; font-size:13px; color:#1565C0; font-weight:bold;"><span>${f.nome}</span><button onclick="removerFornecedorVinculado('${f.id}')" style="background:none; border:none; cursor:pointer; color:#d32f2f; font-size:16px;">×</button></div>`; } }); }
     function removerFornecedorVinculado(id) { tempFornecedoresProduto = tempFornecedoresProduto.filter(x => x !== id); renderizarFornecedoresVinculados(); }
 
-    function abrirModalSelecaoFornecedores() {
-        const box = document.getElementById('boxListaFornecedoresSelecao'); box.innerHTML = '';
-        if(db.fornecedores.length === 0) { box.innerHTML = '<span style="font-size:13px; color:#666; padding:10px; display:block;">Nenhum fornecedor cadastrado no sistema.</span>'; } 
-        else {
-            let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome));
-            fornOrdem.forEach(f => {
-                let checked = tempFornecedoresProduto.includes(f.id) ? 'checked' : '';
-                box.innerHTML += `<label style="display:flex; align-items:center; padding:10px; border-bottom:1px solid #eee; font-size:14px; cursor:pointer;"><input type="checkbox" value="${f.id}" class="chk-selecao-forn" style="margin-right:10px; width:18px; height:18px;" ${checked}>${f.nome}</label>`;
-            });
-        }
-        document.getElementById('modalSelecaoFornecedores').style.display = 'flex';
-    }
-
+    function abrirModalSelecaoFornecedores() { const box = document.getElementById('boxListaFornecedoresSelecao'); box.innerHTML = ''; if(db.fornecedores.length === 0) { box.innerHTML = '<span style="font-size:13px; color:#666; padding:10px; display:block;">Nenhum fornecedor cadastrado no sistema.</span>'; } else { let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome)); fornOrdem.forEach(f => { let checked = tempFornecedoresProduto.includes(f.id) ? 'checked' : ''; box.innerHTML += `<label style="display:flex; align-items:center; padding:10px; border-bottom:1px solid #eee; font-size:14px; cursor:pointer;"><input type="checkbox" value="${f.id}" class="chk-selecao-forn" style="margin-right:10px; width:18px; height:18px;" ${checked}>${f.nome}</label>`; }); } document.getElementById('modalSelecaoFornecedores').style.display = 'flex'; }
     function confirmarSelecaoFornecedores() { tempFornecedoresProduto = Array.from(document.querySelectorAll('.chk-selecao-forn:checked')).map(el => el.value); fecharModal('modalSelecaoFornecedores'); renderizarFornecedoresVinculados(); }
 
-    function abrirFormProduto(id) {
-        fecharModal('modalListagem'); const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
-        document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR();
-        let p = null;
-        if(id) {
-            p = db.produtos.find(x => x.id === id); 
-            document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodDesc').value = p.descFornecedor || ''; document.getElementById('prodObsPadrao').value = p.obsPadrao || ''; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : '';
-            tempPrecosProduto = p.historicoPrecos ? JSON.parse(JSON.stringify(p.historicoPrecos)) : []; tempFornecedoresProduto = p.fornecedores ? JSON.parse(JSON.stringify(p.fornecedores)) : [];
-        } else { 
-            document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = ''; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodQtdPadrao').value = ''; 
-            tempPrecosProduto = []; tempFornecedoresProduto = [];
-        }
-        renderizarFornecedoresVinculados(); renderizarPrecosTemporarios(); document.getElementById('modalFormProduto').style.display = 'flex';
-    }
-    
-    function salvarProduto() {
-        const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : '';
-        if(pVal > 0) { tempPrecosProduto.push({ data: pData, preco: pVal }); }
-        const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: tempFornecedoresProduto };
-        const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo);
-        salvarBanco(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista(); sincronizarFundo(false, true);
-    }
+    function abrirFormProduto(id) { fecharModal('modalListagem'); const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`); document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); let p = null; if(id) { p = db.produtos.find(x => x.id === id); document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodDesc').value = p.descFornecedor || ''; document.getElementById('prodObsPadrao').value = p.obsPadrao || ''; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; tempPrecosProduto = p.historicoPrecos ? JSON.parse(JSON.stringify(p.historicoPrecos)) : []; tempFornecedoresProduto = p.fornecedores ? JSON.parse(JSON.stringify(p.fornecedores)) : []; } else { document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = ''; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodQtdPadrao').value = ''; tempPrecosProduto = []; tempFornecedoresProduto = []; } renderizarFornecedoresVinculados(); renderizarPrecosTemporarios(); document.getElementById('modalFormProduto').style.display = 'flex'; }
+    function salvarProduto() { const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : ''; if(pVal > 0) { tempPrecosProduto.push({ data: pData, preco: pVal }); } const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: tempFornecedoresProduto }; const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo); salvarBanco(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista(); sincronizarFundo(false, true); }
 
     function abrirFormCategoria(id) { fecharModal('modalListagem'); if(id) { const c = db.categorias.find(x => x.id === id); document.getElementById('catId').value = id; document.getElementById('catNome').value = c.nome; document.getElementById('catCor').value = c.cor; document.getElementById('catCorTexto').value = c.corTexto; } else { document.getElementById('catId').value = ''; document.getElementById('catNome').value = ''; document.getElementById('catCor').value = '#1565C0'; document.getElementById('catCorTexto').value = '#ffffff'; } document.getElementById('modalFormCategoria').style.display = 'flex'; }
     function salvarCategoria() { const id = document.getElementById('catId').value || 'c_'+Date.now(); const novo = { id: id, nome: document.getElementById('catNome').value, cor: document.getElementById('catCor').value, corTexto: document.getElementById('catCorTexto').value }; const idx = db.categorias.findIndex(x => x.id === id); if(idx >= 0) db.categorias[idx] = novo; else db.categorias.push(novo); salvarBanco(); fecharModal('modalFormCategoria'); abrirGerenciar('categorias'); renderizarLista(); sincronizarFundo(false, true); }
 
-    function abrirFormColaborador(id) {
-        fecharModal('modalListagem'); const box = document.getElementById('colabCategoriasBox'); box.innerHTML = ''; const c = id ? db.colaboradores.find(x => x.id === id) : null;
-        document.getElementById('colabIsAdmin').checked = c ? (c.isAdmin || false) : false; document.getElementById('colabApenasReceber').checked = c ? (c.apenasReceber || false) : false;
-
-        db.categorias.forEach(cat => { 
-            let checkPed = (!c || (c.catsPermitidasPedido !== undefined ? c.catsPermitidasPedido.includes(cat.id) : (c.catsPermitidas ? c.catsPermitidas.includes(cat.id) : true))) ? 'checked' : '';
-            let checkComp = (!c || (c.catsPermitidasCompras !== undefined ? c.catsPermitidasCompras.includes(cat.id) : (c.catsPermitidas ? c.catsPermitidas.includes(cat.id) : true))) ? 'checked' : '';
-            
-            box.innerHTML += `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #ddd; padding-bottom:6px;"><span style="font-weight:bold; font-size:12px; flex:1; color:#333;">${cat.nome}</span><div style="display:flex; gap:15px;"><label style="display:flex; flex-direction:column; align-items:center; font-size:9px; color:#555; gap:2px;"><div class="switch" style="margin:0;"><input type="checkbox" value="${cat.id}" class="chk-cat-pedido" ${checkPed}><span class="slider"></span></div>Pedidos</label><label style="display:flex; flex-direction:column; align-items:center; font-size:9px; color:#555; gap:2px;"><div class="switch" style="margin:0;"><input type="checkbox" value="${cat.id}" class="chk-cat-compras" ${checkComp}><span class="slider"></span></div>Compras</label></div></div>`; 
-        });
-        document.getElementById('colabId').value = id || ''; document.getElementById('colabNome').value = c ? c.nome : ''; document.getElementById('colabSenha').value = c ? c.senha : ''; document.getElementById('modalFormColaborador').style.display = 'flex';
-    }
-    
-    function salvarColaborador() { 
-        const id = document.getElementById('colabId').value || 'col_'+Date.now(); 
-        const catsPed = Array.from(document.querySelectorAll('.chk-cat-pedido:checked')).map(el => el.value); const catsComp = Array.from(document.querySelectorAll('.chk-cat-compras:checked')).map(el => el.value);
-        const s = document.getElementById('colabSenha').value; const isAdmin = document.getElementById('colabIsAdmin').checked; const apenasReceber = document.getElementById('colabApenasReceber').checked; 
-        const novo = { id: id, nome: document.getElementById('colabNome').value, telefone: "", senha: s, isAdmin: isAdmin, apenasReceber: apenasReceber, catsPermitidasPedido: catsPed, catsPermitidasCompras: catsComp, catsPermitidas: [] }; 
-        const idx = db.colaboradores.findIndex(x => x.id === id); if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo); 
-        salvarBanco(); fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores'); sincronizarFundo(false, true); 
-    }
+    function abrirFormColaborador(id) { fecharModal('modalListagem'); const box = document.getElementById('colabCategoriasBox'); box.innerHTML = ''; const c = id ? db.colaboradores.find(x => x.id === id) : null; document.getElementById('colabIsAdmin').checked = c ? (c.isAdmin || false) : false; document.getElementById('colabApenasReceber').checked = c ? (c.apenasReceber || false) : false; db.categorias.forEach(cat => { let checkPed = (!c || (c.catsPermitidasPedido !== undefined ? c.catsPermitidasPedido.includes(cat.id) : (c.catsPermitidas ? c.catsPermitidas.includes(cat.id) : true))) ? 'checked' : ''; let checkComp = (!c || (c.catsPermitidasCompras !== undefined ? c.catsPermitidasCompras.includes(cat.id) : (c.catsPermitidas ? c.catsPermitidas.includes(cat.id) : true))) ? 'checked' : ''; box.innerHTML += `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #ddd; padding-bottom:6px;"><span style="font-weight:bold; font-size:12px; flex:1; color:#333;">${cat.nome}</span><div style="display:flex; gap:15px;"><label style="display:flex; flex-direction:column; align-items:center; font-size:9px; color:#555; gap:2px;"><div class="switch" style="margin:0;"><input type="checkbox" value="${cat.id}" class="chk-cat-pedido" ${checkPed}><span class="slider"></span></div>Pedidos</label><label style="display:flex; flex-direction:column; align-items:center; font-size:9px; color:#555; gap:2px;"><div class="switch" style="margin:0;"><input type="checkbox" value="${cat.id}" class="chk-cat-compras" ${checkComp}><span class="slider"></span></div>Compras</label></div></div>`; }); document.getElementById('colabId').value = id || ''; document.getElementById('colabNome').value = c ? c.nome : ''; document.getElementById('colabSenha').value = c ? c.senha : ''; document.getElementById('modalFormColaborador').style.display = 'flex'; }
+    function salvarColaborador() { const id = document.getElementById('colabId').value || 'col_'+Date.now(); const catsPed = Array.from(document.querySelectorAll('.chk-cat-pedido:checked')).map(el => el.value); const catsComp = Array.from(document.querySelectorAll('.chk-cat-compras:checked')).map(el => el.value); const s = document.getElementById('colabSenha').value; const isAdmin = document.getElementById('colabIsAdmin').checked; const apenasReceber = document.getElementById('colabApenasReceber').checked; const novo = { id: id, nome: document.getElementById('colabNome').value, telefone: "", senha: s, isAdmin: isAdmin, apenasReceber: apenasReceber, catsPermitidasPedido: catsPed, catsPermitidasCompras: catsComp, catsPermitidas: [] }; const idx = db.colaboradores.findIndex(x => x.id === id); if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo); salvarBanco(); fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores'); sincronizarFundo(false, true); }
 
     function abrirFormFornecedor(id) { fecharModal('modalListagem'); if(id) { const f = db.fornecedores.find(x => x.id === id); document.getElementById('fornId').value = id; document.getElementById('fornNome').value = f.nome; document.getElementById('fornVendedor').value = f.vendedor || ''; document.getElementById('fornTel').value = f.telefone || ''; document.getElementById('fornNomeGerente').value = f.nomeGerente || ''; document.getElementById('fornTelGerente').value = f.telGerente || ''; document.getElementById('fornTelEmpresa').value = f.telEmpresa || ''; } else { document.getElementById('fornId').value = ''; document.getElementById('fornNome').value = ''; document.getElementById('fornVendedor').value = ''; document.getElementById('fornTel').value = ''; document.getElementById('fornNomeGerente').value = ''; document.getElementById('fornTelGerente').value = ''; document.getElementById('fornTelEmpresa').value = ''; } document.getElementById('modalFormFornecedor').style.display = 'flex'; }
     function salvarFornecedor() { const id = document.getElementById('fornId').value || 'f_'+Date.now(); const novo = { id: id, nome: document.getElementById('fornNome').value, vendedor: document.getElementById('fornVendedor').value, telefone: document.getElementById('fornTel').value, nomeGerente: document.getElementById('fornNomeGerente').value, telGerente: document.getElementById('fornTelGerente').value, telEmpresa: document.getElementById('fornTelEmpresa').value }; const idx = db.fornecedores.findIndex(x => x.id === id); if(idx >= 0) db.fornecedores[idx] = novo; else db.fornecedores.push(novo); salvarBanco(); fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores'); sincronizarFundo(false, true); }
