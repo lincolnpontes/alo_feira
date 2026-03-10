@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0.6</title>
+    <title>Alô Feira v1.0.7</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -150,7 +150,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0.6</div>
+    <div class="splash-versao">v1.0.7</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -334,7 +334,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0.6</div>
+            <div class="versao">v1.0.7</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -389,16 +389,12 @@
                 <span style="position:absolute; left:10px; font-size:16px;">🔎</span>
                 <input type="text" id="inputBuscaProd" oninput="renderizarFiltroGerenciar()" placeholder="Buscar produto..." style="width:100%; padding:10px 10px 10px 35px; border:1px solid #ccc; border-radius:5px; box-sizing:border-box; font-size:14px;">
             </div>
-            <select id="filtroGerenciarCat" onchange="renderizarFiltroGerenciar()">
-                </select>
+            <select id="filtroGerenciarCat" onchange="renderizarFiltroGerenciar()"></select>
         </div>
 
         <button class="btn-action" id="btnNovoListagem" style="width: 100%; margin-bottom: 15px; flex-shrink: 0;">+ Novo</button>
-        
         <div id="conteudoListagem" style="flex: 1; overflow-y: auto; padding-right: 25px; min-height: 40vh;"></div>
-        
         <div class="sidebar-alfabeto" id="sidebarAlfabeto" style="display: none;"></div>
-
         <div class="modal-actions" style="flex-shrink: 0;"><button class="btn-cancel" onclick="fecharModal('modalListagem'); document.getElementById('modalPainelUnificado').style.display='flex';" style="width: 100%;">Voltar</button></div>
     </div>
 </div>
@@ -565,7 +561,7 @@
             app_id: "alofeira", 
             restaurante: { nome: "", cnpj: "", rua: "", numero: "", bairro: "", cidade: "", uf: "PB", ponto: "" },
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
-            configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: true, colabAtivoId: null, url: "", dadosBaixados: false, pausarSync: false }
+            configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: true, colabAtivoId: null, url: "", dadosBaixados: false, pendingSync: false }
         };
         let salvo = localStorage.getItem('alofeira_v1');
         if(salvo) {
@@ -575,9 +571,8 @@
                     if(!pa.dataEnvio && pa.status !== 'rascunho') { pa.dataEnvio = pa.dataStatus || parseInt(pa.idUnico.split('_')[1]); }
                 });
             }
-            if(parsed.categorias) {
-                parsed.categorias.forEach(c => { if(!c.subcategorias) c.subcategorias = []; });
-            }
+            if(parsed.categorias) { parsed.categorias.forEach(c => { if(!c.subcategorias) c.subcategorias = []; }); }
+            if(parsed.configs && parsed.configs.pendingSync === undefined) parsed.configs.pendingSync = false;
             return parsed;
         }
         return base;
@@ -585,6 +580,9 @@
     
     function salvarBanco() { localStorage.setItem('alofeira_v1', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+    // Trava CADEADO DE SINCRONIZAÇÃO
+    function marcarMudancaEstrutural() { db.configs.pendingSync = true; salvarBanco(); }
 
     function getCatsPermitidas(colabLogado) {
         if(!colabLogado) return null;
@@ -655,39 +653,25 @@
                 nuvemDB.configs = nuvemDB.configs || {};
                 nuvemDB.configs.url = inputUrl;
                 nuvemDB.configs.dadosBaixados = true;
-                nuvemDB.configs.pausarSync = false; 
+                nuvemDB.configs.pendingSync = false; 
 
                 db = nuvemDB; 
                 salvarBanco();
 
                 alert("✅ Conexão estabelecida! Todos os dados foram puxados da nuvem com sucesso.");
                 location.reload(); 
-            } else {
-                alert("❌ O link parece correto, mas não encontrei o banco de dados lá. Verifique a URL.");
-            }
-        } catch(e) {
-            alert("❌ Falha na conexão. Verifique sua internet ou se a URL está correta e tente de novo.");
-        } finally {
-            document.getElementById('loadingOverlay').style.display = 'none';
-        }
+            } else { alert("❌ O link parece correto, mas não encontrei o banco de dados lá. Verifique a URL."); }
+        } catch(e) { alert("❌ Falha na conexão. Verifique sua internet ou se a URL está correta e tente de novo."); } 
+        finally { document.getElementById('loadingOverlay').style.display = 'none'; }
     }
     
-    // NOVA TRAVA TÁTICA CONTRA SOBREPOSIÇÃO
-    function isUsuarioGerenciando() {
-        return Array.from(document.querySelectorAll('.modal-overlay')).some(el => el.style.display === 'flex');
-    }
+    function isUsuarioGerenciando() { return Array.from(document.querySelectorAll('.modal-overlay')).some(el => el.style.display === 'flex'); }
 
     async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
         if(!db.configs.url) return;
-        if(db.configs && db.configs.pausarSync && !forcado && !apenasEmpurrar) return;
-        
-        // Bloqueio de leitura para não sobrepor telas de edição em andamento
         if(isUsuarioGerenciando() && !forcado && !apenasEmpurrar) return;
 
-        if(isSyncingFundo) {
-            if(forcado) alert("🔄 O sistema já está processando dados com a nuvem no momento. Aguarde alguns segundos.");
-            return;
-        }
+        if(isSyncingFundo) { if(forcado) alert("🔄 O sistema já está processando dados com a nuvem no momento. Aguarde alguns segundos."); return; }
         if(document.hidden && !forcado && !apenasEmpurrar) return;
 
         let temRascunho = db.pedidosAtivos.some(pa => pa.status === 'rascunho' && !pa.excluido);
@@ -709,73 +693,62 @@
                     let jsonAntes = JSON.stringify(db.pedidosAtivos);
                     let mergedPedidos = new Map();
                     
-                    nuvemDB.pedidosAtivos.forEach(pCloud => {
-                        if(pCloud.status !== 'rascunho') { mergedPedidos.set(pCloud.idUnico, pCloud); }
-                    });
+                    nuvemDB.pedidosAtivos.forEach(pCloud => { if(pCloud.status !== 'rascunho') { mergedPedidos.set(pCloud.idUnico, pCloud); } });
                     
                     let pedidosLocais = db.pedidosAtivos || [];
                     pedidosLocais.forEach(pLoc => {
                         if(pLoc.status === 'rascunho') { mergedPedidos.set(pLoc.idUnico, pLoc); return; }
-
                         let pCloud = mergedPedidos.get(pLoc.idUnico);
-                        let tLoc = pLoc.dataStatus || 0;
-                        let tCloud = pCloud ? (pCloud.dataStatus || 0) : 0;
-                        
-                        if(!pCloud || tLoc > tCloud) {
-                            mergedPedidos.set(pLoc.idUnico, pLoc);
-                            precisaAtualizarNuvem = true; 
-                        }
+                        let tLoc = pLoc.dataStatus || 0; let tCloud = pCloud ? (pCloud.dataStatus || 0) : 0;
+                        if(!pCloud || tLoc > tCloud) { mergedPedidos.set(pLoc.idUnico, pLoc); precisaAtualizarNuvem = true; }
                     });
 
                     db.pedidosAtivos = Array.from(mergedPedidos.values());
 
-                    if(nuvemDB.produtos) db.produtos = nuvemDB.produtos;
-                    if(nuvemDB.categorias) db.categorias = nuvemDB.categorias;
-                    if(nuvemDB.fornecedores) db.fornecedores = nuvemDB.fornecedores;
-                    if(nuvemDB.colaboradores) db.colaboradores = nuvemDB.colaboradores;
+                    // CADEADO DE SEGURANÇA: Só puxa a estrutura da nuvem se não houver edição local travada
+                    if (!db.configs.pendingSync) {
+                        if(nuvemDB.produtos) db.produtos = nuvemDB.produtos;
+                        if(nuvemDB.categorias) db.categorias = nuvemDB.categorias;
+                        if(nuvemDB.fornecedores) db.fornecedores = nuvemDB.fornecedores;
+                        if(nuvemDB.colaboradores) db.colaboradores = nuvemDB.colaboradores;
 
-                    if(nuvemDB.configs) {
-                        db.configs.exigirColaborador = nuvemDB.configs.exigirColaborador;
-                        db.configs.senhaAdmin = nuvemDB.configs.senhaAdmin || "1999";
+                        if(nuvemDB.configs) {
+                            db.configs.exigirColaborador = nuvemDB.configs.exigirColaborador;
+                            db.configs.senhaAdmin = nuvemDB.configs.senhaAdmin || "1999";
+                        }
                     }
 
                     db.configs.dadosBaixados = true;
                     salvarBanco();
 
                     if (db.configs.exigirColaborador && !db.configs.colabAtivoId && document.getElementById('modalColaboradorObrigatorio').style.display !== 'flex') {
-                        fecharModal('modalConfigAvancadas');
-                        fecharModal('modalPainelUnificado');
-                        abrirSelecaoColaboradorInicial(false);
+                        fecharModal('modalConfigAvancadas'); fecharModal('modalPainelUnificado'); abrirSelecaoColaboradorInicial(false);
                     }
 
                     let jsonDepois = JSON.stringify(db.pedidosAtivos);
-                    // Atualiza a tela APENAS se não estiver com nenhum modal importante aberto para evitar glitches
-                    if(jsonAntes !== jsonDepois && !isUsuarioGerenciando()) {
-                        renderizarLista();
-                    }
+                    if(jsonAntes !== jsonDepois && !isUsuarioGerenciando()) { renderizarLista(); }
                 }
             }
             
-            if (precisaAtualizarNuvem || apenasEmpurrar || forcado) {
+            if (precisaAtualizarNuvem || apenasEmpurrar || forcado || db.configs.pendingSync) {
                 let dbParaNuvem = JSON.parse(JSON.stringify(db));
                 dbParaNuvem.pedidosAtivos = dbParaNuvem.pedidosAtivos.filter(p => p.status !== 'rascunho');
 
-                await fetch(db.configs.url, { 
-                    method: 'POST', 
-                    redirect: "follow",
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                let response = await fetch(db.configs.url, { 
+                    method: 'POST', redirect: "follow", headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: 'salvar_banco', dados: dbParaNuvem }) 
                 });
+                if(response.ok) {
+                    db.configs.pendingSync = false; // DESTRAVA: Nuvem recebeu os dados estruturais!
+                    salvarBanco();
+                }
             }
-        } catch(e) {
-            console.error("Erro na sincronização de fundo", e);
-        } finally {
-            isSyncingFundo = false;
-            indicador.style.opacity = '0';
-        }
+        } catch(e) { console.error("Erro na sincronização de fundo", e); } 
+        finally { isSyncingFundo = false; indicador.style.opacity = '0'; }
     }
 
-    setInterval(() => { sincronizarFundo(false, false); }, 20000);
+    // Se houver trava pendingSync, ele força o PUSH, senão ele puxa normal.
+    setInterval(() => { if(db.configs && db.configs.pendingSync) { sincronizarFundo(false, true); } else { sincronizarFundo(false, false); } }, 20000);
     
     function exportarDados() {
         db.app_id = "alofeira"; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
@@ -792,12 +765,8 @@
             try {
                 const importedDb = JSON.parse(e.target.result);
                 if(importedDb && importedDb.app_id === "alofeira") {
-                    let urlSalva = db.configs.url; 
-                    db = importedDb; 
-                    if (urlSalva) db.configs.url = urlSalva; 
-                    if(!db.configs) db.configs = {};
-                    db.configs.pausarSync = true; 
-                    salvarBanco(); 
+                    let urlSalva = db.configs.url; db = importedDb; if (urlSalva) db.configs.url = urlSalva; 
+                    if(!db.configs) db.configs = {}; db.configs.pendingSync = true; salvarBanco(); 
                     alert("✅ Arquivo carregado no celular!\n\nAgora, vá na Engrenagem -> Avançado e clique no botão 'Forçar Envio Completo pra Nuvem' para salvar lá."); 
                     location.reload(); 
                 } else { alert("Arquivo de backup inválido."); }
@@ -822,13 +791,10 @@
             });
 
             if(!res.ok) throw new Error("Falha no servidor");
-            db.configs.pausarSync = false; salvarBanco();
+            db.configs.pendingSync = false; salvarBanco();
             alert("✅ TUDO SALVO! O backup foi gravado com sucesso na nuvem.");
-        } catch(e) {
-            alert("❌ Falha na conexão com a nuvem. Verifique a internet ou a URL e tente novamente.");
-        } finally {
-            document.getElementById('loadingOverlay').style.display = 'none';
-        }
+        } catch(e) { alert("❌ Falha na conexão com a nuvem. Verifique a internet ou a URL e tente novamente."); } 
+        finally { document.getElementById('loadingOverlay').style.display = 'none'; }
     }
 
     async function excluirTodoHistorico() { 
@@ -837,11 +803,10 @@
             if(isSyncingFundo) return alert("⏳ Aguarde o sistema terminar de conversar com a nuvem antes de apagar o histórico.");
             if(!confirm("⚠️ TEM CERTEZA? Isso vai apagar todos os pedidos de TODOS os aparelhos conectados. Essa ação não afeta produtos ou categorias.")) return;
 
-            db.pedidosAtivos = []; salvarBanco(); 
+            db.pedidosAtivos = []; marcarMudancaEstrutural();
             
             if (db.configs.url) {
-                isSyncingFundo = true; 
-                document.getElementById('loadingOverlay').style.display = 'flex';
+                isSyncingFundo = true; document.getElementById('loadingOverlay').style.display = 'flex';
                 document.getElementById('loadingText').innerHTML = "Apagando histórico na nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde.</span>";
                 try {
                     let dbParaNuvem = JSON.parse(JSON.stringify(db)); 
@@ -850,12 +815,10 @@
                         body: JSON.stringify({ action: 'salvar_banco', dados: dbParaNuvem }) 
                     });
                     if(!res.ok) throw new Error("Erro de resposta");
+                    db.configs.pendingSync = false; salvarBanco();
                     alert("✅ Histórico de pedidos apagado localmente e na nuvem com sucesso!"); 
-                } catch(e) {
-                    alert("❌ Os pedidos foram apagados no celular, mas houve falha na conexão ao apagar na nuvem.");
-                } finally {
-                    isSyncingFundo = false; document.getElementById('loadingOverlay').style.display = 'none';
-                }
+                } catch(e) { alert("❌ Os pedidos foram apagados no celular, mas houve falha na conexão ao apagar na nuvem."); } 
+                finally { isSyncingFundo = false; document.getElementById('loadingOverlay').style.display = 'none'; }
             } else { alert("✅ Histórico apagado localmente (Sistema não está conectado)."); }
             document.getElementById('inputExcluirTudo').value = ''; fecharModal('modalConfigAvancadas'); renderizarLista(); 
         } else { alert("Frase incorreta."); } 
@@ -895,23 +858,21 @@
     function definirColaboradorAtivo() { 
         const id = document.getElementById('selectColabInicial').value; if(!id) return alert("Selecione um perfil primeiro."); 
         const colab = db.colaboradores.find(c => c.id === id); const senhaDigitada = document.getElementById('inputSenhaColab').value;
-        
         if (colab.senha && colab.senha !== senhaDigitada && senhaDigitada !== db.configs.senhaAdmin) { return alert("Senha incorreta!"); }
-        
-        pilhaDesfazer = []; atualizarBotaoDesfazer(); // Limpa desfazer na troca
+        pilhaDesfazer = []; atualizarBotaoDesfazer();
         db.configs.colabAtivoId = id; salvarBanco(); fecharModal('modalColaboradorObrigatorio'); iniciarApp(); 
     }
     
     function sairDoSistema() {
         if(db.configs.exigirColaborador === false) { db.configs.exigirColaborador = true; }
-        pilhaDesfazer = []; atualizarBotaoDesfazer(); // Limpa desfazer ao sair
+        pilhaDesfazer = []; atualizarBotaoDesfazer(); 
         db.configs.colabAtivoId = null; salvarBanco(); fecharModal('modalColaboradorObrigatorio');
         document.getElementById('splashScreen').style.opacity = '1'; document.getElementById('splashScreen').style.display = 'flex'; setTimeout(() => location.reload(), 300);
     }
 
     function toggleExigirColab() { 
         db.configs.exigirColaborador = document.getElementById('configExigirColab').checked; 
-        salvarBanco(); sincronizarFundo(false, true); 
+        marcarMudancaEstrutural(); sincronizarFundo(false, true); 
     }
 
     function alterarModo(modo) {
@@ -953,8 +914,7 @@
         if(allIds.length === 0) return;
         
         let allSelected = allIds.every(id => itensSelecionadosRelatorio.has(id));
-        if(allSelected) { allIds.forEach(id => itensSelecionadosRelatorio.delete(id)); } 
-        else { allIds.forEach(id => itensSelecionadosRelatorio.add(id)); }
+        if(allSelected) { allIds.forEach(id => itensSelecionadosRelatorio.delete(id)); } else { allIds.forEach(id => itensSelecionadosRelatorio.add(id)); }
         renderizarLista();
     }
 
@@ -965,12 +925,12 @@
         let temRascunho = false;
         let produtosOrdenados = [...db.produtos];
 
-        // LÓGICA DE ORDENAÇÃO POR CATEGORIA -> SUBCATEGORIA -> NOME
+        // LÓGICA DE ORDENAÇÃO: Ordem Fixa das Categorias -> Subcategoria Nome -> Produto Nome
         if (categoriaAtual === null) {
             produtosOrdenados.sort((a, b) => {
-                let catA = db.categorias.find(c => c.id === a.categoria); let catB = db.categorias.find(c => c.id === b.categoria);
-                let nameA = catA ? catA.nome : "ZZZ"; let nameB = catB ? catB.nome : "ZZZ";
-                if(nameA !== nameB) return nameA.localeCompare(nameB);
+                let idxA = db.categorias.findIndex(c => c.id === a.categoria); if(idxA === -1) idxA = 999;
+                let idxB = db.categorias.findIndex(c => c.id === b.categoria); if(idxB === -1) idxB = 999;
+                if(idxA !== idxB) return idxA - idxB;
                 
                 let subA = a.subcategoria || ""; let subB = b.subcategoria || "";
                 if(subA !== subB) return subA.localeCompare(subB);
@@ -1072,9 +1032,10 @@
                     let prioA = getStatusPrio(a.status); let prioB = getStatusPrio(b.status); if (prioA !== prioB) return prioA - prioB;
                     
                     let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
-                    let catA = db.categorias.find(c => pA && c.id === pA.categoria); let catB = db.categorias.find(c => pB && c.id === pB.categoria);
-                    let nameA = catA ? catA.nome : "ZZZ"; let nameB = catB ? catB.nome : "ZZZ";
-                    if(nameA !== nameB) return nameA.localeCompare(nameB);
+                    
+                    let idxA = pA ? db.categorias.findIndex(c => c.id === pA.categoria) : 999; if(idxA === -1) idxA = 999;
+                    let idxB = pB ? db.categorias.findIndex(c => c.id === pB.categoria) : 999; if(idxB === -1) idxB = 999;
+                    if(idxA !== idxB) return idxA - idxB;
                     
                     let subA = pA && pA.subcategoria ? pA.subcategoria : ""; let subB = pB && pB.subcategoria ? pB.subcategoria : "";
                     if(subA !== subB) return subA.localeCompare(subB);
@@ -1084,9 +1045,10 @@
             } else {
                 comprasParaMostrar.sort((a, b) => {
                     let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
-                    let catA = db.categorias.find(c => pA && c.id === pA.categoria); let catB = db.categorias.find(c => pB && c.id === pB.categoria);
-                    let nameA = catA ? catA.nome : "ZZZ"; let nameB = catB ? catB.nome : "ZZZ";
-                    if (categoriaAtual === null && nameA !== nameB) return nameA.localeCompare(nameB);
+                    
+                    let idxA = pA ? db.categorias.findIndex(c => c.id === pA.categoria) : 999; if(idxA === -1) idxA = 999;
+                    let idxB = pB ? db.categorias.findIndex(c => c.id === pB.categoria) : 999; if(idxB === -1) idxB = 999;
+                    if (categoriaAtual === null && idxA !== idxB) return idxA - idxB;
                     
                     let subA = pA && pA.subcategoria ? pA.subcategoria : ""; let subB = pB && pB.subcategoria ? pB.subcategoria : "";
                     if(subA !== subB) return subA.localeCompare(subB);
@@ -1182,11 +1144,7 @@
        PEDIDOS DO DIA E CANCELAMENTO (BOTÕES DE RODAPÉ)
        ========================================================================= */
     function cancelarRascunhos() {
-        if(confirm("Deseja realmente cancelar a seleção e remover os rascunhos?")) {
-            db.pedidosAtivos = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho');
-            salvarBanco();
-            renderizarLista();
-        }
+        if(confirm("Deseja realmente cancelar a seleção e remover os rascunhos?")) { db.pedidosAtivos = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho'); salvarBanco(); renderizarLista(); }
     }
 
     async function enviarPedidosParaCompras() { 
@@ -1198,49 +1156,28 @@
 
         if (isSyncingFundo) { return alert("⏳ O radar do aplicativo está checando a nuvem agora. Aguarde alguns segundinhos e clique em Enviar novamente."); }
 
-        isSyncingFundo = true; 
-        document.getElementById('loadingOverlay').style.display = 'flex';
+        isSyncingFundo = true; document.getElementById('loadingOverlay').style.display = 'flex';
         
-        let backupPedidos = JSON.parse(JSON.stringify(db.pedidosAtivos));
-        let agora = Date.now();
-        // ESTA DATA NUNCA MAIS DEVE SER MEXIDA NO MODO COMPRAS
+        let backupPedidos = JSON.parse(JSON.stringify(db.pedidosAtivos)); let agora = Date.now();
         rascunhos.forEach(pa => { pa.status = 'pendente'; pa.dataStatus = agora; pa.dataEnvio = agora; }); 
         salvarBanco(); 
 
         try {
-            let dbParaNuvem = JSON.parse(JSON.stringify(db));
-            dbParaNuvem.pedidosAtivos = dbParaNuvem.pedidosAtivos.filter(p => p.status !== 'rascunho');
-
-            let res = await fetch(db.configs.url, { 
-                method: 'POST', redirect: "follow", headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'salvar_banco', dados: dbParaNuvem }) 
-            });
-
+            let dbParaNuvem = JSON.parse(JSON.stringify(db)); dbParaNuvem.pedidosAtivos = dbParaNuvem.pedidosAtivos.filter(p => p.status !== 'rascunho');
+            let res = await fetch(db.configs.url, { method: 'POST', redirect: "follow", headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'salvar_banco', dados: dbParaNuvem }) });
             if(!res.ok) throw new Error("Erro na resposta do servidor");
 
-            document.getElementById('loadingOverlay').style.display = 'none';
-            alert("✅ SUCESSO! O pedido foi gravado com segurança na nuvem."); 
-            renderizarLista(); 
-
+            document.getElementById('loadingOverlay').style.display = 'none'; alert("✅ SUCESSO! O pedido foi gravado com segurança na nuvem."); renderizarLista(); 
         } catch (error) {
-            db.pedidosAtivos = backupPedidos; salvarBanco();
-            document.getElementById('loadingOverlay').style.display = 'none';
-            alert("❌ FALHA NA CONEXÃO!\nSeu pedido NÃO foi enviado. Por favor, verifique a sua internet e tente novamente.");
-            renderizarLista();
-        } finally {
-            isSyncingFundo = false; 
-        }
+            db.pedidosAtivos = backupPedidos; salvarBanco(); document.getElementById('loadingOverlay').style.display = 'none';
+            alert("❌ FALHA NA CONEXÃO!\nSeu pedido NÃO foi enviado. Por favor, verifique a sua internet e tente novamente."); renderizarLista();
+        } finally { isSyncingFundo = false; }
     }
 
     function abrirPedidosHoje() {
         const modal = document.getElementById('modalPedidosHoje'); const lista = document.getElementById('listaPedidosHoje'); lista.innerHTML = '';
         let hoje = new Date().setHours(0,0,0,0);
-        let itensHoje = db.pedidosAtivos.filter(pa => { 
-            if(pa.status === 'rascunho' || pa.excluido) return false; 
-            // AGORA VERIFICA EXCLUSIVAMENTE O DATAENVIO, BLINDADO CONTRA MUDANÇAS NO MODO COMPRAS
-            let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : 0; 
-            return dataPa === hoje; 
-        });
+        let itensHoje = db.pedidosAtivos.filter(pa => { if(pa.status === 'rascunho' || pa.excluido) return false; let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : 0; return dataPa === hoje; });
         itensHoje.sort((a,b) => (b.dataEnvio || 0) - (a.dataEnvio || 0));
 
         if(itensHoje.length === 0) { lista.innerHTML = '<div style="padding:20px; text-align:center; color:#666; font-size:14px;">Nenhum pedido enviado hoje.</div>'; } 
@@ -1250,11 +1187,8 @@
                 let statusNome = pa.status;
                 if(pa.status === 'pendente') statusNome = 'Pendente ⏳'; else if(pa.status === 'pedido_forn') statusNome = 'No Fornecedor 📦'; else if(pa.status === 'comprado') statusNome = 'Comprado ✅'; else if(pa.status === 'entregue') statusNome = 'Entregue ✅'; else if(pa.status === 'cancelado') statusNome = 'Cancelado 🚫';
                 let acoes = '';
-                if(pa.status === 'pendente') { acoes = `<button onclick="prepararEdicaoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px;">✏️</button><button onclick="excluirPedidoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px; color:#d32f2f;">🗑️</button>`; } 
-                else { let textLimpo = statusNome.replace(/ ✅| 📦| ⏳| 🚫/g, ''); acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${textLimpo})</span>`; }
-                
+                if(pa.status === 'pendente') { acoes = `<button onclick="prepararEdicaoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px;">✏️</button><button onclick="excluirPedidoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px; color:#d32f2f;">🗑️</button>`; } else { let textLimpo = statusNome.replace(/ ✅| 📦| ⏳| 🚫/g, ''); acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${textLimpo})</span>`; }
                 let obsVisual = pa.obs ? `<br><span style="font-size:11px; color:#666;">Obs: ${pa.obs}</span>` : ''; 
-                
                 let qtyVal = pa.qtd !== '' ? pa.qtd : null; let unVal = pa.unidade ? pa.unidade : null; let qtdStrDisplay = "";
                 if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`; else if(unVal !== null) qtdStrDisplay = `${unVal}`;
                 let exibicaoQtd = qtdStrDisplay ? `<span style="font-size:13px; color:#1565C0; font-weight:bold; margin-right:5px;">${qtdStrDisplay}</span>` : "";
@@ -1267,32 +1201,15 @@
     
     function prepararEdicaoHoje(idUnico) { abrirModalEditarPedido(idUnico); }
     
-    function excluirPedidoHoje(idUnico) { 
-        if(confirm("Deseja apagar definitivamente este pedido feito hoje?")) { 
-            let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico);
-            if(pa) { pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); salvarBanco(); abrirPedidosHoje(); renderizarLista(); sincronizarFundo(false, true); }
-        } 
-    }
+    function excluirPedidoHoje(idUnico) { if(confirm("Deseja apagar definitivamente este pedido feito hoje?")) { let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(pa) { pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); salvarBanco(); abrirPedidosHoje(); renderizarLista(); sincronizarFundo(false, true); } } }
 
-    // NOVA FUNÇÃO: COMPARTILHAMENTO NATIVO WEB SHARE API (.TXT)
     async function compartilharTxtNativo() {
         let hoje = new Date().setHours(0,0,0,0);
-        let itensHoje = db.pedidosAtivos.filter(pa => { 
-            if(pa.status === 'rascunho' || pa.excluido) return false; 
-            let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : 0; 
-            return dataPa === hoje; 
-        });
-        
+        let itensHoje = db.pedidosAtivos.filter(pa => { if(pa.status === 'rascunho' || pa.excluido) return false; let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : 0; return dataPa === hoje; });
         if (itensHoje.length === 0) return alert("Nenhum pedido foi enviado hoje para ser exportado.");
 
         let grupos = {};
-        itensHoje.forEach(pa => {
-            const p = db.produtos.find(x => x.id === pa.produtoId);
-            if (!p) return;
-            let cId = p.categoria || "sem_cat";
-            if(!grupos[cId]) grupos[cId] = [];
-            grupos[cId].push({ pa: pa, p: p });
-        });
+        itensHoje.forEach(pa => { const p = db.produtos.find(x => x.id === pa.produtoId); if (!p) return; let cId = p.categoria || "sem_cat"; if(!grupos[cId]) grupos[cId] = []; grupos[cId].push({ pa: pa, p: p }); });
 
         let blocosTexto = [];
         db.categorias.forEach(cat => {
@@ -1301,8 +1218,7 @@
                 let linhas = grupos[cat.id].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => {
                     let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
                     if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
-                    let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : '';
-                    return `▪ ${item.p.nome}${qtdStr}${obsStr}`;
+                    let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; return `▪ ${item.p.nome}${qtdStr}${obsStr}`;
                 });
                 blocosTexto.push(txt + linhas.join('\n'));
             }
@@ -1313,28 +1229,18 @@
             let linhas = grupos["sem_cat"].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => {
                 let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
                 if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
-                let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : '';
-                return `▪ ${item.p.nome}${qtdStr}${obsStr}`;
+                let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; return `▪ ${item.p.nome}${qtdStr}${obsStr}`;
             });
             blocosTexto.push(txt + linhas.join('\n'));
         }
 
-        const textoFinal = blocosTexto.join('\n\n');
-        
-        const d = new Date();
-        const dataBrFormatada = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
-        const nomeRes = db.restaurante.nome || "Restaurante";
-        const nomeArquivo = `Pedido - ${nomeRes} - ${dataBrFormatada}.txt`;
-
-        const file = new File([textoFinal], nomeArquivo, { type: 'text/plain' });
+        const textoFinal = blocosTexto.join('\n\n'); const d = new Date(); const dataBrFormatada = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+        const nomeRes = db.restaurante.nome || "Restaurante"; const nomeArquivo = `Pedido - ${nomeRes} - ${dataBrFormatada}.txt`; const file = new File([textoFinal], nomeArquivo, { type: 'text/plain' });
 
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try { await navigator.share({ files: [file], title: 'Relatório de Pedidos', text: 'Segue a lista de pedidos gerada hoje.' }); } 
-            catch (error) { console.log('Compartilhamento cancelado ou falhou', error); }
+            try { await navigator.share({ files: [file], title: 'Relatório de Pedidos', text: 'Segue a lista de pedidos gerada hoje.' }); } catch (error) { console.log('Compartilhamento falhou', error); }
         } else {
-            const url = URL.createObjectURL(file); const a = document.createElement('a'); a.href = url; a.download = nomeArquivo;
-            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-            alert("O arquivo foi baixado na pasta de Downloads do seu aparelho.");
+            const url = URL.createObjectURL(file); const a = document.createElement('a'); a.href = url; a.download = nomeArquivo; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); alert("O arquivo foi baixado.");
         }
     }
 
@@ -1342,10 +1248,7 @@
        SISTEMA DE DESFAZER E GESTOS
        ========================================================================= */
     function registrarDesfazer(pa) { pilhaDesfazer.push(JSON.parse(JSON.stringify(pa))); atualizarBotaoDesfazer(); }
-    function desfazerAcao() {
-        if(pilhaDesfazer.length === 0) return; let last = pilhaDesfazer.pop(); let idx = db.pedidosAtivos.findIndex(x => x.idUnico === last.idUnico);
-        if(idx !== -1) { db.pedidosAtivos[idx] = last; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } atualizarBotaoDesfazer();
-    }
+    function desfazerAcao() { if(pilhaDesfazer.length === 0) return; let last = pilhaDesfazer.pop(); let idx = db.pedidosAtivos.findIndex(x => x.idUnico === last.idUnico); if(idx !== -1) { db.pedidosAtivos[idx] = last; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } atualizarBotaoDesfazer(); }
     function atualizarBotaoDesfazer() { const btn = document.getElementById('btnDesfazer'); if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0) { btn.style.display = 'flex'; } else { btn.style.display = 'none'; } }
 
     let touchStartX = 0; let touchStartY = 0; let pressTimer; let isLongPress = false; let lastTap = 0; let lastTapId = null; let isScrolling = false;
@@ -1360,8 +1263,7 @@
             let currentTime = new Date().getTime(); let tapLength = currentTime - lastTap; let currentId = el.getAttribute('data-id');
             if (tapLength < 350 && tapLength > 0 && lastTapId === currentId) { acaoDuploToque(el); } else { acaoToqueSimples(el); } 
             lastTap = currentTime; lastTapId = currentId;
-        } 
-        else if (diffX < -60) { acaoDeslizarEsquerda(el); } else if (diffX > 60) { acaoDeslizarDireita(el); }
+        } else if (diffX < -60) { acaoDeslizarEsquerda(el); } else if (diffX > 60) { acaoDeslizarDireita(el); }
     }
 
     function getPermissaoColab() { let c = db.colaboradores.find(col => col.id === db.configs.colabAtivoId); return c ? (c.apenasReceber || false) : false; }
@@ -1372,18 +1274,14 @@
             if(!pedId) {
                 const p = db.produtos.find(x => x.id === pId); if(!p) return;
                 let qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; 
-                let un = p.unidades[0] || ''; let obsPad = p.obsPadrao || '';
-                let novoPedId = 'pa_' + Date.now();
+                let un = p.unidades[0] || ''; let obsPad = p.obsPadrao || ''; let novoPedId = 'pa_' + Date.now();
                 db.pedidosAtivos.push({ idUnico: novoPedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco(); 
                 el.setAttribute('data-pedid', novoPedId); el.classList.add('item-pedido-rascunho');
-                
                 let qtyVal = qtd !== '' ? qtd : null; let unVal = un ? un : null; let qtdStrDisplay = "";
                 if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`; else if(unVal !== null) qtdStrDisplay = `${unVal}`;
                 let exibicaoQtd = qtdStrDisplay ? `<span style="font-weight: bold; font-size: 14px; color: #1565C0;">${qtdStrDisplay}</span>` : "";
-
-                let infoDir = el.querySelector('.info-direita');
-                if(infoDir) { infoDir.innerHTML = `<div class="status-badge bg-rascunho" style="margin-bottom: 2px;">Rascunho</div>${exibicaoQtd}`; }
+                let infoDir = el.querySelector('.info-direita'); if(infoDir) { infoDir.innerHTML = `<div class="status-badge bg-rascunho" style="margin-bottom: 2px;">Rascunho</div>${exibicaoQtd}`; }
                 document.getElementById('containerBotoesEnvio').style.display = 'flex';
             } 
         } 
@@ -1399,13 +1297,7 @@
         }
     }
     
-    function acaoSegurar(el) { 
-        if(db.configs.modo === 'compras') { 
-            if (getPermissaoColab()) return; 
-            const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
-            if(pa && !pa.excluido && pa.status !== 'cancelado') { registrarDesfazer(pa); pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } 
-        } 
-    }
+    function acaoSegurar(el) { if(db.configs.modo === 'compras') { if (getPermissaoColab()) return; const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && !pa.excluido && pa.status !== 'cancelado') { registrarDesfazer(pa); pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } } }
     
     function acaoDeslizarDireita(el) {
         if(db.configs.modo === 'compras') {
@@ -1446,12 +1338,8 @@
                 registrarDesfazer(pa);
                 if(pa.status === 'entregue') { if(confirm("Deseja voltar este item para 'Pedido ao Fornecedor'?")) { pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
                 else if (pa.status === 'pedido_forn' || pa.status === 'comprado') { if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
-                else if (pa.status === 'pendente') { 
-                    pa.status = 'cancelado'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); 
-                }
-                else if (pa.status === 'cancelado') {
-                    pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true);
-                }
+                else if (pa.status === 'pendente') { pa.status = 'cancelado'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); }
+                else if (pa.status === 'cancelado') { pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); }
             } 
         }
     }
@@ -1536,8 +1424,7 @@
         if (agruparCat) {
             let grupos = {};
             itensProcessados.forEach(item => { 
-                let cId = item.p.categoria || "sem_cat"; 
-                let subId = item.p.subcategoria || "sem_sub";
+                let cId = item.p.categoria || "sem_cat"; let subId = item.p.subcategoria || "sem_sub";
                 if(!grupos[cId]) grupos[cId] = { cat: item.p.categoria, subs: {} }; 
                 if(!grupos[cId].subs[subId]) grupos[cId].subs[subId] = [];
                 grupos[cId].subs[subId].push(item); 
@@ -1578,10 +1465,8 @@
             let linhas = itensProcessados.map(item => { 
                 let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; 
                 let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; 
-                
                 let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
                 if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
-                
                 let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; 
                 return `▪ ${nomeItem}${marcasStr}${qtdStr}${obsStr}`; 
             });
@@ -1679,35 +1564,29 @@
     }
 
     function rolarParaLetra(letraClicada) {
-        const alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        let indexInicial = alfabeto.indexOf(letraClicada);
-        let containerLista = document.getElementById('conteudoListagem');
-        let elementoAlvo = null;
-        for (let i = indexInicial; i < alfabeto.length; i++) {
-            elementoAlvo = document.querySelector(`.gerenciar-item[data-letra="${alfabeto[i]}"]`);
-            if (elementoAlvo) break;
-        }
+        const alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; let indexInicial = alfabeto.indexOf(letraClicada);
+        let containerLista = document.getElementById('conteudoListagem'); let elementoAlvo = null;
+        for (let i = indexInicial; i < alfabeto.length; i++) { elementoAlvo = document.querySelector(`.gerenciar-item[data-letra="${alfabeto[i]}"]`); if (elementoAlvo) break; }
         if(elementoAlvo) { containerLista.scrollTo({ top: elementoAlvo.offsetTop - containerLista.offsetTop, behavior: 'smooth' }); }
     }
 
     function moverCategoria(index, direcao) {
         if (direcao === -1 && index > 0) { let temp = db.categorias[index]; db.categorias[index] = db.categorias[index - 1]; db.categorias[index - 1] = temp; } 
         else if (direcao === 1 && index < db.categorias.length - 1) { let temp = db.categorias[index]; db.categorias[index] = db.categorias[index + 1]; db.categorias[index + 1] = temp; }
-        salvarBanco(); abrirGerenciar('categorias'); sincronizarFundo(false, true);
+        marcarMudancaEstrutural(); abrirGerenciar('categorias'); sincronizarFundo(false, true);
     }
 
-    function excluirItem(tipo, id) { if(confirm("Tem certeza?")) { db[tipo] = db[tipo].filter(x => x.id !== id); salvarBanco(); abrirGerenciar(tipo); renderizarLista(); sincronizarFundo(false, true); } }
+    function excluirItem(tipo, id) { if(confirm("Tem certeza?")) { db[tipo] = db[tipo].filter(x => x.id !== id); marcarMudancaEstrutural(); abrirGerenciar(tipo); renderizarLista(); sincronizarFundo(false, true); } }
 
     function duplicarProduto(id) {
         if(confirm("Deseja duplicar este produto com os exatos mesmos dados e nome?")) {
             let p = db.produtos.find(x => x.id === id); if(!p) return;
             let copia = JSON.parse(JSON.stringify(p)); copia.id = 'p_' + Date.now(); 
-            db.produtos.push(copia);
-            salvarBanco(); abrirGerenciar('produtos'); sincronizarFundo(false, true);
+            db.produtos.push(copia); marcarMudancaEstrutural(); abrirGerenciar('produtos'); sincronizarFundo(false, true);
         }
     }
 
-    function salvarRestaurante() { db.restaurante.nome = document.getElementById('restNome').value; db.restaurante.cnpj = document.getElementById('restCNPJ').value; db.restaurante.rua = document.getElementById('restRua').value; db.restaurante.numero = document.getElementById('restNum').value; db.restaurante.bairro = document.getElementById('restBairro').value; db.restaurante.cidade = document.getElementById('restCidade').value; db.restaurante.uf = document.getElementById('restUF').value; db.restaurante.ponto = document.getElementById('restPonto').value; salvarBanco(); fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display = 'flex'; sincronizarFundo(false, true); }
+    function salvarRestaurante() { db.restaurante.nome = document.getElementById('restNome').value; db.restaurante.cnpj = document.getElementById('restCNPJ').value; db.restaurante.rua = document.getElementById('restRua').value; db.restaurante.numero = document.getElementById('restNum').value; db.restaurante.bairro = document.getElementById('restBairro').value; db.restaurante.cidade = document.getElementById('restCidade').value; db.restaurante.uf = document.getElementById('restUF').value; db.restaurante.ponto = document.getElementById('restPonto').value; marcarMudancaEstrutural(); fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display = 'flex'; sincronizarFundo(false, true); }
 
     /* LÓGICA DE PREÇOS PRODUTO E FORNECEDORES VINCULADOS */
     function renderizarPrecosTemporarios() { const box = document.getElementById('boxHistoricoPrecos'); const list = document.getElementById('listaPrecosProduto'); list.innerHTML = ''; if(tempPrecosProduto.length === 0) { box.style.display = 'none'; } else { box.style.display = 'block'; [...tempPrecosProduto].reverse().forEach((p, realIdxReverso) => { let realIdx = tempPrecosProduto.length - 1 - realIdxReverso; list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:4px 0;"><span>${p.data}: <b>R$ ${p.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</b></span><div><button onclick="editarPrecoProduto(${realIdx})" style="background:none;border:none;cursor:pointer;font-size:14px;">✏️</button><button onclick="excluirPrecoProduto(${realIdx})" style="background:none;border:none;cursor:pointer;font-size:14px;">🗑️</button></div></div>`; }); } }
@@ -1721,34 +1600,30 @@
     function confirmarSelecaoFornecedores() { tempFornecedoresProduto = Array.from(document.querySelectorAll('.chk-selecao-forn:checked')).map(el => el.value); fecharModal('modalSelecaoFornecedores'); renderizarFornecedoresVinculados(); }
 
     function atualizarComboSubcat(selecionada = '') {
-        const catId = document.getElementById('prodCategoria').value;
-        const cat = db.categorias.find(c => c.id === catId);
-        const combo = document.getElementById('prodSubcategoria');
+        const catId = document.getElementById('prodCategoria').value; const cat = db.categorias.find(c => c.id === catId); const combo = document.getElementById('prodSubcategoria');
         combo.innerHTML = '<option value="">-- Nenhuma --</option>';
-        if(cat && cat.subcategorias) {
-            cat.subcategorias.forEach(s => combo.innerHTML += `<option value="${s}" ${selecionada===s?'selected':''}>${s}</option>`);
-        }
+        if(cat && cat.subcategorias) { cat.subcategorias.forEach(s => combo.innerHTML += `<option value="${s}" ${selecionada===s?'selected':''}>${s}</option>`); }
     }
 
     function abrirFormProduto(id) { fecharModal('modalListagem'); const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`); document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); let p = null; if(id) { p = db.produtos.find(x => x.id === id); document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodDesc').value = p.descFornecedor || ''; document.getElementById('prodObsPadrao').value = p.obsPadrao || ''; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; tempPrecosProduto = p.historicoPrecos ? JSON.parse(JSON.stringify(p.historicoPrecos)) : []; tempFornecedoresProduto = p.fornecedores ? JSON.parse(JSON.stringify(p.fornecedores)) : []; atualizarComboSubcat(p.subcategoria); } else { document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = ''; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodQtdPadrao').value = ''; tempPrecosProduto = []; tempFornecedoresProduto = []; atualizarComboSubcat(); } renderizarFornecedoresVinculados(); renderizarPrecosTemporarios(); document.getElementById('modalFormProduto').style.display = 'flex'; }
-    function salvarProduto() { const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : ''; if(pVal > 0) { tempPrecosProduto.push({ data: pData, preco: pVal }); } const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, subcategoria: document.getElementById('prodSubcategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: tempFornecedoresProduto }; const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo); salvarBanco(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista(); sincronizarFundo(false, true); }
+    
+    function salvarProduto() { const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : ''; if(pVal > 0) { tempPrecosProduto.push({ data: pData, preco: pVal }); } const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, subcategoria: document.getElementById('prodSubcategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: tempFornecedoresProduto }; const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo); marcarMudancaEstrutural(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista(); sincronizarFundo(false, true); }
 
-    function renderFormSubcats() {
-        const list = document.getElementById('listaSubcatsForm');
-        list.innerHTML = '';
-        tempSubcats.forEach((s, i) => { list.innerHTML += `<div style="display:flex; justify-content:space-between; background:#f0f0f0; padding:5px 10px; border-radius:4px;"><input type="hidden" class="subcat-item-val" value="${s}"><span style="font-size:13px;">${s}</span><button onclick="removerFormSubcat(${i})" style="border:none;background:none;color:#d32f2f;cursor:pointer;font-weight:bold;">✕</button></div>`; });
-    }
+    function renderFormSubcats() { const list = document.getElementById('listaSubcatsForm'); list.innerHTML = ''; tempSubcats.forEach((s, i) => { list.innerHTML += `<div style="display:flex; justify-content:space-between; background:#f0f0f0; padding:5px 10px; border-radius:4px;"><input type="hidden" class="subcat-item-val" value="${s}"><span style="font-size:13px;">${s}</span><button onclick="removerFormSubcat(${i})" style="border:none;background:none;color:#d32f2f;cursor:pointer;font-weight:bold;">✕</button></div>`; }); }
     function addFormSubcat() { let val = document.getElementById('novaSubcatNome').value.trim(); if(val) { tempSubcats.push(val); renderFormSubcats(); document.getElementById('novaSubcatNome').value = ''; } }
     function removerFormSubcat(idx) { tempSubcats.splice(idx, 1); renderFormSubcats(); }
 
     function abrirFormCategoria(id) { fecharModal('modalListagem'); document.getElementById('novaSubcatNome').value = ''; if(id) { const c = db.categorias.find(x => x.id === id); document.getElementById('catId').value = id; document.getElementById('catNome').value = c.nome; document.getElementById('catCor').value = c.cor; document.getElementById('catCorTexto').value = c.corTexto; tempSubcats = c.subcategorias ? [...c.subcategorias] : []; } else { document.getElementById('catId').value = ''; document.getElementById('catNome').value = ''; document.getElementById('catCor').value = '#1565C0'; document.getElementById('catCorTexto').value = '#ffffff'; tempSubcats = []; } renderFormSubcats(); document.getElementById('modalFormCategoria').style.display = 'flex'; }
-    function salvarCategoria() { const id = document.getElementById('catId').value || 'c_'+Date.now(); const novo = { id: id, nome: document.getElementById('catNome').value, cor: document.getElementById('catCor').value, corTexto: document.getElementById('catCorTexto').value, subcategorias: tempSubcats }; const idx = db.categorias.findIndex(x => x.id === id); if(idx >= 0) db.categorias[idx] = novo; else db.categorias.push(novo); salvarBanco(); fecharModal('modalFormCategoria'); abrirGerenciar('categorias'); renderizarLista(); sincronizarFundo(false, true); }
+    
+    function salvarCategoria() { const id = document.getElementById('catId').value || 'c_'+Date.now(); const novo = { id: id, nome: document.getElementById('catNome').value, cor: document.getElementById('catCor').value, corTexto: document.getElementById('catCorTexto').value, subcategorias: tempSubcats }; const idx = db.categorias.findIndex(x => x.id === id); if(idx >= 0) db.categorias[idx] = novo; else db.categorias.push(novo); marcarMudancaEstrutural(); fecharModal('modalFormCategoria'); abrirGerenciar('categorias'); renderizarLista(); sincronizarFundo(false, true); }
 
     function abrirFormColaborador(id) { fecharModal('modalListagem'); const box = document.getElementById('colabCategoriasBox'); box.innerHTML = ''; const c = id ? db.colaboradores.find(x => x.id === id) : null; document.getElementById('colabIsAdmin').checked = c ? (c.isAdmin || false) : false; document.getElementById('colabApenasReceber').checked = c ? (c.apenasReceber || false) : false; db.categorias.forEach(cat => { let checkPed = (!c || (c.catsPermitidasPedido !== undefined ? c.catsPermitidasPedido.includes(cat.id) : (c.catsPermitidas ? c.catsPermitidas.includes(cat.id) : true))) ? 'checked' : ''; let checkComp = (!c || (c.catsPermitidasCompras !== undefined ? c.catsPermitidasCompras.includes(cat.id) : (c.catsPermitidas ? c.catsPermitidas.includes(cat.id) : true))) ? 'checked' : ''; box.innerHTML += `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #ddd; padding-bottom:6px;"><span style="font-weight:bold; font-size:12px; flex:1; color:#333;">${cat.nome}</span><div style="display:flex; gap:15px;"><label style="display:flex; flex-direction:column; align-items:center; font-size:9px; color:#555; gap:2px;"><div class="switch" style="margin:0;"><input type="checkbox" value="${cat.id}" class="chk-cat-pedido" ${checkPed}><span class="slider"></span></div>Pedidos</label><label style="display:flex; flex-direction:column; align-items:center; font-size:9px; color:#555; gap:2px;"><div class="switch" style="margin:0;"><input type="checkbox" value="${cat.id}" class="chk-cat-compras" ${checkComp}><span class="slider"></span></div>Compras</label></div></div>`; }); document.getElementById('colabId').value = id || ''; document.getElementById('colabNome').value = c ? c.nome : ''; document.getElementById('colabSenha').value = c ? c.senha : ''; document.getElementById('modalFormColaborador').style.display = 'flex'; }
-    function salvarColaborador() { const id = document.getElementById('colabId').value || 'col_'+Date.now(); const catsPed = Array.from(document.querySelectorAll('.chk-cat-pedido:checked')).map(el => el.value); const catsComp = Array.from(document.querySelectorAll('.chk-cat-compras:checked')).map(el => el.value); const s = document.getElementById('colabSenha').value; const isAdmin = document.getElementById('colabIsAdmin').checked; const apenasReceber = document.getElementById('colabApenasReceber').checked; const novo = { id: id, nome: document.getElementById('colabNome').value, telefone: "", senha: s, isAdmin: isAdmin, apenasReceber: apenasReceber, catsPermitidasPedido: catsPed, catsPermitidasCompras: catsComp, catsPermitidas: [] }; const idx = db.colaboradores.findIndex(x => x.id === id); if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo); salvarBanco(); fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores'); sincronizarFundo(false, true); }
+    
+    function salvarColaborador() { const id = document.getElementById('colabId').value || 'col_'+Date.now(); const catsPed = Array.from(document.querySelectorAll('.chk-cat-pedido:checked')).map(el => el.value); const catsComp = Array.from(document.querySelectorAll('.chk-cat-compras:checked')).map(el => el.value); const s = document.getElementById('colabSenha').value; const isAdmin = document.getElementById('colabIsAdmin').checked; const apenasReceber = document.getElementById('colabApenasReceber').checked; const novo = { id: id, nome: document.getElementById('colabNome').value, telefone: "", senha: s, isAdmin: isAdmin, apenasReceber: apenasReceber, catsPermitidasPedido: catsPed, catsPermitidasCompras: catsComp, catsPermitidas: [] }; const idx = db.colaboradores.findIndex(x => x.id === id); if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo); marcarMudancaEstrutural(); fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores'); sincronizarFundo(false, true); }
 
     function abrirFormFornecedor(id) { fecharModal('modalListagem'); if(id) { const f = db.fornecedores.find(x => x.id === id); document.getElementById('fornId').value = id; document.getElementById('fornNome').value = f.nome; document.getElementById('fornVendedor').value = f.vendedor || ''; document.getElementById('fornTel').value = f.telefone || ''; document.getElementById('fornNomeGerente').value = f.nomeGerente || ''; document.getElementById('fornTelGerente').value = f.telGerente || ''; document.getElementById('fornTelEmpresa').value = f.telEmpresa || ''; } else { document.getElementById('fornId').value = ''; document.getElementById('fornNome').value = ''; document.getElementById('fornVendedor').value = ''; document.getElementById('fornTel').value = ''; document.getElementById('fornNomeGerente').value = ''; document.getElementById('fornTelGerente').value = ''; document.getElementById('fornTelEmpresa').value = ''; } document.getElementById('modalFormFornecedor').style.display = 'flex'; }
-    function salvarFornecedor() { const id = document.getElementById('fornId').value || 'f_'+Date.now(); const novo = { id: id, nome: document.getElementById('fornNome').value, vendedor: document.getElementById('fornVendedor').value, telefone: document.getElementById('fornTel').value, nomeGerente: document.getElementById('fornNomeGerente').value, telGerente: document.getElementById('fornTelGerente').value, telEmpresa: document.getElementById('fornTelEmpresa').value }; const idx = db.fornecedores.findIndex(x => x.id === id); if(idx >= 0) db.fornecedores[idx] = novo; else db.fornecedores.push(novo); salvarBanco(); fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores'); sincronizarFundo(false, true); }
+    
+    function salvarFornecedor() { const id = document.getElementById('fornId').value || 'f_'+Date.now(); const novo = { id: id, nome: document.getElementById('fornNome').value, vendedor: document.getElementById('fornVendedor').value, telefone: document.getElementById('fornTel').value, nomeGerente: document.getElementById('fornNomeGerente').value, telGerente: document.getElementById('fornTelGerente').value, telEmpresa: document.getElementById('fornTelEmpresa').value }; const idx = db.fornecedores.findIndex(x => x.id === id); if(idx >= 0) db.fornecedores[idx] = novo; else db.fornecedores.push(novo); marcarMudancaEstrutural(); fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores'); sincronizarFundo(false, true); }
 </script>
 </body>
 </html>
