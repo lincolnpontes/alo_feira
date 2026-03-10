@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.1.0</title>
+    <title>Alô Feira v1.1.1</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -150,7 +150,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.1.0</div>
+    <div class="splash-versao">v1.1.1</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -349,7 +349,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.1.0</div>
+            <div class="versao">v1.1.1</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -835,7 +835,7 @@
             db.pedidosAtivos = []; marcarMudancaEstrutural();
             
             if (db.configs.url) {
-                isSyncingFundo = true document.getElementById('loadingOverlay').style.display = 'flex';
+                isSyncingFundo = true; document.getElementById('loadingOverlay').style.display = 'flex';
                 document.getElementById('loadingText').innerHTML = "Apagando histórico na nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde.</span>";
                 try {
                     let dbParaNuvem = JSON.parse(JSON.stringify(db)); 
