@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0.1</title>
+    <title>Alô Feira v1.0.2</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -59,13 +59,14 @@
         .item-subtitle { color: #666; font-size: 11px; line-height: 1.3; }
         
         /* STATUS & CORES */
-        .riscado { opacity: 0.5; }
+        .riscado { opacity: 0.6; background-color: #f5f5f5; border-left: 6px solid #9e9e9e !important; }
         .riscado .item-title { text-decoration: line-through; }
         
         .status-pendente { border-left: 6px solid #ff9800; background-color: #fff3e0; }
         .status-comprado { border-left: 6px solid #81c784; background-color: #e8f5e9; } 
         .status-pedido_forn { border-left: 6px solid #9c27b0; background-color: #f3e5f5; } 
         .status-entregue { border-left: 6px solid #1b5e20; background-color: #c8e6c9; } 
+        .status-cancelado { border-left: 6px solid #9e9e9e; background-color: #f5f5f5; opacity: 0.7; }
         .item-pedido-rascunho { border-left: 4px solid #1565C0; background-color: #e3f2fd; }
 
         .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; color: white; display: inline-block; }
@@ -74,6 +75,7 @@
         .bg-comprado { background-color: #1b5e20; }
         .bg-entregue { background-color: #1b5e20; }
         .bg-excluido { background-color: #d32f2f; }
+        .bg-cancelado { background-color: #9e9e9e; }
         .bg-rascunho { background-color: transparent; color: #1565C0; border: 1px solid #1565C0; padding: 1px 5px; }
 
         .checkbox-selecao { width: 22px; height: 22px; border: 2px solid #6a1b9a; border-radius: 4px; display: inline-block; vertical-align: middle; margin-right: 10px; position: relative; pointer-events: none; }
@@ -146,7 +148,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0.1</div>
+    <div class="splash-versao">v1.0.2</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -330,7 +332,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0.1</div>
+            <div class="versao">v1.0.2</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -523,7 +525,6 @@
        ========================================================================= */
     history.pushState(null, null, location.href);
     window.addEventListener('popstate', function () {
-        // Quando o usuário tenta voltar, a gente joga ele pra frente de novo imediatamente
         history.pushState(null, null, location.href);
     });
 
@@ -545,7 +546,7 @@
             app_id: "alofeira", 
             restaurante: { nome: "", cnpj: "", rua: "", numero: "", bairro: "", cidade: "", uf: "PB", ponto: "" },
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
-            configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: false, colabAtivoId: null, url: "", dadosBaixados: false, pausarSync: false }
+            configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: true, colabAtivoId: null, url: "", dadosBaixados: false, pausarSync: false } // Default TRUE agora
         };
         let salvo = localStorage.getItem('alofeira_v1');
         return salvo ? JSON.parse(salvo) : base;
@@ -585,7 +586,6 @@
     function maskMoeda(el) { let v = el.value.replace(/\D/g, ""); if(!v) { el.value = ""; return; } v = (parseFloat(v) / 100).toLocaleString('pt-BR', {minimumFractionDigits: 2}); el.value = v; }
     function parseMoeda(str) { if(!str) return 0; return parseFloat(str.replace(/\./g, "").replace(",", ".")); }
     function parseFloatBr(str) { if(str === '' || str === null || str === undefined) return ''; return parseFloat(String(str).replace(',','.')); }
-    // Função para remover acentos para organização (Item 3)
     function removerAcentos(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 
     /* =========================================================================
@@ -643,14 +643,12 @@
     
     async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
         if(!db.configs.url) return;
-        
         if(db.configs && db.configs.pausarSync && !forcado && !apenasEmpurrar) return;
         
         if(isSyncingFundo) {
             if(forcado) alert("🔄 O sistema já está processando dados com a nuvem no momento. Aguarde alguns segundos.");
             return;
         }
-        
         if(document.hidden && !forcado && !apenasEmpurrar) return;
 
         let temRascunho = db.pedidosAtivos.some(pa => pa.status === 'rascunho' && !pa.excluido);
@@ -670,21 +668,15 @@
                 
                 if(nuvemDB && nuvemDB.app_id === "alofeira" && nuvemDB.pedidosAtivos) {
                     let jsonAntes = JSON.stringify(db.pedidosAtivos);
-
                     let mergedPedidos = new Map();
                     
                     nuvemDB.pedidosAtivos.forEach(pCloud => {
-                        if(pCloud.status !== 'rascunho') {
-                            mergedPedidos.set(pCloud.idUnico, pCloud);
-                        }
+                        if(pCloud.status !== 'rascunho') { mergedPedidos.set(pCloud.idUnico, pCloud); }
                     });
                     
                     let pedidosLocais = db.pedidosAtivos || [];
                     pedidosLocais.forEach(pLoc => {
-                        if(pLoc.status === 'rascunho') {
-                            mergedPedidos.set(pLoc.idUnico, pLoc);
-                            return;
-                        }
+                        if(pLoc.status === 'rascunho') { mergedPedidos.set(pLoc.idUnico, pLoc); return; }
 
                         let pCloud = mergedPedidos.get(pLoc.idUnico);
                         let tLoc = pLoc.dataStatus || 0;
@@ -736,7 +728,6 @@
                     body: JSON.stringify({ action: 'salvar_banco', dados: dbParaNuvem }) 
                 });
             }
-
         } catch(e) {
             console.error("Erro na sincronização de fundo", e);
         } finally {
@@ -757,7 +748,6 @@
     function importarDados(event) {
         const file = event.target.files[0]; 
         if(!file) return;
-        
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -771,15 +761,10 @@
                     salvarBanco(); 
                     alert("✅ Arquivo carregado no celular!\n\nAgora, vá na Engrenagem -> Avançado e clique no botão 'Forçar Envio Completo pra Nuvem' para salvar lá."); 
                     location.reload(); 
-                } else { 
-                    alert("Arquivo de backup inválido."); 
-                }
-            } catch(err) { 
-                alert("Erro ao ler o arquivo."); 
-            }
+                } else { alert("Arquivo de backup inválido."); }
+            } catch(err) { alert("Erro ao ler o arquivo."); }
         };
-        reader.readAsText(file);
-        event.target.value = ''; 
+        reader.readAsText(file); event.target.value = ''; 
     }
 
     async function forcarEnvioNuvemCompleto() {
@@ -793,17 +778,12 @@
             dbParaNuvem.pedidosAtivos = dbParaNuvem.pedidosAtivos.filter(p => p.status !== 'rascunho');
 
             let res = await fetch(db.configs.url, { 
-                method: 'POST', 
-                redirect: "follow",
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                method: 'POST', redirect: "follow", headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: 'salvar_banco', dados: dbParaNuvem }) 
             });
 
             if(!res.ok) throw new Error("Falha no servidor");
-            
-            db.configs.pausarSync = false;
-            salvarBanco();
-            
+            db.configs.pausarSync = false; salvarBanco();
             alert("✅ TUDO SALVO! O backup foi gravado com sucesso na nuvem.");
         } catch(e) {
             alert("❌ Falha na conexão com a nuvem. Verifique a internet ou a URL e tente novamente.");
@@ -818,31 +798,24 @@
             if(isSyncingFundo) return alert("⏳ Aguarde o sistema terminar de conversar com a nuvem antes de apagar o histórico.");
             if(!confirm("⚠️ TEM CERTEZA? Isso vai apagar todos os pedidos de TODOS os aparelhos conectados. Essa ação não afeta produtos ou categorias.")) return;
 
-            db.pedidosAtivos = []; 
-            salvarBanco(); 
+            db.pedidosAtivos = []; salvarBanco(); 
             
             if (db.configs.url) {
                 isSyncingFundo = true; 
                 document.getElementById('loadingOverlay').style.display = 'flex';
                 document.getElementById('loadingText').innerHTML = "Apagando histórico na nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde.</span>";
-                
                 try {
                     let dbParaNuvem = JSON.parse(JSON.stringify(db)); 
                     let res = await fetch(db.configs.url, { 
-                        method: 'POST', 
-                        redirect: "follow",
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        method: 'POST', redirect: "follow", headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ action: 'salvar_banco', dados: dbParaNuvem }) 
                     });
-                    
                     if(!res.ok) throw new Error("Erro de resposta");
                     alert("✅ Histórico de pedidos apagado localmente e na nuvem com sucesso!"); 
                 } catch(e) {
                     alert("❌ Os pedidos foram apagados no celular, mas houve falha na conexão ao apagar na nuvem.");
                 } finally {
-                    isSyncingFundo = false; 
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    document.getElementById('loadingText').innerHTML = "Processando...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde. Não feche o app.</span>";
+                    isSyncingFundo = false; document.getElementById('loadingOverlay').style.display = 'none';
                 }
             } else { alert("✅ Histórico apagado localmente (Sistema não está conectado)."); }
             document.getElementById('inputExcluirTudo').value = ''; fecharModal('modalConfigAvancadas'); renderizarLista(); 
@@ -851,11 +824,7 @@
 
     function forcarAtualizacao() { 
         if(confirm("Deseja forçar a atualização do aplicativo? Isso vai tentar baixar a versão mais nova do sistema sem apagar seus dados, produtos ou URL.")) {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                    for(let registration of registrations) { registration.update(); }
-                });
-            }
+            if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(function(registrations) { for(let registration of registrations) { registration.update(); } }); }
             window.location.href = window.location.pathname + '?nocache=' + new Date().getTime();
         }
     }
@@ -892,11 +861,16 @@
     }
     
     function sairDoSistema() {
+        // Blinda a configuração para sempre exigir senha ao deslogar se estava ligado
+        if(db.configs.exigirColaborador === false) { db.configs.exigirColaborador = true; }
         db.configs.colabAtivoId = null; salvarBanco(); fecharModal('modalColaboradorObrigatorio');
         document.getElementById('splashScreen').style.opacity = '1'; document.getElementById('splashScreen').style.display = 'flex'; setTimeout(() => location.reload(), 300);
     }
 
-    function toggleExigirColab() { db.configs.exigirColaborador = document.getElementById('configExigirColab').checked; salvarBanco(); sincronizarFundo(false, true); }
+    function toggleExigirColab() { 
+        db.configs.exigirColaborador = document.getElementById('configExigirColab').checked; 
+        salvarBanco(); sincronizarFundo(false, true); 
+    }
 
     function alterarModo(modo) {
         db.configs.modo = modo; modoSelecaoAtivo = false; itensSelecionadosRelatorio.clear(); agrupamentoCompradoAtivo = false;
@@ -907,7 +881,7 @@
             dicas.innerHTML = "<div>👆 Toque: Pedir</div><div>👈 Deslize: Apagar</div><div>✌️ 2 Toques: Detalhes</div>"; 
             document.getElementById('fabContainer').style.display = 'none'; document.getElementById('btnHistHoje').style.display = 'inline-block';
         } else { 
-            dicas.innerHTML = "<div>👉 Deslize: Avançar Status</div><div>👈 Deslize: Voltar Status</div><div>👆 Segure: P/ Fornecedor</div><div>✌️ 2 Toques: Detalhes</div>"; 
+            dicas.innerHTML = "<div>👉 Deslize: Avançar Status</div><div>👈 Deslize: Voltar/Cancelar</div><div>👆 Segure: P/ Fornecedor</div><div>✌️ 2 Toques: Detalhes</div>"; 
             document.getElementById('fabContainer').style.display = 'flex'; document.getElementById('containerBotoesEnvio').style.display = 'none'; document.getElementById('btnHistHoje').style.display = 'none';
         }
         document.getElementById('btnModoSelecao').style.backgroundColor = '#ab47bc';
@@ -976,11 +950,20 @@
                             case 'pedido_forn': statusName = 'Pedido Forn.'; statusClass = 'bg-pedido_forn'; break;
                             case 'comprado': statusName = 'Comprado'; statusClass = 'bg-comprado'; break;
                             case 'entregue': statusName = 'Entregue'; statusClass = 'bg-entregue'; break;
+                            case 'cancelado': statusName = 'Cancelado'; statusClass = 'bg-cancelado'; break;
                         }
                     }
                     let obsVisual = ultimoPedido.obs ? `<br><span style="color:#000; font-size:11px;">Obs: ${ultimoPedido.obs}</span>` : "";
-                    let qtdNum = ultimoPedido.qtd !== '' ? ultimoPedido.qtd : '-';
-                    infoDireita = `<div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${qtdNum} ${ultimoPedido.unidade}</span>${obsVisual}`;
+                    
+                    let qtdStrDisplay = "";
+                    let qtyVal = ultimoPedido.qtd !== '' ? ultimoPedido.qtd : null;
+                    let unVal = ultimoPedido.unidade ? ultimoPedido.unidade : null;
+                    if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`;
+                    else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`;
+                    else if(unVal !== null) qtdStrDisplay = `${unVal}`;
+                    
+                    let exibicaoQtd = qtdStrDisplay ? `<span style="font-weight: bold; font-size: 14px; color: #1565C0;">${qtdStrDisplay}</span>` : "";
+                    infoDireita = `<div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div>${exibicaoQtd}${obsVisual}`;
                     if(pedidoEditavel) { classesExtra += (pedidoEditavel.status === 'rascunho') ? "item-pedido-rascunho " : "item-pedido-ativo "; if(pedidoEditavel.status === 'rascunho') temRascunho = true; }
                 }
 
@@ -1004,7 +987,7 @@
             
             if(agrupamentoCompradoAtivo) {
                 comprasParaMostrar.sort((a, b) => {
-                    let getStatusPrio = (s) => s === 'pendente' ? 1 : (s === 'pedido_forn' ? 2 : 3);
+                    let getStatusPrio = (s) => s === 'pendente' ? 1 : (s === 'pedido_forn' ? 2 : (s === 'cancelado' ? 4 : 3));
                     let prioA = getStatusPrio(a.status); let prioB = getStatusPrio(b.status); if (prioA !== prioB) return prioA - prioB;
                     let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
                     let getCatPrio = (prod) => { if(!prod) return 999; let idx = db.categorias.findIndex(c => c.id === prod.categoria); return idx >= 0 ? idx : 999; };
@@ -1032,7 +1015,7 @@
                 if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 
                 if (agrupamentoCompradoAtivo) {
-                    let currentGroup = pa.status === 'pendente' ? '⏳ PENDENTES' : (pa.status === 'pedido_forn' ? '📦 PEDIDOS AO FORNECEDOR' : '✅ COMPRADOS / ENTREGUES');
+                    let currentGroup = pa.status === 'pendente' ? '⏳ PENDENTES' : (pa.status === 'pedido_forn' ? '📦 PEDIDOS AO FORNECEDOR' : (pa.status === 'cancelado' ? '🚫 CANCELADOS' : '✅ COMPRADOS / ENTREGUES'));
                     if (currentGroup !== lastGroup) { lista.innerHTML += `<li style="background:#e0e0e0; padding:8px 15px; font-weight:bold; font-size:12px; color:#333; text-transform:uppercase; border-bottom:1px solid #ccc;">${currentGroup}</li>`; lastGroup = currentGroup; }
                 } else if (categoriaAtual === null) {
                     let cObj = db.categorias.find(c => c.id === p.categoria); let catName = cObj ? cObj.nome : "Sem Categoria";
@@ -1040,28 +1023,32 @@
                 }
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
-                let emojiStatus = pa.status === 'pendente' ? '⏳' : (pa.status === 'comprado' ? '✅' : (pa.status === 'pedido_forn' ? '📦' : (pa.status === 'entregue' ? '✅' : '')));
+                let emojiStatus = pa.status === 'pendente' ? '⏳' : (pa.status === 'comprado' ? '✅' : (pa.status === 'pedido_forn' ? '📦' : (pa.status === 'entregue' ? '✅' : (pa.status === 'cancelado' ? '🚫' : ''))));
                 let isSelected = itensSelecionadosRelatorio.has(pa.idUnico); let htmlSelecao = modoSelecaoAtivo ? `<div class="checkbox-selecao"></div>` : '';
                 
-                let qtdNum = pa.qtd !== '' ? pa.qtd : '-';
+                let qtyVal = pa.qtd !== '' ? pa.qtd : null; let unVal = pa.unidade ? pa.unidade : null; let qtdStrDisplay = "";
+                if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`; else if(unVal !== null) qtdStrDisplay = `${unVal}`;
+                
                 let tituloItem = `${p.nome}`;
                 let tsReferencia = pa.dataStatus || pa.dataConclusao || parseInt(pa.idUnico.split('_')[1]); let tempoTxt = tsReferencia ? ` ${tempoRelativo(tsReferencia)}` : "";
                 
-                let nomeStatus = ""; let statusClass = "bg-pendente";
+                let nomeStatus = ""; let statusClass = "bg-pendente"; let itemClassExtra = pa.status === 'cancelado' ? 'riscado' : '';
                 switch(pa.status) { 
                     case 'pendente': nomeStatus = 'Pendente'; statusClass = 'bg-pendente'; break; 
                     case 'comprado': nomeStatus = 'Comprado'; statusClass = 'bg-comprado'; break; 
                     case 'pedido_forn': nomeStatus = 'Pedido Forn.'; statusClass = 'bg-pedido_forn'; break; 
                     case 'entregue': nomeStatus = 'Entregue'; statusClass = 'bg-entregue'; break; 
+                    case 'cancelado': nomeStatus = 'Cancelado'; statusClass = 'bg-cancelado'; break;
                 }
                 
                 let statusText = nomeStatus + tempoTxt; 
                 let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado em compras')) ? ' <span style="font-size:10px; color:#d32f2f; font-weight:bold;">(Edit)</span>' : '';
                 let obsVisual = pa.obs ? `<div class="item-subtitle" style="margin-top:2px; font-weight:bold; color:#444;">Obs: ${pa.obs}</div>` : "";
                 
-                let infoDireita = `<div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusText}</div><span style="font-weight: bold; font-size: 14px; color: #6a1b9a;">${qtdNum} ${pa.unidade}</span>`;
+                let exibicaoQtd = qtdStrDisplay ? `<span style="font-weight: bold; font-size: 14px; color: #6a1b9a;">${qtdStrDisplay}</span>` : "";
+                let infoDireita = `<div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusText}</div>${exibicaoQtd}`;
 
-                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">
+                lista.innerHTML += `<li class="item status-${pa.status} ${itemClassExtra} ${isSelected ? 'selecionado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">
                     ${htmlSelecao}
                     <div style="display: flex; align-items: center; flex: 1; overflow: hidden;">
                         <div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div>
@@ -1103,7 +1090,8 @@
         
         let backupPedidos = JSON.parse(JSON.stringify(db.pedidosAtivos));
         let agora = Date.now();
-        rascunhos.forEach(pa => { pa.status = 'pendente'; pa.dataStatus = agora; }); 
+        // ADICIONADO: pa.dataEnvio = agora (Isso fixa a data imutável de quando foi para as compras pela primeira vez)
+        rascunhos.forEach(pa => { pa.status = 'pendente'; pa.dataStatus = agora; pa.dataEnvio = agora; }); 
         salvarBanco(); 
 
         try {
@@ -1111,9 +1099,7 @@
             dbParaNuvem.pedidosAtivos = dbParaNuvem.pedidosAtivos.filter(p => p.status !== 'rascunho');
 
             let res = await fetch(db.configs.url, { 
-                method: 'POST', 
-                redirect: "follow",
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                method: 'POST', redirect: "follow", headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: 'salvar_banco', dados: dbParaNuvem }) 
             });
 
@@ -1124,8 +1110,7 @@
             renderizarLista(); 
 
         } catch (error) {
-            db.pedidosAtivos = backupPedidos;
-            salvarBanco();
+            db.pedidosAtivos = backupPedidos; salvarBanco();
             document.getElementById('loadingOverlay').style.display = 'none';
             alert("❌ FALHA NA CONEXÃO!\nSeu pedido NÃO foi enviado. Por favor, verifique a sua internet e tente novamente.");
             renderizarLista();
@@ -1137,20 +1122,31 @@
     function abrirPedidosHoje() {
         const modal = document.getElementById('modalPedidosHoje'); const lista = document.getElementById('listaPedidosHoje'); lista.innerHTML = '';
         let hoje = new Date().setHours(0,0,0,0);
-        let itensHoje = db.pedidosAtivos.filter(pa => { if(pa.status === 'rascunho' || pa.excluido) return false; let dataPa = pa.dataStatus ? new Date(pa.dataStatus).setHours(0,0,0,0) : 0; return dataPa === hoje; });
-        itensHoje.sort((a,b) => (b.dataStatus || 0) - (a.dataStatus || 0));
+        let itensHoje = db.pedidosAtivos.filter(pa => { 
+            if(pa.status === 'rascunho' || pa.excluido) return false; 
+            // Usa dataEnvio (se existir) para não perder o rastro ao mudar status de compras
+            let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : (pa.dataStatus ? new Date(pa.dataStatus).setHours(0,0,0,0) : 0); 
+            return dataPa === hoje; 
+        });
+        itensHoje.sort((a,b) => (b.dataEnvio || b.dataStatus || 0) - (a.dataEnvio || a.dataStatus || 0));
 
         if(itensHoje.length === 0) { lista.innerHTML = '<div style="padding:20px; text-align:center; color:#666; font-size:14px;">Nenhum pedido enviado hoje.</div>'; } 
         else {
             itensHoje.forEach(pa => {
                 const p = db.produtos.find(x => x.id === pa.produtoId); if(!p) return;
                 let statusNome = pa.status;
-                if(pa.status === 'pendente') statusNome = 'Pendente ⏳'; else if(pa.status === 'pedido_forn') statusNome = 'No Fornecedor 📦'; else if(pa.status === 'comprado') statusNome = 'Comprado ✅'; else if(pa.status === 'entregue') statusNome = 'Entregue ✅';
+                if(pa.status === 'pendente') statusNome = 'Pendente ⏳'; else if(pa.status === 'pedido_forn') statusNome = 'No Fornecedor 📦'; else if(pa.status === 'comprado') statusNome = 'Comprado ✅'; else if(pa.status === 'entregue') statusNome = 'Entregue ✅'; else if(pa.status === 'cancelado') statusNome = 'Cancelado 🚫';
                 let acoes = '';
                 if(pa.status === 'pendente') { acoes = `<button onclick="prepararEdicaoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px;">✏️</button><button onclick="excluirPedidoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px; color:#d32f2f;">🗑️</button>`; } 
-                else { let textLimpo = statusNome.replace(/ ✅| 📦| ⏳/g, ''); acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${textLimpo})</span>`; }
-                let obsVisual = pa.obs ? `<br><span style="font-size:11px; color:#666;">Obs: ${pa.obs}</span>` : ''; let qtdNum = pa.qtd !== '' ? pa.qtd : '-';
-                lista.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #eee;"><div style="flex:1;"><strong style="font-size:14px; color:#333;">${p.nome}</strong><br><span style="font-size:13px; color:#1565C0; font-weight:bold;">${qtdNum} ${pa.unidade}</span><span style="font-size:11px; color:#666; margin-left:5px;">- ${statusNome}</span>${obsVisual}</div><div style="display:flex; gap:5px; align-items:center;">${acoes}</div></div>`;
+                else { let textLimpo = statusNome.replace(/ ✅| 📦| ⏳| 🚫/g, ''); acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${textLimpo})</span>`; }
+                
+                let obsVisual = pa.obs ? `<br><span style="font-size:11px; color:#666;">Obs: ${pa.obs}</span>` : ''; 
+                
+                let qtyVal = pa.qtd !== '' ? pa.qtd : null; let unVal = pa.unidade ? pa.unidade : null; let qtdStrDisplay = "";
+                if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`; else if(unVal !== null) qtdStrDisplay = `${unVal}`;
+                let exibicaoQtd = qtdStrDisplay ? `<span style="font-size:13px; color:#1565C0; font-weight:bold; margin-right:5px;">${qtdStrDisplay}</span>` : "";
+
+                lista.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #eee;"><div style="flex:1;"><strong style="font-size:14px; color:#333;">${p.nome}</strong><br>${exibicaoQtd}<span style="font-size:11px; color:#666;">- ${statusNome}</span>${obsVisual}</div><div style="display:flex; gap:5px; align-items:center;">${acoes}</div></div>`;
             });
         }
         modal.style.display = 'flex';
@@ -1168,7 +1164,11 @@
     // NOVA FUNÇÃO: COMPARTILHAMENTO NATIVO WEB SHARE API (.TXT)
     async function compartilharTxtNativo() {
         let hoje = new Date().setHours(0,0,0,0);
-        let itensHoje = db.pedidosAtivos.filter(pa => { if(pa.status === 'rascunho' || pa.excluido) return false; let dataPa = pa.dataStatus ? new Date(pa.dataStatus).setHours(0,0,0,0) : 0; return dataPa === hoje; });
+        let itensHoje = db.pedidosAtivos.filter(pa => { 
+            if(pa.status === 'rascunho' || pa.excluido) return false; 
+            let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : (pa.dataStatus ? new Date(pa.dataStatus).setHours(0,0,0,0) : 0); 
+            return dataPa === hoje; 
+        });
         
         if (itensHoje.length === 0) return alert("Nenhum pedido foi enviado hoje para ser exportado.");
 
@@ -1186,9 +1186,10 @@
             if (grupos[cat.id] && grupos[cat.id].length > 0) {
                 let txt = `> *${cat.nome}*\n`;
                 let linhas = grupos[cat.id].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => {
-                    let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-';
+                    let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
+                    if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
                     let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : '';
-                    return `▪ ${item.p.nome} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`;
+                    return `▪ ${item.p.nome}${qtdStr}${obsStr}`;
                 });
                 blocosTexto.push(txt + linhas.join('\n'));
             }
@@ -1197,9 +1198,10 @@
         if (grupos["sem_cat"] && grupos["sem_cat"].length > 0) {
             let txt = `> *Outros*\n`;
             let linhas = grupos["sem_cat"].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => {
-                let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-';
+                let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
+                if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
                 let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : '';
-                return `▪ ${item.p.nome} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`;
+                return `▪ ${item.p.nome}${qtdStr}${obsStr}`;
             });
             blocosTexto.push(txt + linhas.join('\n'));
         }
@@ -1214,25 +1216,11 @@
         const file = new File([textoFinal], nomeArquivo, { type: 'text/plain' });
 
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: 'Relatório de Pedidos',
-                    text: 'Segue a lista de pedidos gerada hoje.'
-                });
-            } catch (error) {
-                console.log('Compartilhamento cancelado ou falhou', error);
-            }
+            try { await navigator.share({ files: [file], title: 'Relatório de Pedidos', text: 'Segue a lista de pedidos gerada hoje.' }); } 
+            catch (error) { console.log('Compartilhamento cancelado ou falhou', error); }
         } else {
-            // Plano B (Se o navegador do celular for antigo): Baixa direto pra memória
-            const url = URL.createObjectURL(file);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = nomeArquivo;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            const url = URL.createObjectURL(file); const a = document.createElement('a'); a.href = url; a.download = nomeArquivo;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
             alert("O arquivo foi baixado na pasta de Downloads do seu aparelho.");
         }
     }
@@ -1276,8 +1264,13 @@
                 db.pedidosAtivos.push({ idUnico: novoPedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId });
                 salvarBanco(); 
                 el.setAttribute('data-pedid', novoPedId); el.classList.add('item-pedido-rascunho');
+                
+                let qtyVal = qtd !== '' ? qtd : null; let unVal = un ? un : null; let qtdStrDisplay = "";
+                if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`; else if(unVal !== null) qtdStrDisplay = `${unVal}`;
+                let exibicaoQtd = qtdStrDisplay ? `<span style="font-weight: bold; font-size: 14px; color: #1565C0;">${qtdStrDisplay}</span>` : "";
+
                 let infoDir = el.querySelector('.info-direita');
-                if(infoDir) { infoDir.innerHTML = `<div class="status-badge bg-rascunho" style="margin-bottom: 2px;">Rascunho</div><span style="font-weight: bold; font-size: 14px; color: #1565C0;">${qtd} ${un}</span>`; }
+                if(infoDir) { infoDir.innerHTML = `<div class="status-badge bg-rascunho" style="margin-bottom: 2px;">Rascunho</div>${exibicaoQtd}`; }
                 document.getElementById('containerBotoesEnvio').style.display = 'flex';
             } 
         } 
@@ -1297,7 +1290,7 @@
         if(db.configs.modo === 'compras') { 
             if (getPermissaoColab()) return; 
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
-            if(pa && !pa.excluido) { registrarDesfazer(pa); pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } 
+            if(pa && !pa.excluido && pa.status !== 'cancelado') { registrarDesfazer(pa); pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } 
         } 
     }
     
@@ -1308,6 +1301,9 @@
                 if(pa.excluido) {
                     if (apenasReceber) return alert("Seu perfil não permite alterar itens excluídos.");
                     if(confirm("Desfazer exclusão do item e voltar à lista?")) { registrarDesfazer(pa); pa.excluido = false; pa.status = 'pendente'; pa.dataStatus = Date.now(); salvarBanco(); renderizarLista(); sincronizarFundo(false, true); }
+                } else if (pa.status === 'cancelado') {
+                    if (apenasReceber) return alert("Seu perfil não permite alterar itens cancelados.");
+                    registrarDesfazer(pa); pa.status = 'pendente'; pa.dataStatus = Date.now(); salvarBanco(); renderizarLista(); sincronizarFundo(false, true);
                 } else {
                     if (apenasReceber && pa.status !== 'pedido_forn') return alert("Seu perfil só permite dar recebido em itens marcados como 'Pedido ao Fornecedor'.");
                     registrarDesfazer(pa);
@@ -1337,7 +1333,12 @@
                 registrarDesfazer(pa);
                 if(pa.status === 'entregue') { if(confirm("Deseja voltar este item para 'Pedido ao Fornecedor'?")) { pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
                 else if (pa.status === 'pedido_forn' || pa.status === 'comprado') { if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
-                else if (pa.status === 'pendente') { if(confirm("Deseja excluir o item? Ele desaparecerá das compras.")) { pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
+                else if (pa.status === 'pendente') { 
+                    pa.status = 'cancelado'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); 
+                }
+                else if (pa.status === 'cancelado') {
+                    pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true);
+                }
             } 
         }
     }
@@ -1425,17 +1426,44 @@
             db.categorias.forEach(cat => {
                 if (grupos[cat.id] && grupos[cat.id].length > 0) {
                     let txtCat = `> *${cat.nome}*\n`;
-                    let linhas = grupos[cat.id].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => { let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-'; return `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`; });
+                    let linhas = grupos[cat.id].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => { 
+                        let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; 
+                        let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; 
+                        
+                        let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
+                        if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
+                        
+                        let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; 
+                        return `▪ ${nomeItem}${marcasStr}${qtdStr}${obsStr}`; 
+                    });
                     txtCat += linhas.join('\n'); blocosItens.push(txtCat);
                 }
             });
             if (grupos["sem_cat"] && grupos["sem_cat"].length > 0) {
                 let txtCat = `> *Outros*\n`;
-                let linhas = grupos["sem_cat"].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => { let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-'; return `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`; });
+                let linhas = grupos["sem_cat"].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => { 
+                    let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; 
+                    let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; 
+                    
+                    let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
+                    if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
+                    
+                    let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; 
+                    return `▪ ${nomeItem}${marcasStr}${qtdStr}${obsStr}`; 
+                });
                 txtCat += linhas.join('\n'); blocosItens.push(txtCat);
             }
         } else {
-            let linhas = itensProcessados.map(item => { let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; let qtdStr = item.pa.qtd !== '' ? item.pa.qtd : '-'; return `▪ ${nomeItem}${marcasStr} - Qtd: ${qtdStr} ${item.pa.unidade}${obsStr}`; });
+            let linhas = itensProcessados.map(item => { 
+                let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; 
+                let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; 
+                
+                let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
+                if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
+                
+                let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; 
+                return `▪ ${nomeItem}${marcasStr}${qtdStr}${obsStr}`; 
+            });
             if(linhas.length > 0) blocosItens.push(linhas.join('\n'));
         }
 
@@ -1515,8 +1543,6 @@
         
         prodOrdem.forEach((p) => { 
             if (filtro !== 'todos' && p.categoria !== filtro) return;
-            
-            // Grava a letra inicial sem acento no atributo HTML invisível para ajudar a rolar a página depois
             let letraInicial = removerAcentos(p.nome).charAt(0).toUpperCase();
             
             lista.innerHTML += `<div class="gerenciar-item" data-letra="${letraInicial}"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span></div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="duplicarProduto('${p.id}')">📄</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; 
@@ -1528,19 +1554,11 @@
         let indexInicial = alfabeto.indexOf(letraClicada);
         let containerLista = document.getElementById('conteudoListagem');
         let elementoAlvo = null;
-
-        // Procura a letra clicada. Se não achar, procura a próxima letra do alfabeto que exista na lista.
         for (let i = indexInicial; i < alfabeto.length; i++) {
             elementoAlvo = document.querySelector(`.gerenciar-item[data-letra="${alfabeto[i]}"]`);
-            if (elementoAlvo) break; // Achou!
+            if (elementoAlvo) break;
         }
-
-        if(elementoAlvo) {
-            containerLista.scrollTo({
-                top: elementoAlvo.offsetTop - containerLista.offsetTop,
-                behavior: 'smooth'
-            });
-        }
+        if(elementoAlvo) { containerLista.scrollTo({ top: elementoAlvo.offsetTop - containerLista.offsetTop, behavior: 'smooth' }); }
     }
 
     function moverCategoria(index, direcao) {
