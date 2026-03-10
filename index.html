@@ -555,7 +555,7 @@
     function parseFloatBr(str) { if(str === '' || str === null || str === undefined) return ''; return parseFloat(String(str).replace(',','.')); }
 
     /* =========================================================================
-       NUVEM E ZONA DE RISCO + SYNC INVISÍVEL INTELIGENTE (T30)
+       NUVEM E ZONA DE RISCO + SYNC INVISÍVEL INTELIGENTE
        ========================================================================= */
     function atualizarVisibilidadeAdmin() {
         const btnAdmin = document.getElementById('btnAdmin');
@@ -607,89 +607,94 @@
         }
     }
     
-    async function sincronizarFundo(forcado = false, forcarPush = false) {
+    // O motor invisível do dia a dia (CORRIGIDO PARA NÃO ESMAGAR NOVOS PRODUTOS)
+    async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
         if(!db.configs.url) return;
         
-        if(db.configs && db.configs.pausarSync && !forcado && !forcarPush) return;
+        if(db.configs && db.configs.pausarSync && !forcado && !apenasEmpurrar) return;
         
         if(isSyncingFundo) {
             if(forcado) alert("🔄 O sistema já está processando dados com a nuvem no momento. Aguarde alguns segundos.");
             return;
         }
         
-        if(document.hidden && !forcado && !forcarPush) return;
+        if(document.hidden && !forcado && !apenasEmpurrar) return;
 
         let temRascunho = db.pedidosAtivos.some(pa => pa.status === 'rascunho' && !pa.excluido);
-        if(temRascunho && db.configs.modo === 'pedido' && !forcado && !forcarPush) return;
+        if(temRascunho && db.configs.modo === 'pedido' && !forcado && !apenasEmpurrar) return;
 
         isSyncingFundo = true;
         let indicador = document.getElementById('syncIndicador');
         indicador.style.opacity = '1';
 
         try {
-            let fetchUrl = db.configs.url + (db.configs.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
-            let res = await fetch(fetchUrl, { redirect: "follow", cache: "no-store" }); 
-            let nuvemDB = await res.json(); 
-            
             let precisaAtualizarNuvem = false;
 
-            if(nuvemDB && nuvemDB.app_id === "alofeira" && nuvemDB.pedidosAtivos) {
-                let jsonAntes = JSON.stringify(db.pedidosAtivos);
-
-                let mergedPedidos = new Map();
+            // Só puxa da nuvem se não for uma ordem direta de empurrar (como salvar produto)
+            if (!apenasEmpurrar) {
+                let fetchUrl = db.configs.url + (db.configs.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
+                let res = await fetch(fetchUrl, { redirect: "follow", cache: "no-store" }); 
+                let nuvemDB = await res.json(); 
                 
-                nuvemDB.pedidosAtivos.forEach(pCloud => {
-                    if(pCloud.status !== 'rascunho') {
-                        mergedPedidos.set(pCloud.idUnico, pCloud);
-                    }
-                });
-                
-                let pedidosLocais = db.pedidosAtivos || [];
-                pedidosLocais.forEach(pLoc => {
-                    if(pLoc.status === 'rascunho') {
-                        mergedPedidos.set(pLoc.idUnico, pLoc);
-                        return;
-                    }
+                if(nuvemDB && nuvemDB.app_id === "alofeira" && nuvemDB.pedidosAtivos) {
+                    let jsonAntes = JSON.stringify(db.pedidosAtivos);
 
-                    let pCloud = mergedPedidos.get(pLoc.idUnico);
-                    let tLoc = pLoc.dataStatus || 0;
-                    let tCloud = pCloud ? (pCloud.dataStatus || 0) : 0;
+                    let mergedPedidos = new Map();
                     
-                    if(!pCloud || tLoc > tCloud) {
-                        mergedPedidos.set(pLoc.idUnico, pLoc);
-                        precisaAtualizarNuvem = true; 
+                    nuvemDB.pedidosAtivos.forEach(pCloud => {
+                        if(pCloud.status !== 'rascunho') {
+                            mergedPedidos.set(pCloud.idUnico, pCloud);
+                        }
+                    });
+                    
+                    let pedidosLocais = db.pedidosAtivos || [];
+                    pedidosLocais.forEach(pLoc => {
+                        if(pLoc.status === 'rascunho') {
+                            mergedPedidos.set(pLoc.idUnico, pLoc);
+                            return;
+                        }
+
+                        let pCloud = mergedPedidos.get(pLoc.idUnico);
+                        let tLoc = pLoc.dataStatus || 0;
+                        let tCloud = pCloud ? (pCloud.dataStatus || 0) : 0;
+                        
+                        if(!pCloud || tLoc > tCloud) {
+                            mergedPedidos.set(pLoc.idUnico, pLoc);
+                            precisaAtualizarNuvem = true; 
+                        }
+                    });
+
+                    db.pedidosAtivos = Array.from(mergedPedidos.values());
+
+                    if(nuvemDB.produtos) db.produtos = nuvemDB.produtos;
+                    if(nuvemDB.categorias) db.categorias = nuvemDB.categorias;
+                    if(nuvemDB.fornecedores) db.fornecedores = nuvemDB.fornecedores;
+                    if(nuvemDB.colaboradores) db.colaboradores = nuvemDB.colaboradores;
+
+                    if(nuvemDB.configs) {
+                        db.configs.exigirColaborador = nuvemDB.configs.exigirColaborador;
+                        db.configs.senhaAdmin = nuvemDB.configs.senhaAdmin || "1999";
                     }
-                });
 
-                db.pedidosAtivos = Array.from(mergedPedidos.values());
+                    db.configs.dadosBaixados = true;
+                    salvarBanco();
 
-                if(nuvemDB.produtos) db.produtos = nuvemDB.produtos;
-                if(nuvemDB.categorias) db.categorias = nuvemDB.categorias;
-                if(nuvemDB.fornecedores) db.fornecedores = nuvemDB.fornecedores;
-                if(nuvemDB.colaboradores) db.colaboradores = nuvemDB.colaboradores;
+                    if (db.configs.exigirColaborador && !db.configs.colabAtivoId && document.getElementById('modalColaboradorObrigatorio').style.display !== 'flex') {
+                        fecharModal('modalConfigAvancadas');
+                        fecharModal('modalPainelUnificado');
+                        abrirSelecaoColaboradorInicial(false);
+                    }
 
-                if(nuvemDB.configs) {
-                    db.configs.exigirColaborador = nuvemDB.configs.exigirColaborador;
-                    db.configs.senhaAdmin = nuvemDB.configs.senhaAdmin || "1999";
-                }
-
-                db.configs.dadosBaixados = true;
-                salvarBanco();
-
-                if (db.configs.exigirColaborador && !db.configs.colabAtivoId && document.getElementById('modalColaboradorObrigatorio').style.display !== 'flex') {
-                    fecharModal('modalConfigAvancadas');
-                    fecharModal('modalPainelUnificado');
-                    abrirSelecaoColaboradorInicial(false);
-                }
-
-                let jsonDepois = JSON.stringify(db.pedidosAtivos);
-                if(jsonAntes !== jsonDepois) {
-                    renderizarLista();
-                    if(document.getElementById('modalPedidosHoje').style.display === 'flex') abrirPedidosHoje();
+                    let jsonDepois = JSON.stringify(db.pedidosAtivos);
+                    if(jsonAntes !== jsonDepois) {
+                        renderizarLista();
+                        if(document.getElementById('modalPedidosHoje').style.display === 'flex') abrirPedidosHoje();
+                    }
                 }
             }
             
-            if (precisaAtualizarNuvem || forcarPush || forcado) {
+            // Empurra para a nuvem se forçado, se houver alteração local, ou se for salvamento direto
+            if (precisaAtualizarNuvem || apenasEmpurrar || forcado) {
                 let dbParaNuvem = JSON.parse(JSON.stringify(db));
                 dbParaNuvem.pedidosAtivos = dbParaNuvem.pedidosAtivos.filter(p => p.status !== 'rascunho');
 
@@ -940,7 +945,6 @@
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
                 
-                // === AQUI ESTÁ A CORREÇÃO DE OURO: CEGANDO O ITEM EXCLUÍDO ===
                 const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id && !pa.excluido);
                 const ultimoPedido = pedidosDeste[pedidosDeste.length-1];
                 const pedidoEditavel = pedidosDeste.find(pa => (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
@@ -983,8 +987,9 @@
             document.getElementById('btnEnviarPedidos').style.display = temRascunho ? 'block' : 'none';
 
         } else {
-            // MODO COMPRAS
-            let comprasParaMostrar = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho');
+            // MODO COMPRAS (CORRIGIDO PARA IGNORAR ITENS EXCLUÍDOS COMPLETAMENTE)
+            let comprasParaMostrar = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho' && !pa.excluido);
+            
             if(agrupamentoCompradoAtivo) {
                 comprasParaMostrar.sort((a, b) => {
                     let getStatusPrio = (s) => s === 'pendente' ? 1 : (s === 'pedido_forn' ? 2 : 3);
@@ -1010,7 +1015,6 @@
 
             let lastGroup = ""; let lastCatHeader = "";
             comprasParaMostrar.forEach(pa => {
-                if(pa.excluido) { const diffDays = (agora - pa.dataExclusao) / (1000 * 60 * 60 * 24); if(diffDays >= 7) return; }
                 const p = db.produtos.find(prod => prod.id === pa.produtoId); if(!p) return; 
                 if(categoriaAtual && p.categoria !== categoriaAtual) return;
                 if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
@@ -1029,7 +1033,7 @@
                 
                 let qtdNum = pa.qtd !== '' ? pa.qtd : '-';
                 let tituloItem = `${p.nome}`;
-                let tsReferencia = pa.dataStatus || pa.dataConclusao || pa.dataExclusao || parseInt(pa.idUnico.split('_')[1]); let tempoTxt = tsReferencia ? ` ${tempoRelativo(tsReferencia)}` : "";
+                let tsReferencia = pa.dataStatus || pa.dataConclusao || parseInt(pa.idUnico.split('_')[1]); let tempoTxt = tsReferencia ? ` ${tempoRelativo(tsReferencia)}` : "";
                 
                 let nomeStatus = ""; let statusClass = "bg-pendente";
                 switch(pa.status) { 
@@ -1037,7 +1041,6 @@
                     case 'comprado': nomeStatus = 'Comprado'; statusClass = 'bg-comprado'; break; 
                     case 'pedido_forn': nomeStatus = 'Pedido Forn.'; statusClass = 'bg-pedido_forn'; break; 
                     case 'entregue': nomeStatus = 'Entregue'; statusClass = 'bg-entregue'; break; 
-                    case 'excluido': nomeStatus = 'Excluído'; statusClass = 'bg-excluido'; break; 
                 }
                 
                 let statusText = nomeStatus + tempoTxt; 
@@ -1046,7 +1049,7 @@
                 
                 let infoDireita = `<div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusText}</div><span style="font-weight: bold; font-size: 14px; color: #6a1b9a;">${qtdNum} ${pa.unidade}</span>`;
 
-                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''} ${pa.excluido ? 'riscado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">
+                lista.innerHTML += `<li class="item status-${pa.status} ${isSelected ? 'selecionado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">
                     ${htmlSelecao}
                     <div style="display: flex; align-items: center; flex: 1; overflow: hidden;">
                         <div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div>
@@ -1283,7 +1286,7 @@
                 registrarDesfazer(pa);
                 if(pa.status === 'entregue') { if(confirm("Deseja voltar este item para 'Pedido ao Fornecedor'?")) { pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
                 else if (pa.status === 'pedido_forn' || pa.status === 'comprado') { if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
-                else if (pa.status === 'pendente') { if(confirm("Deseja excluir o item? Ele ficará riscado nas Compras por 7 dias.")) { pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
+                else if (pa.status === 'pendente') { if(confirm("Deseja excluir o item? Ele desaparecerá das compras.")) { pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
             } 
         }
     }
