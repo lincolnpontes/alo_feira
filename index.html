@@ -147,7 +147,7 @@
 
 <div id="loadingOverlay">
     <div class="spinner"></div>
-    <div id="loadingText">Gravando pedido na nuvem...<br><span style="font-size: 14px; font-weight: normal; margin-top: 10px; display: block;">Por favor, aguarde. Não feche o app.</span></div>
+    <div id="loadingText">Sincronizando banco de dados...<br><span style="font-size: 14px; font-weight: normal; margin-top: 10px; display: block;">Por favor, aguarde. Não feche o app.</span></div>
 </div>
 
 <div class="app-container">
@@ -607,7 +607,7 @@
         }
     }
     
-    // O motor invisível do dia a dia (CORRIGIDO PARA NÃO ESMAGAR NOVOS PRODUTOS)
+    // O motor invisível (O Tanque de Guerra agora fala a mesma língua da Planilha)
     async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
         if(!db.configs.url) return;
         
@@ -630,7 +630,7 @@
         try {
             let precisaAtualizarNuvem = false;
 
-            // Só puxa da nuvem se não for uma ordem direta de empurrar (como salvar produto)
+            // Só puxa da nuvem se não for uma ordem direta de empurrar (como ao salvar um produto novo)
             if (!apenasEmpurrar) {
                 let fetchUrl = db.configs.url + (db.configs.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
                 let res = await fetch(fetchUrl, { redirect: "follow", cache: "no-store" }); 
@@ -658,6 +658,7 @@
                         let tLoc = pLoc.dataStatus || 0;
                         let tCloud = pCloud ? (pCloud.dataStatus || 0) : 0;
                         
+                        // Se o celular tiver uma ação mais recente que a nuvem, ele manda atualizar a nuvem
                         if(!pCloud || tLoc > tCloud) {
                             mergedPedidos.set(pLoc.idUnico, pLoc);
                             precisaAtualizarNuvem = true; 
@@ -732,20 +733,14 @@
             try {
                 const importedDb = JSON.parse(e.target.result);
                 if(importedDb && importedDb.app_id === "alofeira") {
-                    
                     let urlSalva = db.configs.url; 
-                    
                     db = importedDb; 
                     if (urlSalva) db.configs.url = urlSalva; 
-                    
                     if(!db.configs) db.configs = {};
                     db.configs.pausarSync = true; 
-                    
                     salvarBanco(); 
-                    
                     alert("✅ Arquivo carregado no celular!\n\nAgora, vá na Engrenagem -> Avançado e clique no botão 'Forçar Envio Completo pra Nuvem' para salvar lá."); 
                     location.reload(); 
-                    
                 } else { 
                     alert("Arquivo de backup inválido."); 
                 }
@@ -754,7 +749,6 @@
             }
         };
         reader.readAsText(file);
-        
         event.target.value = ''; 
     }
 
@@ -987,7 +981,7 @@
             document.getElementById('btnEnviarPedidos').style.display = temRascunho ? 'block' : 'none';
 
         } else {
-            // MODO COMPRAS (CORRIGIDO PARA IGNORAR ITENS EXCLUÍDOS COMPLETAMENTE)
+            // MODO COMPRAS
             let comprasParaMostrar = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho' && !pa.excluido);
             
             if(agrupamentoCompradoAtivo) {
