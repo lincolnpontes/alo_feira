@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.1.2</title>
+    <title>Alô Feira v1.1.4</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -150,7 +150,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.1.2</div>
+    <div class="splash-versao">v1.1.4</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -350,7 +350,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.1.2</div>
+            <div class="versao">v1.1.4</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -958,6 +958,36 @@
         renderizarLista();
     }
 
+    /* =========================================================================
+       FUNÇÃO GLOBAL DE ORDENAÇÃO CUSTOMIZADA
+       ========================================================================= */
+    function ordernarPorCategoriaESub(a, b) {
+        let pA = a.p || a; let pB = b.p || b;
+        
+        let idxA = pA ? db.categorias.findIndex(c => c.id === pA.categoria) : 999; if(idxA === -1) idxA = 999;
+        let idxB = pB ? db.categorias.findIndex(c => c.id === pB.categoria) : 999; if(idxB === -1) idxB = 999;
+        
+        if (idxA !== idxB) return idxA - idxB;
+        
+        let subA = pA && pA.subcategoria ? pA.subcategoria : "";
+        let subB = pB && pB.subcategoria ? pB.subcategoria : "";
+        
+        let cObjA = db.categorias.find(c => c.id === (pA ? pA.categoria : null));
+        let idxSubA = (cObjA && cObjA.subcategorias && subA) ? cObjA.subcategorias.indexOf(subA) : 999;
+        if(idxSubA === -1) idxSubA = 999;
+        
+        let cObjB = db.categorias.find(c => c.id === (pB ? pB.categoria : null));
+        let idxSubB = (cObjB && cObjB.subcategorias && subB) ? cObjB.subcategorias.indexOf(subB) : 999;
+        if(idxSubB === -1) idxSubB = 999;
+        
+        if (idxSubA !== idxSubB) return idxSubA - idxSubB;
+        if (subA !== subB) return subA.localeCompare(subB);
+        
+        let nomeA = pA.descFornecedor ? pA.descFornecedor : pA.nome;
+        let nomeB = pB.descFornecedor ? pB.descFornecedor : pB.nome;
+        return nomeA.localeCompare(nomeB);
+    }
+
     function renderizarLista() {
         const lista = document.getElementById('listaPrincipal'); lista.innerHTML = ''; let itensMostrados = 0;
         let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = getCatsPermitidas(colabLogado);
@@ -966,41 +996,7 @@
         let produtosOrdenados = [...db.produtos];
 
         // LÓGICA DE ORDENAÇÃO
-        if (categoriaAtual === null) {
-            produtosOrdenados.sort((a, b) => {
-                let idxA = db.categorias.findIndex(c => c.id === a.categoria); if(idxA === -1) idxA = 999;
-                let idxB = db.categorias.findIndex(c => c.id === b.categoria); if(idxB === -1) idxB = 999;
-                if(idxA !== idxB) return idxA - idxB;
-                
-                let subA = a.subcategoria || ""; let subB = b.subcategoria || "";
-                let cObjA = db.categorias.find(c => c.id === a.categoria);
-                let idxSubA = (cObjA && cObjA.subcategorias && subA) ? cObjA.subcategorias.indexOf(subA) : 999;
-                if(idxSubA === -1) idxSubA = 999;
-                let cObjB = db.categorias.find(c => c.id === b.categoria);
-                let idxSubB = (cObjB && cObjB.subcategorias && subB) ? cObjB.subcategorias.indexOf(subB) : 999;
-                if(idxSubB === -1) idxSubB = 999;
-                
-                if(idxSubA !== idxSubB) return idxSubA - idxSubB;
-                if(subA !== subB) return subA.localeCompare(subB);
-                
-                return a.nome.localeCompare(b.nome);
-            });
-        } else { 
-            produtosOrdenados.sort((a, b) => {
-                let subA = a.subcategoria || ""; let subB = b.subcategoria || "";
-                let cObjA = db.categorias.find(c => c.id === a.categoria);
-                let idxSubA = (cObjA && cObjA.subcategorias && subA) ? cObjA.subcategorias.indexOf(subA) : 999;
-                if(idxSubA === -1) idxSubA = 999;
-                let cObjB = db.categorias.find(c => c.id === b.categoria);
-                let idxSubB = (cObjB && cObjB.subcategorias && subB) ? cObjB.subcategorias.indexOf(subB) : 999;
-                if(idxSubB === -1) idxSubB = 999;
-                
-                if(idxSubA !== idxSubB) return idxSubA - idxSubB;
-                if(subA !== subB) return subA.localeCompare(subB);
-                
-                return a.nome.localeCompare(b.nome);
-            }); 
-        }
+        produtosOrdenados.sort(ordernarPorCategoriaESub);
 
         let btnMarcar = modoSelecaoAtivo ? `<span style="font-size:11px; color:#6a1b9a; border:1px solid #6a1b9a; padding:3px 8px; border-radius:12px; background:#fff;">✓ Todos</span>` : '';
 
@@ -1091,46 +1087,13 @@
                 comprasParaMostrar.sort((a, b) => {
                     let getStatusPrio = (s) => s === 'pendente' ? 1 : (s === 'pedido_forn' ? 2 : (s === 'cancelado' ? 4 : 3));
                     let prioA = getStatusPrio(a.status); let prioB = getStatusPrio(b.status); if (prioA !== prioB) return prioA - prioB;
-                    
                     let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
-                    
-                    let idxA = pA ? db.categorias.findIndex(c => c.id === pA.categoria) : 999; if(idxA === -1) idxA = 999;
-                    let idxB = pB ? db.categorias.findIndex(c => c.id === pB.categoria) : 999; if(idxB === -1) idxB = 999;
-                    if(idxA !== idxB) return idxA - idxB;
-                    
-                    let subA = pA && pA.subcategoria ? pA.subcategoria : ""; let subB = pB && pB.subcategoria ? pB.subcategoria : "";
-                    let cObjA = db.categorias.find(c => c.id === (pA ? pA.categoria : null));
-                    let idxSubA = (cObjA && cObjA.subcategorias && subA) ? cObjA.subcategorias.indexOf(subA) : 999;
-                    if(idxSubA === -1) idxSubA = 999;
-                    let cObjB = db.categorias.find(c => c.id === (pB ? pB.categoria : null));
-                    let idxSubB = (cObjB && cObjB.subcategorias && subB) ? cObjB.subcategorias.indexOf(subB) : 999;
-                    if(idxSubB === -1) idxSubB = 999;
-                    
-                    if(idxSubA !== idxSubB) return idxSubA - idxSubB;
-                    if(subA !== subB) return subA.localeCompare(subB);
-                    
-                    return (pA ? pA.nome : "").localeCompare(pB ? pB.nome : "");
+                    return ordernarPorCategoriaESub({p: pA}, {p: pB});
                 });
             } else {
                 comprasParaMostrar.sort((a, b) => {
                     let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
-                    
-                    let idxA = pA ? db.categorias.findIndex(c => c.id === pA.categoria) : 999; if(idxA === -1) idxA = 999;
-                    let idxB = pB ? db.categorias.findIndex(c => c.id === pB.categoria) : 999; if(idxB === -1) idxB = 999;
-                    if (categoriaAtual === null && idxA !== idxB) return idxA - idxB;
-                    
-                    let subA = pA && pA.subcategoria ? pA.subcategoria : ""; let subB = pB && pB.subcategoria ? pB.subcategoria : "";
-                    let cObjA = db.categorias.find(c => c.id === (pA ? pA.categoria : null));
-                    let idxSubA = (cObjA && cObjA.subcategorias && subA) ? cObjA.subcategorias.indexOf(subA) : 999;
-                    if(idxSubA === -1) idxSubA = 999;
-                    let cObjB = db.categorias.find(c => c.id === (pB ? pB.categoria : null));
-                    let idxSubB = (cObjB && cObjB.subcategorias && subB) ? cObjB.subcategorias.indexOf(subB) : 999;
-                    if(idxSubB === -1) idxSubB = 999;
-                    
-                    if(idxSubA !== idxSubB) return idxSubA - idxSubB;
-                    if(subA !== subB) return subA.localeCompare(subB);
-                    
-                    return (pA ? pA.nome : "").localeCompare(pB ? pB.nome : "");
+                    return ordernarPorCategoriaESub({p: pA}, {p: pB});
                 });
             }
 
@@ -1255,12 +1218,14 @@
         const modal = document.getElementById('modalPedidosHoje'); const lista = document.getElementById('listaPedidosHoje'); lista.innerHTML = '';
         let hoje = new Date().setHours(0,0,0,0);
         let itensHoje = db.pedidosAtivos.filter(pa => { if(pa.status === 'rascunho' || pa.excluido) return false; let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : 0; return dataPa === hoje; });
-        itensHoje.sort((a,b) => (b.dataEnvio || 0) - (a.dataEnvio || 0));
+        
+        let itensHojeDetalhado = itensHoje.map(pa => ({ pa: pa, p: db.produtos.find(x => x.id === pa.produtoId) })).filter(item => item.p);
+        itensHojeDetalhado.sort(ordernarPorCategoriaESub);
 
-        if(itensHoje.length === 0) { lista.innerHTML = '<div style="padding:20px; text-align:center; color:#666; font-size:14px;">Nenhum pedido enviado hoje.</div>'; } 
+        if(itensHojeDetalhado.length === 0) { lista.innerHTML = '<div style="padding:20px; text-align:center; color:#666; font-size:14px;">Nenhum pedido enviado hoje.</div>'; } 
         else {
-            itensHoje.forEach(pa => {
-                const p = db.produtos.find(x => x.id === pa.produtoId); if(!p) return;
+            itensHojeDetalhado.forEach(item => {
+                let pa = item.pa; let p = item.p;
                 let statusNome = pa.status;
                 if(pa.status === 'pendente') statusNome = 'Pendente ⏳'; else if(pa.status === 'pedido_forn') statusNome = 'No Fornecedor 📦'; else if(pa.status === 'comprado') statusNome = 'Comprado ✅'; else if(pa.status === 'entregue') statusNome = 'Entregue ✅'; else if(pa.status === 'cancelado') statusNome = 'Cancelado 🚫';
                 let acoes = '';
@@ -1283,27 +1248,21 @@
         let itensHoje = db.pedidosAtivos.filter(pa => { if(pa.status === 'rascunho' || pa.excluido) return false; let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : 0; return dataPa === hoje; });
         if (itensHoje.length === 0) return alert("Nenhum pedido foi enviado hoje para ser exportado.");
 
-        let gruposTratados = {};
-        itensHoje.forEach(pa => { 
-            const p = db.produtos.find(x => x.id === pa.produtoId); 
-            if (!p) return; 
-            let nomeGrupo = "";
-            if (p.subcategoria && p.subcategoria.trim() !== "") {
-                nomeGrupo = p.subcategoria.trim();
-            } else {
-                let catObj = db.categorias.find(c => c.id === p.categoria);
-                nomeGrupo = catObj ? catObj.nome : "Outros";
-            }
-            if(!gruposTratados[nomeGrupo]) gruposTratados[nomeGrupo] = []; 
-            gruposTratados[nomeGrupo].push({ pa: pa, p: p }); 
+        let itensHojeDetalhado = itensHoje.map(pa => ({ pa: pa, p: db.produtos.find(x => x.id === pa.produtoId) })).filter(item => item.p);
+        itensHojeDetalhado.sort(ordernarPorCategoriaESub);
+
+        let gruposArr = [];
+        itensHojeDetalhado.forEach(item => {
+            let nomeGrupo = item.p.subcategoria && item.p.subcategoria.trim() !== "" ? item.p.subcategoria.trim() : (db.categorias.find(c => c.id === item.p.categoria)?.nome || "Outros");
+            let g = gruposArr.find(x => x.nome === nomeGrupo);
+            if(!g) { g = { nome: nomeGrupo, itens: [] }; gruposArr.push(g); }
+            g.itens.push(item);
         });
 
         let blocosTexto = [];
-        let chavesGrupo = Object.keys(gruposTratados).sort((a,b) => a.localeCompare(b));
-        
-        chavesGrupo.forEach(grupo => {
-            let txt = `> *${grupo}*\n`;
-            let linhas = gruposTratados[grupo].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => {
+        gruposArr.forEach(grupo => {
+            let txt = `> *${grupo.nome}*\n`;
+            let linhas = grupo.itens.map(item => {
                 let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
                 if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
                 let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; return `▪ ${item.p.nome}${qtdStr}${obsStr}`;
@@ -1384,10 +1343,16 @@
             if(pa) {
                 if(pa.excluido) {
                     if (apenasReceber) return alert("Seu perfil não permite alterar itens excluídos.");
-                    if(confirm("Desfazer exclusão do item e voltar à lista?")) { registrarDesfazer(pa); pa.excluido = false; pa.excluidoCompras = false; pa.status = 'pendente'; pa.dataStatus = Date.now(); salvarBanco(); renderizarLista(); sincronizarFundo(false, true); }
+                    if(confirm("Desfazer exclusão do item e voltar à lista?")) { 
+                        registrarDesfazer(pa); pa.excluido = false; pa.excluidoCompras = false; pa.status = 'pendente'; 
+                        pa.dataStatus = pa.dataEnvio || parseInt(pa.idUnico.split('_')[1]); 
+                        salvarBanco(); renderizarLista(); sincronizarFundo(false, true); 
+                    }
                 } else if (pa.status === 'cancelado') {
                     if (apenasReceber) return alert("Seu perfil não permite alterar itens cancelados.");
-                    registrarDesfazer(pa); pa.status = 'pendente'; pa.dataStatus = Date.now(); salvarBanco(); renderizarLista(); sincronizarFundo(false, true);
+                    registrarDesfazer(pa); pa.status = 'pendente'; 
+                    pa.dataStatus = pa.dataEnvio || parseInt(pa.idUnico.split('_')[1]); 
+                    salvarBanco(); renderizarLista(); sincronizarFundo(false, true);
                 } else {
                     if (apenasReceber && pa.status !== 'pedido_forn') return alert("Seu perfil só permite dar recebido em itens marcados como 'Pedido ao Fornecedor'.");
                     registrarDesfazer(pa);
@@ -1415,9 +1380,23 @@
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
             if(pa && !pa.excluido) { 
                 registrarDesfazer(pa);
-                if(pa.status === 'entregue') { if(confirm("Deseja voltar este item para 'Pedido ao Fornecedor'?")) { pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
-                else if (pa.status === 'pedido_forn' || pa.status === 'comprado') { if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
-                else if (pa.status === 'pendente') { pa.status = 'cancelado'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); }
+                if(pa.status === 'entregue') { 
+                    if(confirm("Deseja voltar este item para 'Pedido ao Fornecedor'?")) { 
+                        pa.status = 'pedido_forn'; 
+                        pa.dataStatus = pa.dataEnvio || parseInt(pa.idUnico.split('_')[1]); 
+                        delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); 
+                    } 
+                }
+                else if (pa.status === 'pedido_forn' || pa.status === 'comprado') { 
+                    if(confirm("Deseja voltar este item para 'Pendente'?")) { 
+                        pa.status = 'pendente'; 
+                        pa.dataStatus = pa.dataEnvio || parseInt(pa.idUnico.split('_')[1]); 
+                        delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); 
+                    } 
+                }
+                else if (pa.status === 'pendente') { 
+                    pa.status = 'cancelado'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); 
+                }
                 else if (pa.status === 'cancelado') { 
                     // ITEM EXCLUIDO DO MODO COMPRAS
                     pa.excluido = true; pa.excluidoCompras = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); 
@@ -1585,30 +1564,23 @@
         if (isCotacao) blocos.push(`*ITENS PARA COTAÇÃO:*`); if (isPedido) blocos.push(`*ITENS DO PEDIDO:*`);
 
         let itensProcessados = Array.from(itensSelecionadosRelatorio).map(idUnico => { const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); const p = pa ? db.produtos.find(x => x.id === pa.produtoId) : null; return { pa, p }; }).filter(item => item.pa && item.p);
+        
+        itensProcessados.sort(ordernarPorCategoriaESub);
+
         let blocosItens = [];
 
         if (agruparCat) {
-            let gruposTratados = {};
+            let gruposArr = [];
             itensProcessados.forEach(item => { 
-                let nomeGrupo = "";
-                if (item.p.subcategoria && item.p.subcategoria.trim() !== "") {
-                    nomeGrupo = item.p.subcategoria.trim();
-                } else {
-                    let catObj = db.categorias.find(c => c.id === item.p.categoria);
-                    nomeGrupo = catObj ? catObj.nome : "Outros";
-                }
-                if(!gruposTratados[nomeGrupo]) gruposTratados[nomeGrupo] = [];
-                gruposTratados[nomeGrupo].push(item); 
+                let nomeGrupo = item.p.subcategoria && item.p.subcategoria.trim() !== "" ? item.p.subcategoria.trim() : (db.categorias.find(c => c.id === item.p.categoria)?.nome || "Outros");
+                let g = gruposArr.find(x => x.nome === nomeGrupo);
+                if(!g) { g = { nome: nomeGrupo, itens: [] }; gruposArr.push(g); }
+                g.itens.push(item);
             });
             
-            let chavesGrupo = Object.keys(gruposTratados).sort((a,b) => a.localeCompare(b));
-            chavesGrupo.forEach(grupo => {
-                let txtCat = `> *${grupo}*\n`;
-                let linhas = gruposTratados[grupo].sort((a,b) => {
-                    let nA = a.p.descFornecedor ? a.p.descFornecedor : a.p.nome;
-                    let nB = b.p.descFornecedor ? b.p.descFornecedor : b.p.nome;
-                    return nA.localeCompare(nB);
-                }).map(item => { 
+            gruposArr.forEach(grupo => {
+                let txtCat = `> *${grupo.nome}*\n`;
+                let linhas = grupo.itens.map(item => { 
                     let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; 
                     let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; 
                     let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
