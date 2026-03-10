@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0.5</title>
+    <title>Alô Feira v1.0.6</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -133,7 +133,9 @@
         .marca-sistema .titulo { font-size: 22px; font-weight: bold; color: #1565C0; }
         .marca-sistema .versao { font-size: 12px; color: #666; }
         
+        /* CABEÇALHOS DAS CATEGORIAS MAIORES NO COMPRAS */
         .cat-header { background: #e0e0e0; padding: 12px 15px; font-weight: bold; font-size: 14px; color: #333; text-transform: uppercase; border-bottom: 1px solid #ccc; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+        .subcat-header { background: #eceff1; padding: 8px 15px 8px 25px; font-weight: bold; font-size: 12px; color: #546e7a; border-bottom: 1px solid #cfd8dc; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         
         /* ALFABETO E FILTRO NO GERENCIAR */
         .sidebar-alfabeto { position: absolute; right: 2px; top: 130px; bottom: 20px; width: 22px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; font-size: 10px; font-weight: bold; color: #1565C0; z-index: 10; background: rgba(255,255,255,0.8); border-radius: 10px; padding: 5px 0; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; }
@@ -148,7 +150,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0.5</div>
+    <div class="splash-versao">v1.0.6</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -332,7 +334,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0.5</div>
+            <div class="versao">v1.0.6</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -421,7 +423,8 @@
         <div class="form-group"><label>Nome (Visão Interna):</label><input type="text" id="prodNome"></div>
         <div class="form-group"><label>Nome para o Relatório (Opcional):</label><input type="text" id="prodDesc"></div>
         <div class="form-group"><label>Observação Padrão (Opcional):</label><input type="text" id="prodObsPadrao" placeholder="Ex: maduro, marca tal..."></div>
-        <div class="form-group"><label>Categoria:</label><select id="prodCategoria"></select></div>
+        <div class="form-group"><label>Categoria:</label><select id="prodCategoria" onchange="atualizarComboSubcat()"></select></div>
+        <div class="form-group"><label>Subcategoria (Opcional):</label><select id="prodSubcategoria"></select></div>
         
         <div style="display: flex; gap: 10px;">
             <div class="form-group" style="flex: 1;">
@@ -479,6 +482,17 @@
             <div class="form-group" style="flex:1;"><label>Cor Fundo:</label><input type="color" class="input-cor" id="catCor"></div>
             <div class="form-group" style="flex:1;"><label>Cor Texto:</label><input type="color" class="input-cor" id="catCorTexto"></div>
         </div>
+        
+        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+        <div class="form-group">
+            <label style="color:#1565C0; font-size:14px;">Subcategorias (Opcional):</label>
+            <div style="display:flex; gap:5px; margin-bottom:10px;">
+                <input type="text" id="novaSubcatNome" placeholder="Ex: Bebidas, Sobremesas...">
+                <button class="btn-action" style="flex-shrink:0; padding:10px 15px;" onclick="addFormSubcat()">+</button>
+            </div>
+            <div id="listaSubcatsForm" style="display:flex; flex-direction:column; gap:5px; max-height:120px; overflow-y:auto; padding-right:5px;"></div>
+        </div>
+
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormCategoria'); abrirGerenciar('categorias');">Cancelar</button><button class="btn-action" onclick="salvarCategoria()">Salvar</button></div>
     </div>
 </div>
@@ -543,6 +557,7 @@
     let pilhaDesfazer = []; 
     let tempPrecosProduto = [];
     let tempFornecedoresProduto = [];
+    let tempSubcats = [];
     let isSyncingFundo = false;
 
     function carregarBanco() {
@@ -555,13 +570,13 @@
         let salvo = localStorage.getItem('alofeira_v1');
         if(salvo) {
             let parsed = JSON.parse(salvo);
-            // MIGRAÇÃO BLINDADA: Garante que todo pedido antigo tenha uma data de envio imutável
             if(parsed.pedidosAtivos) {
                 parsed.pedidosAtivos.forEach(pa => {
-                    if(!pa.dataEnvio && pa.status !== 'rascunho') {
-                        pa.dataEnvio = pa.dataStatus || parseInt(pa.idUnico.split('_')[1]);
-                    }
+                    if(!pa.dataEnvio && pa.status !== 'rascunho') { pa.dataEnvio = pa.dataStatus || parseInt(pa.idUnico.split('_')[1]); }
                 });
+            }
+            if(parsed.categorias) {
+                parsed.categorias.forEach(c => { if(!c.subcategorias) c.subcategorias = []; });
             }
             return parsed;
         }
@@ -657,10 +672,18 @@
         }
     }
     
+    // NOVA TRAVA TÁTICA CONTRA SOBREPOSIÇÃO
+    function isUsuarioGerenciando() {
+        return Array.from(document.querySelectorAll('.modal-overlay')).some(el => el.style.display === 'flex');
+    }
+
     async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
         if(!db.configs.url) return;
         if(db.configs && db.configs.pausarSync && !forcado && !apenasEmpurrar) return;
         
+        // Bloqueio de leitura para não sobrepor telas de edição em andamento
+        if(isUsuarioGerenciando() && !forcado && !apenasEmpurrar) return;
+
         if(isSyncingFundo) {
             if(forcado) alert("🔄 O sistema já está processando dados com a nuvem no momento. Aguarde alguns segundos.");
             return;
@@ -726,9 +749,9 @@
                     }
 
                     let jsonDepois = JSON.stringify(db.pedidosAtivos);
-                    if(jsonAntes !== jsonDepois) {
+                    // Atualiza a tela APENAS se não estiver com nenhum modal importante aberto para evitar glitches
+                    if(jsonAntes !== jsonDepois && !isUsuarioGerenciando()) {
                         renderizarLista();
-                        if(document.getElementById('modalPedidosHoje').style.display === 'flex') abrirPedidosHoje();
                     }
                 }
             }
@@ -922,9 +945,10 @@
         renderizarFiltros(); renderizarLista(); 
     }
 
-    function selecionarGrupoCompras(grupoId) {
+    function selecionarGrupoCompras(grupoId, tipo = 'cat') {
         if(!modoSelecaoAtivo) return;
-        let itensNode = document.querySelectorAll(`.item[data-grupo="${grupoId}"]`);
+        let seletor = tipo === 'cat' ? `.item[data-grp-cat="${grupoId}"]` : `.item[data-grp-sub="${grupoId}"]`;
+        let itensNode = document.querySelectorAll(seletor);
         let allIds = Array.from(itensNode).map(el => el.getAttribute('data-id'));
         if(allIds.length === 0) return;
         
@@ -941,25 +965,49 @@
         let temRascunho = false;
         let produtosOrdenados = [...db.produtos];
 
+        // LÓGICA DE ORDENAÇÃO POR CATEGORIA -> SUBCATEGORIA -> NOME
         if (categoriaAtual === null) {
             produtosOrdenados.sort((a, b) => {
-                let idxA = db.categorias.findIndex(c => c.id === a.categoria); if(idxA === -1) idxA = 999;
-                let idxB = db.categorias.findIndex(c => c.id === b.categoria); if(idxB === -1) idxB = 999;
-                if(idxA !== idxB) return idxA - idxB; return a.nome.localeCompare(b.nome);
+                let catA = db.categorias.find(c => c.id === a.categoria); let catB = db.categorias.find(c => c.id === b.categoria);
+                let nameA = catA ? catA.nome : "ZZZ"; let nameB = catB ? catB.nome : "ZZZ";
+                if(nameA !== nameB) return nameA.localeCompare(nameB);
+                
+                let subA = a.subcategoria || ""; let subB = b.subcategoria || "";
+                if(subA !== subB) return subA.localeCompare(subB);
+                
+                return a.nome.localeCompare(b.nome);
             });
-        } else { produtosOrdenados.sort((a, b) => a.nome.localeCompare(b.nome)); }
+        } else { 
+            produtosOrdenados.sort((a, b) => {
+                let subA = a.subcategoria || ""; let subB = b.subcategoria || "";
+                if(subA !== subB) return subA.localeCompare(subB);
+                return a.nome.localeCompare(b.nome);
+            }); 
+        }
 
         let btnMarcar = modoSelecaoAtivo ? `<span style="font-size:11px; color:#6a1b9a; border:1px solid #6a1b9a; padding:3px 8px; border-radius:12px; background:#fff;">✓ Todos</span>` : '';
 
         if (db.configs.modo === 'pedido') {
-            let lastCatHeader = "";
+            let lastCatId = "";
+            let lastSubcat = null;
+            
             produtosOrdenados.forEach(p => {
                 if(categoriaAtual && p.categoria !== categoriaAtual) return; 
                 if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 
-                if (categoriaAtual === null) {
-                    let cObj = db.categorias.find(c => c.id === p.categoria); let catName = cObj ? cObj.nome : "Sem Categoria";
-                    if (catName !== lastCatHeader) { lista.innerHTML += `<li class="cat-header" style="cursor:default;"><span>🏷️ ${catName}</span></li>`; lastCatHeader = catName; }
+                let cObj = db.categorias.find(c => c.id === p.categoria);
+                let catId = cObj ? cObj.id : "sem_cat";
+                let subcat = p.subcategoria || "";
+
+                if (categoriaAtual === null && catId !== lastCatId) {
+                    let catName = cObj ? cObj.nome : "Sem Categoria";
+                    lista.innerHTML += `<li class="cat-header" style="cursor:default;"><span>🏷️ ${catName}</span></li>`; 
+                    lastCatId = catId; lastSubcat = null;
+                }
+                
+                if (subcat !== lastSubcat && subcat !== "") {
+                    lista.innerHTML += `<li class="subcat-header" style="cursor:default;"><span>↳ ${subcat}</span></li>`;
+                    lastSubcat = subcat;
                 }
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
@@ -1022,48 +1070,69 @@
                 comprasParaMostrar.sort((a, b) => {
                     let getStatusPrio = (s) => s === 'pendente' ? 1 : (s === 'pedido_forn' ? 2 : (s === 'cancelado' ? 4 : 3));
                     let prioA = getStatusPrio(a.status); let prioB = getStatusPrio(b.status); if (prioA !== prioB) return prioA - prioB;
+                    
                     let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
-                    let getCatPrio = (prod) => { if(!prod) return 999; let idx = db.categorias.findIndex(c => c.id === prod.categoria); return idx >= 0 ? idx : 999; };
-                    let catPrioA = getCatPrio(pA); let catPrioB = getCatPrio(pB); if (catPrioA !== catPrioB) return catPrioA - catPrioB;
-                    let nomeA = pA ? pA.nome : ""; let nomeB = pB ? pB.nome : ""; return nomeA.localeCompare(nomeB);
-                });
-            } else if (categoriaAtual === null) {
-                comprasParaMostrar.sort((a, b) => {
-                    let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
-                    let getCatPrio = (prod) => { if(!prod) return 999; let idx = db.categorias.findIndex(c => c.id === prod.categoria); return idx >= 0 ? idx : 999; };
-                    let catPrioA = getCatPrio(pA); let catPrioB = getCatPrio(pB); if (catPrioA !== catPrioB) return catPrioA - catPrioB;
-                    let nomeA = pA ? pA.nome : ""; let nomeB = pB ? pB.nome : ""; return nomeA.localeCompare(nomeB);
+                    let catA = db.categorias.find(c => pA && c.id === pA.categoria); let catB = db.categorias.find(c => pB && c.id === pB.categoria);
+                    let nameA = catA ? catA.nome : "ZZZ"; let nameB = catB ? catB.nome : "ZZZ";
+                    if(nameA !== nameB) return nameA.localeCompare(nameB);
+                    
+                    let subA = pA && pA.subcategoria ? pA.subcategoria : ""; let subB = pB && pB.subcategoria ? pB.subcategoria : "";
+                    if(subA !== subB) return subA.localeCompare(subB);
+                    
+                    return (pA ? pA.nome : "").localeCompare(pB ? pB.nome : "");
                 });
             } else {
                 comprasParaMostrar.sort((a, b) => {
                     let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId);
-                    let nomeA = pA ? pA.nome : ""; let nomeB = pB ? pB.nome : ""; return nomeA.localeCompare(nomeB);
+                    let catA = db.categorias.find(c => pA && c.id === pA.categoria); let catB = db.categorias.find(c => pB && c.id === pB.categoria);
+                    let nameA = catA ? catA.nome : "ZZZ"; let nameB = catB ? catB.nome : "ZZZ";
+                    if (categoriaAtual === null && nameA !== nameB) return nameA.localeCompare(nameB);
+                    
+                    let subA = pA && pA.subcategoria ? pA.subcategoria : ""; let subB = pB && pB.subcategoria ? pB.subcategoria : "";
+                    if(subA !== subB) return subA.localeCompare(subB);
+                    
+                    return (pA ? pA.nome : "").localeCompare(pB ? pB.nome : "");
                 });
             }
 
-            let lastGroup = ""; let lastCatHeader = "";
+            let lastGroup = ""; 
+            let lastCatId = ""; 
+            let lastSubcat = null;
+
             comprasParaMostrar.forEach(pa => {
                 const p = db.produtos.find(prod => prod.id === pa.produtoId); if(!p) return; 
                 if(categoriaAtual && p.categoria !== categoriaAtual) return;
                 if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 
-                let currentGroupId = "grupo_default";
+                let cObj = db.categorias.find(c => c.id === p.categoria);
+                let catId = cObj ? cObj.id : "sem_cat";
+                let subcat = p.subcategoria || "";
+                
+                let stGroupId = "st_" + pa.status;
+                let catGroupId = "cat_" + catId;
+                let subcatGroupId = "cat_" + catId + "_sub_" + subcat.replace(/\s/g,'_');
+                
                 if (agrupamentoCompradoAtivo) {
                     let currentGroup = pa.status === 'pendente' ? '⏳ PENDENTES' : (pa.status === 'pedido_forn' ? '📦 PEDIDOS AO FORNECEDOR' : (pa.status === 'cancelado' ? '🚫 CANCELADOS' : '✅ COMPRADOS / ENTREGUES'));
-                    currentGroupId = "st_" + pa.status;
                     if (currentGroup !== lastGroup) { 
-                        lista.innerHTML += `<li class="cat-header" onclick="selecionarGrupoCompras('${currentGroupId}')"><span>${currentGroup}</span> ${btnMarcar}</li>`; 
-                        lastGroup = currentGroup; 
+                        lista.innerHTML += `<li class="cat-header" style="background:#546e7a; color:#fff;"><span>${currentGroup}</span></li>`; 
+                        lastGroup = currentGroup; lastCatId = ""; lastSubcat = null;
                     }
-                } else if (categoriaAtual === null) {
-                    let cObj = db.categorias.find(c => c.id === p.categoria); let catName = cObj ? cObj.nome : "Sem Categoria";
-                    currentGroupId = "cat_" + (cObj ? cObj.id : "null");
-                    if (catName !== lastCatHeader) { 
-                        lista.innerHTML += `<li class="cat-header" onclick="selecionarGrupoCompras('${currentGroupId}')"><span>🏷️ ${catName}</span> ${btnMarcar}</li>`; 
-                        lastCatHeader = catName; 
+                    catGroupId = stGroupId + "_" + catGroupId;
+                    subcatGroupId = stGroupId + "_" + subcatGroupId;
+                }
+
+                if (categoriaAtual === null || agrupamentoCompradoAtivo) {
+                    if (catId !== lastCatId) {
+                        let catName = cObj ? cObj.nome : "Sem Categoria";
+                        lista.innerHTML += `<li class="cat-header" onclick="selecionarGrupoCompras('${catGroupId}', 'cat')"><span>🏷️ ${catName}</span> ${btnMarcar}</li>`; 
+                        lastCatId = catId; lastSubcat = null;
                     }
-                } else {
-                    currentGroupId = "cat_unica";
+                }
+
+                if (subcat !== lastSubcat && subcat !== "") {
+                    lista.innerHTML += `<li class="subcat-header" onclick="selecionarGrupoCompras('${subcatGroupId}', 'sub')"><span>↳ ${subcat}</span> ${btnMarcar}</li>`;
+                    lastSubcat = subcat;
                 }
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
@@ -1092,7 +1161,7 @@
                 let exibicaoQtd = qtdStrDisplay ? `<span style="font-weight: bold; font-size: 14px; color: #6a1b9a;">${qtdStrDisplay}</span>` : "";
                 let infoDireita = `<div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusText}</div>${exibicaoQtd}`;
 
-                lista.innerHTML += `<li class="item status-${pa.status} ${itemClassExtra} ${isSelected ? 'selecionado' : ''}" data-id="${pa.idUnico}" data-grupo="${currentGroupId}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">
+                lista.innerHTML += `<li class="item status-${pa.status} ${itemClassExtra} ${isSelected ? 'selecionado' : ''}" data-id="${pa.idUnico}" data-grp-cat="${catGroupId}" data-grp-sub="${subcatGroupId}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">
                     ${htmlSelecao}
                     <div style="display: flex; align-items: center; flex: 1; overflow: hidden;">
                         <div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div>
@@ -1466,32 +1535,40 @@
 
         if (agruparCat) {
             let grupos = {};
-            itensProcessados.forEach(item => { let cId = item.p.categoria || "sem_cat"; if(!grupos[cId]) grupos[cId] = []; grupos[cId].push(item); });
+            itensProcessados.forEach(item => { 
+                let cId = item.p.categoria || "sem_cat"; 
+                let subId = item.p.subcategoria || "sem_sub";
+                if(!grupos[cId]) grupos[cId] = { cat: item.p.categoria, subs: {} }; 
+                if(!grupos[cId].subs[subId]) grupos[cId].subs[subId] = [];
+                grupos[cId].subs[subId].push(item); 
+            });
+            
             db.categorias.forEach(cat => {
-                if (grupos[cat.id] && grupos[cat.id].length > 0) {
+                if (grupos[cat.id]) {
                     let txtCat = `> *${cat.nome}*\n`;
-                    let linhas = grupos[cat.id].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => { 
-                        let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; 
-                        let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; 
-                        
-                        let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
-                        if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
-                        
-                        let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; 
-                        return `▪ ${nomeItem}${marcasStr}${qtdStr}${obsStr}`; 
+                    let subChaves = Object.keys(grupos[cat.id].subs).sort();
+                    subChaves.forEach(sub => {
+                        if(sub !== "sem_sub") txtCat += `_↳ ${sub}_\n`;
+                        let linhas = grupos[cat.id].subs[sub].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => { 
+                            let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; 
+                            let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; 
+                            let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
+                            if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
+                            let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; 
+                            return `▪ ${nomeItem}${marcasStr}${qtdStr}${obsStr}`; 
+                        });
+                        txtCat += linhas.join('\n') + '\n';
                     });
-                    txtCat += linhas.join('\n'); blocosItens.push(txtCat);
+                    blocosItens.push(txtCat.trim());
                 }
             });
-            if (grupos["sem_cat"] && grupos["sem_cat"].length > 0) {
+            if (grupos["sem_cat"]) {
                 let txtCat = `> *Outros*\n`;
-                let linhas = grupos["sem_cat"].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => { 
+                let linhas = grupos["sem_cat"].subs["sem_sub"].sort((a,b) => a.p.nome.localeCompare(b.p.nome)).map(item => { 
                     let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; 
                     let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; 
-                    
                     let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
                     if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
-                    
                     let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; 
                     return `▪ ${nomeItem}${marcasStr}${qtdStr}${obsStr}`; 
                 });
@@ -1549,7 +1626,7 @@
             selFiltro.innerHTML = '<option value="todos">-- Todas as Categorias --</option>';
             db.categorias.forEach(c => selFiltro.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
             boxFiltro.style.display = 'flex';
-            document.getElementById('inputBuscaProd').value = ''; // Limpa a busca ao abrir
+            document.getElementById('inputBuscaProd').value = '';
             
             barAlfabeto.style.display = 'flex';
             barAlfabeto.innerHTML = '';
@@ -1563,7 +1640,10 @@
 
             if (tipo === 'categorias') { 
                 titulo.innerText = "Categorias"; btnNovo.onclick = () => abrirFormCategoria(null); 
-                db.categorias.forEach((c, index) => { lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><span class="color-preview" style="background:${c.cor}; color:${c.corTexto}; padding:2px 6px; border-radius:4px;">${c.nome}</span></div><div class="gerenciar-actions"><button onclick="moverCategoria(${index}, -1)">⬆️</button><button onclick="moverCategoria(${index}, 1)">⬇️</button><button onclick="abrirFormCategoria('${c.id}')">✏️</button><button onclick="excluirItem('categorias', '${c.id}')">🗑️</button></div></div>`; }); 
+                db.categorias.forEach((c, index) => { 
+                    let subList = (c.subcategorias && c.subcategorias.length > 0) ? `<div style="margin-top:6px; font-size:11px; color:#666;">↳ ${c.subcategorias.join(', ')}</div>` : '';
+                    lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><span class="color-preview" style="background:${c.cor}; color:${c.corTexto}; padding:2px 6px; border-radius:4px;">${c.nome}</span>${subList}</div><div class="gerenciar-actions"><button onclick="moverCategoria(${index}, -1)">⬆️</button><button onclick="moverCategoria(${index}, 1)">⬇️</button><button onclick="abrirFormCategoria('${c.id}')">✏️</button><button onclick="excluirItem('categorias', '${c.id}')">🗑️</button></div></div>`; 
+                }); 
             } 
             else if (tipo === 'colaboradores') { 
                 titulo.innerText = "Colaboradores"; btnNovo.onclick = () => abrirFormColaborador(null); 
@@ -1592,8 +1672,9 @@
             if (busca && !p.nome.toLowerCase().includes(busca)) return;
             
             let letraInicial = removerAcentos(p.nome).charAt(0).toUpperCase();
+            let nSubcat = p.subcategoria ? ` <span style="font-size:10px; color:#888;">(${p.subcategoria})</span>` : '';
             
-            lista.innerHTML += `<div class="gerenciar-item" data-letra="${letraInicial}"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span></div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="duplicarProduto('${p.id}')" title="Duplicar">♴</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; 
+            lista.innerHTML += `<div class="gerenciar-item" data-letra="${letraInicial}"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span>${nSubcat}</div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="duplicarProduto('${p.id}')" title="Duplicar">♴</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; 
         });
     }
 
@@ -1639,11 +1720,29 @@
     function abrirModalSelecaoFornecedores() { const box = document.getElementById('boxListaFornecedoresSelecao'); box.innerHTML = ''; if(db.fornecedores.length === 0) { box.innerHTML = '<span style="font-size:13px; color:#666; padding:10px; display:block;">Nenhum fornecedor cadastrado no sistema.</span>'; } else { let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome)); fornOrdem.forEach(f => { let checked = tempFornecedoresProduto.includes(f.id) ? 'checked' : ''; box.innerHTML += `<label style="display:flex; align-items:center; padding:10px; border-bottom:1px solid #eee; font-size:14px; cursor:pointer;"><input type="checkbox" value="${f.id}" class="chk-selecao-forn" style="margin-right:10px; width:18px; height:18px;" ${checked}>${f.nome}</label>`; }); } document.getElementById('modalSelecaoFornecedores').style.display = 'flex'; }
     function confirmarSelecaoFornecedores() { tempFornecedoresProduto = Array.from(document.querySelectorAll('.chk-selecao-forn:checked')).map(el => el.value); fecharModal('modalSelecaoFornecedores'); renderizarFornecedoresVinculados(); }
 
-    function abrirFormProduto(id) { fecharModal('modalListagem'); const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`); document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); let p = null; if(id) { p = db.produtos.find(x => x.id === id); document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodDesc').value = p.descFornecedor || ''; document.getElementById('prodObsPadrao').value = p.obsPadrao || ''; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; tempPrecosProduto = p.historicoPrecos ? JSON.parse(JSON.stringify(p.historicoPrecos)) : []; tempFornecedoresProduto = p.fornecedores ? JSON.parse(JSON.stringify(p.fornecedores)) : []; } else { document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = ''; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodQtdPadrao').value = ''; tempPrecosProduto = []; tempFornecedoresProduto = []; } renderizarFornecedoresVinculados(); renderizarPrecosTemporarios(); document.getElementById('modalFormProduto').style.display = 'flex'; }
-    function salvarProduto() { const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : ''; if(pVal > 0) { tempPrecosProduto.push({ data: pData, preco: pVal }); } const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: tempFornecedoresProduto }; const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo); salvarBanco(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista(); sincronizarFundo(false, true); }
+    function atualizarComboSubcat(selecionada = '') {
+        const catId = document.getElementById('prodCategoria').value;
+        const cat = db.categorias.find(c => c.id === catId);
+        const combo = document.getElementById('prodSubcategoria');
+        combo.innerHTML = '<option value="">-- Nenhuma --</option>';
+        if(cat && cat.subcategorias) {
+            cat.subcategorias.forEach(s => combo.innerHTML += `<option value="${s}" ${selecionada===s?'selected':''}>${s}</option>`);
+        }
+    }
 
-    function abrirFormCategoria(id) { fecharModal('modalListagem'); if(id) { const c = db.categorias.find(x => x.id === id); document.getElementById('catId').value = id; document.getElementById('catNome').value = c.nome; document.getElementById('catCor').value = c.cor; document.getElementById('catCorTexto').value = c.corTexto; } else { document.getElementById('catId').value = ''; document.getElementById('catNome').value = ''; document.getElementById('catCor').value = '#1565C0'; document.getElementById('catCorTexto').value = '#ffffff'; } document.getElementById('modalFormCategoria').style.display = 'flex'; }
-    function salvarCategoria() { const id = document.getElementById('catId').value || 'c_'+Date.now(); const novo = { id: id, nome: document.getElementById('catNome').value, cor: document.getElementById('catCor').value, corTexto: document.getElementById('catCorTexto').value }; const idx = db.categorias.findIndex(x => x.id === id); if(idx >= 0) db.categorias[idx] = novo; else db.categorias.push(novo); salvarBanco(); fecharModal('modalFormCategoria'); abrirGerenciar('categorias'); renderizarLista(); sincronizarFundo(false, true); }
+    function abrirFormProduto(id) { fecharModal('modalListagem'); const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`); document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); let p = null; if(id) { p = db.produtos.find(x => x.id === id); document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodDesc').value = p.descFornecedor || ''; document.getElementById('prodObsPadrao').value = p.obsPadrao || ''; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; tempPrecosProduto = p.historicoPrecos ? JSON.parse(JSON.stringify(p.historicoPrecos)) : []; tempFornecedoresProduto = p.fornecedores ? JSON.parse(JSON.stringify(p.fornecedores)) : []; atualizarComboSubcat(p.subcategoria); } else { document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = ''; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodQtdPadrao').value = ''; tempPrecosProduto = []; tempFornecedoresProduto = []; atualizarComboSubcat(); } renderizarFornecedoresVinculados(); renderizarPrecosTemporarios(); document.getElementById('modalFormProduto').style.display = 'flex'; }
+    function salvarProduto() { const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : ''; if(pVal > 0) { tempPrecosProduto.push({ data: pData, preco: pVal }); } const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, subcategoria: document.getElementById('prodSubcategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: tempFornecedoresProduto }; const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo); salvarBanco(); fecharModal('modalFormProduto'); abrirGerenciar('produtos'); renderizarLista(); sincronizarFundo(false, true); }
+
+    function renderFormSubcats() {
+        const list = document.getElementById('listaSubcatsForm');
+        list.innerHTML = '';
+        tempSubcats.forEach((s, i) => { list.innerHTML += `<div style="display:flex; justify-content:space-between; background:#f0f0f0; padding:5px 10px; border-radius:4px;"><input type="hidden" class="subcat-item-val" value="${s}"><span style="font-size:13px;">${s}</span><button onclick="removerFormSubcat(${i})" style="border:none;background:none;color:#d32f2f;cursor:pointer;font-weight:bold;">✕</button></div>`; });
+    }
+    function addFormSubcat() { let val = document.getElementById('novaSubcatNome').value.trim(); if(val) { tempSubcats.push(val); renderFormSubcats(); document.getElementById('novaSubcatNome').value = ''; } }
+    function removerFormSubcat(idx) { tempSubcats.splice(idx, 1); renderFormSubcats(); }
+
+    function abrirFormCategoria(id) { fecharModal('modalListagem'); document.getElementById('novaSubcatNome').value = ''; if(id) { const c = db.categorias.find(x => x.id === id); document.getElementById('catId').value = id; document.getElementById('catNome').value = c.nome; document.getElementById('catCor').value = c.cor; document.getElementById('catCorTexto').value = c.corTexto; tempSubcats = c.subcategorias ? [...c.subcategorias] : []; } else { document.getElementById('catId').value = ''; document.getElementById('catNome').value = ''; document.getElementById('catCor').value = '#1565C0'; document.getElementById('catCorTexto').value = '#ffffff'; tempSubcats = []; } renderFormSubcats(); document.getElementById('modalFormCategoria').style.display = 'flex'; }
+    function salvarCategoria() { const id = document.getElementById('catId').value || 'c_'+Date.now(); const novo = { id: id, nome: document.getElementById('catNome').value, cor: document.getElementById('catCor').value, corTexto: document.getElementById('catCorTexto').value, subcategorias: tempSubcats }; const idx = db.categorias.findIndex(x => x.id === id); if(idx >= 0) db.categorias[idx] = novo; else db.categorias.push(novo); salvarBanco(); fecharModal('modalFormCategoria'); abrirGerenciar('categorias'); renderizarLista(); sincronizarFundo(false, true); }
 
     function abrirFormColaborador(id) { fecharModal('modalListagem'); const box = document.getElementById('colabCategoriasBox'); box.innerHTML = ''; const c = id ? db.colaboradores.find(x => x.id === id) : null; document.getElementById('colabIsAdmin').checked = c ? (c.isAdmin || false) : false; document.getElementById('colabApenasReceber').checked = c ? (c.apenasReceber || false) : false; db.categorias.forEach(cat => { let checkPed = (!c || (c.catsPermitidasPedido !== undefined ? c.catsPermitidasPedido.includes(cat.id) : (c.catsPermitidas ? c.catsPermitidas.includes(cat.id) : true))) ? 'checked' : ''; let checkComp = (!c || (c.catsPermitidasCompras !== undefined ? c.catsPermitidasCompras.includes(cat.id) : (c.catsPermitidas ? c.catsPermitidas.includes(cat.id) : true))) ? 'checked' : ''; box.innerHTML += `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #ddd; padding-bottom:6px;"><span style="font-weight:bold; font-size:12px; flex:1; color:#333;">${cat.nome}</span><div style="display:flex; gap:15px;"><label style="display:flex; flex-direction:column; align-items:center; font-size:9px; color:#555; gap:2px;"><div class="switch" style="margin:0;"><input type="checkbox" value="${cat.id}" class="chk-cat-pedido" ${checkPed}><span class="slider"></span></div>Pedidos</label><label style="display:flex; flex-direction:column; align-items:center; font-size:9px; color:#555; gap:2px;"><div class="switch" style="margin:0;"><input type="checkbox" value="${cat.id}" class="chk-cat-compras" ${checkComp}><span class="slider"></span></div>Compras</label></div></div>`; }); document.getElementById('colabId').value = id || ''; document.getElementById('colabNome').value = c ? c.nome : ''; document.getElementById('colabSenha').value = c ? c.senha : ''; document.getElementById('modalFormColaborador').style.display = 'flex'; }
     function salvarColaborador() { const id = document.getElementById('colabId').value || 'col_'+Date.now(); const catsPed = Array.from(document.querySelectorAll('.chk-cat-pedido:checked')).map(el => el.value); const catsComp = Array.from(document.querySelectorAll('.chk-cat-compras:checked')).map(el => el.value); const s = document.getElementById('colabSenha').value; const isAdmin = document.getElementById('colabIsAdmin').checked; const apenasReceber = document.getElementById('colabApenasReceber').checked; const novo = { id: id, nome: document.getElementById('colabNome').value, telefone: "", senha: s, isAdmin: isAdmin, apenasReceber: apenasReceber, catsPermitidasPedido: catsPed, catsPermitidasCompras: catsComp, catsPermitidas: [] }; const idx = db.colaboradores.findIndex(x => x.id === id); if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo); salvarBanco(); fecharModal('modalFormColaborador'); abrirGerenciar('colaboradores'); sincronizarFundo(false, true); }
