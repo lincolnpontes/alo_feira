@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0.2</title>
+    <title>Alô Feira v1.0.4</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -148,7 +148,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0.2</div>
+    <div class="splash-versao">v1.0.4</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -332,7 +332,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0.2</div>
+            <div class="versao">v1.0.4</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -853,15 +853,18 @@
         document.getElementById('inputSenhaColab').value = ''; document.getElementById('btnCancelColab').style.display = isTroca ? 'block' : 'none'; document.getElementById('btnSairSistema').style.display = isTroca ? 'block' : 'none'; document.getElementById('modalColaboradorObrigatorio').style.display = 'flex'; 
     }
 
+    // AQUI ESTÁ A CHAVE MESTRA IMPLEMENTADA NO CÓDIGO
     function definirColaboradorAtivo() { 
         const id = document.getElementById('selectColabInicial').value; if(!id) return alert("Selecione um perfil primeiro."); 
         const colab = db.colaboradores.find(c => c.id === id); const senhaDigitada = document.getElementById('inputSenhaColab').value;
-        if (colab.senha && colab.senha !== senhaDigitada) { return alert("Senha incorreta!"); }
+        
+        // Verifica se tem senha. Se tiver, checa se a digitada não é a do usuário e também NÃO é a senha Mestra (Administrador)
+        if (colab.senha && colab.senha !== senhaDigitada && senhaDigitada !== db.configs.senhaAdmin) { return alert("Senha incorreta!"); }
+        
         db.configs.colabAtivoId = id; salvarBanco(); fecharModal('modalColaboradorObrigatorio'); iniciarApp(); 
     }
     
     function sairDoSistema() {
-        // Blinda a configuração para sempre exigir senha ao deslogar se estava ligado
         if(db.configs.exigirColaborador === false) { db.configs.exigirColaborador = true; }
         db.configs.colabAtivoId = null; salvarBanco(); fecharModal('modalColaboradorObrigatorio');
         document.getElementById('splashScreen').style.opacity = '1'; document.getElementById('splashScreen').style.display = 'flex'; setTimeout(() => location.reload(), 300);
