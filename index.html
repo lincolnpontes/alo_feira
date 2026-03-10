@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v2.0</title>
+    <title>Alô Feira v1.0.1</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -97,7 +97,7 @@
         .btn-cancel { background: #eee; color: #333; }
         .btn-action { background: #1565C0; color: white; }
         .btn-danger { background: #d32f2f; color: white; }
-        .btn-drive { background: #fbbc04; color: #333; width: 100%; font-size: 15px; margin-bottom: 10px; }
+        .btn-drive { background: #2e7d32; color: white; width: 100%; font-size: 15px; margin-bottom: 10px; }
         .btn-whatsapp { background: #25d366; color: white; position: relative; display: flex; align-items: center; justify-content: center; width: 100%; font-size: 16px; }
         .btn-whatsapp .icon { position: absolute; left: 15px; font-size: 20px; }
         
@@ -134,8 +134,7 @@
         .cat-header { background: #e0e0e0; padding: 4px 15px; font-weight: bold; font-size: 11px; color: #555; text-transform: uppercase; border-bottom: 1px solid #ccc; display: flex; align-items: center; }
         
         /* ALFABETO E FILTRO NO GERENCIAR */
-        .letra-separador { background: #e0e0e0; padding: 4px 10px; font-weight: bold; font-size: 14px; color: #333; margin-top: 10px; border-radius: 4px; }
-        .sidebar-alfabeto { position: absolute; right: 2px; top: 130px; bottom: 20px; width: 22px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; font-size: 10px; font-weight: bold; color: #1565C0; z-index: 10; background: rgba(255,255,255,0.8); border-radius: 10px; padding: 5px 0; }
+        .sidebar-alfabeto { position: absolute; right: 2px; top: 130px; bottom: 20px; width: 22px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; font-size: 10px; font-weight: bold; color: #1565C0; z-index: 10; background: rgba(255,255,255,0.8); border-radius: 10px; padding: 5px 0; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; }
         .sidebar-alfabeto div { cursor: pointer; width: 100%; text-align: center; padding: 2px 0; }
         .sidebar-alfabeto div:active { background: #1565C0; color: white; border-radius: 3px; }
 
@@ -147,14 +146,14 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v2.0</div>
+    <div class="splash-versao">v1.0.1</div>
 </div>
 
 <div id="syncIndicador"></div>
 
 <div id="loadingOverlay">
     <div class="spinner"></div>
-    <div id="loadingText">Gravando na nuvem...<br><span style="font-size: 14px; font-weight: normal; margin-top: 10px; display: block;">Por favor, aguarde. Não feche o app.</span></div>
+    <div id="loadingText">Processando...<br><span style="font-size: 14px; font-weight: normal; margin-top: 10px; display: block;">Por favor, aguarde. Não feche o app.</span></div>
 </div>
 
 <div class="app-container">
@@ -196,7 +195,7 @@
         <div id="listaPedidosHoje" style="max-height: 50vh; overflow-y: auto; padding-right: 5px;"></div>
         
         <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
-            <button class="btn-drive" onclick="exportarParaDrive()">📂 Exportar .TXT (Google Drive)</button>
+            <button class="btn-drive" onclick="compartilharTxtNativo()">↗️ Compartilhar / Salvar Relatório (.txt)</button>
             <div class="modal-actions" style="margin-top: 0;">
                 <button class="btn-cancel" onclick="fecharModal('modalPedidosHoje')" style="width: 100%;">Fechar</button>
             </div>
@@ -331,7 +330,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v2.0</div>
+            <div class="versao">v1.0.1</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -520,6 +519,15 @@
 
 <script>
     /* =========================================================================
+       TRAVA DO BOTÃO VOLTAR DO CELULAR (ITEM 6)
+       ========================================================================= */
+    history.pushState(null, null, location.href);
+    window.addEventListener('popstate', function () {
+        // Quando o usuário tenta voltar, a gente joga ele pra frente de novo imediatamente
+        history.pushState(null, null, location.href);
+    });
+
+    /* =========================================================================
        BANCO DE DADOS LOCAL E ESTADO
        ========================================================================= */
     let db = carregarBanco();
@@ -577,6 +585,8 @@
     function maskMoeda(el) { let v = el.value.replace(/\D/g, ""); if(!v) { el.value = ""; return; } v = (parseFloat(v) / 100).toLocaleString('pt-BR', {minimumFractionDigits: 2}); el.value = v; }
     function parseMoeda(str) { if(!str) return 0; return parseFloat(str.replace(/\./g, "").replace(",", ".")); }
     function parseFloatBr(str) { if(str === '' || str === null || str === undefined) return ''; return parseFloat(String(str).replace(',','.')); }
+    // Função para remover acentos para organização (Item 3)
+    function removerAcentos(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 
     /* =========================================================================
        NUVEM E ZONA DE RISCO + SYNC INVISÍVEL INTELIGENTE
@@ -631,7 +641,6 @@
         }
     }
     
-    // O motor invisível
     async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
         if(!db.configs.url) return;
         
@@ -833,7 +842,7 @@
                 } finally {
                     isSyncingFundo = false; 
                     document.getElementById('loadingOverlay').style.display = 'none';
-                    document.getElementById('loadingText').innerHTML = "Gravando pedido na nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde. Não feche o app.</span>";
+                    document.getElementById('loadingText').innerHTML = "Processando...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde. Não feche o app.</span>";
                 }
             } else { alert("✅ Histórico apagado localmente (Sistema não está conectado)."); }
             document.getElementById('inputExcluirTudo').value = ''; fecharModal('modalConfigAvancadas'); renderizarLista(); 
@@ -1087,7 +1096,7 @@
 
         if(!confirm("Deseja enviar os itens selecionados?")) return;
 
-        if (isSyncingFundo) { return alert("⏳ O radar do aplicativo está checando a nuvem agora. Aguarde 3 segundinhos e clique em Enviar novamente."); }
+        if (isSyncingFundo) { return alert("⏳ O radar do aplicativo está checando a nuvem agora. Aguarde alguns segundinhos e clique em Enviar novamente."); }
 
         isSyncingFundo = true; 
         document.getElementById('loadingOverlay').style.display = 'flex';
@@ -1156,10 +1165,8 @@
         } 
     }
 
-    // NOVA FUNÇÃO: EXPORTAR PARA GOOGLE DRIVE
-    async function exportarParaDrive() {
-        if(!db.configs.url) return alert("Configure a URL do sistema na engrenagem primeiro!");
-        
+    // NOVA FUNÇÃO: COMPARTILHAMENTO NATIVO WEB SHARE API (.TXT)
+    async function compartilharTxtNativo() {
         let hoje = new Date().setHours(0,0,0,0);
         let itensHoje = db.pedidosAtivos.filter(pa => { if(pa.status === 'rascunho' || pa.excluido) return false; let dataPa = pa.dataStatus ? new Date(pa.dataStatus).setHours(0,0,0,0) : 0; return dataPa === hoje; });
         
@@ -1202,30 +1209,31 @@
         const d = new Date();
         const dataBrFormatada = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
         const nomeRes = db.restaurante.nome || "Restaurante";
+        const nomeArquivo = `Pedido - ${nomeRes} - ${dataBrFormatada}.txt`;
 
-        document.getElementById('loadingOverlay').style.display = 'flex';
-        document.getElementById('loadingText').innerHTML = "Gerando arquivo no Drive...";
+        const file = new File([textoFinal], nomeArquivo, { type: 'text/plain' });
 
-        try {
-            const res = await fetch(db.configs.url, {
-                method: 'POST',
-                redirect: "follow",
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'exportar_drive', restaurante: nomeRes, dataBr: dataBrFormatada, texto: textoFinal })
-            });
-
-            if(!res.ok) throw new Error("Falha no servidor");
-            let respJSON = await res.json();
-            
-            if(respJSON.status === 'ok') {
-                alert(`✅ Relatório exportado com sucesso para a raiz do seu Google Drive!\nNome do arquivo: Pedido - ${nomeRes} - ${dataBrFormatada}.txt`);
-            } else {
-                throw new Error(respJSON.msg);
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'Relatório de Pedidos',
+                    text: 'Segue a lista de pedidos gerada hoje.'
+                });
+            } catch (error) {
+                console.log('Compartilhamento cancelado ou falhou', error);
             }
-        } catch(e) {
-            alert("❌ Erro ao exportar para o Drive. Certifique-se de que autorizou o App Script a acessar seu Drive.");
-        } finally {
-            document.getElementById('loadingOverlay').style.display = 'none';
+        } else {
+            // Plano B (Se o navegador do celular for antigo): Baixa direto pra memória
+            const url = URL.createObjectURL(file);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nomeArquivo;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert("O arquivo foi baixado na pasta de Downloads do seu aparelho.");
         }
     }
 
@@ -1465,18 +1473,16 @@
         if(tipo === 'produtos') { 
             titulo.innerText = "Produtos"; btnNovo.onclick = () => abrirFormProduto(null); 
             
-            // Renderiza combo de categorias para filtro
             const selFiltro = document.getElementById('filtroGerenciarCat');
             selFiltro.innerHTML = '<option value="todos">-- Todas as Categorias --</option>';
             db.categorias.forEach(c => selFiltro.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
             boxFiltro.style.display = 'block';
             
-            // Renderiza alfabeto
             barAlfabeto.style.display = 'flex';
             barAlfabeto.innerHTML = '';
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(l => { barAlfabeto.innerHTML += `<div onclick="rolarParaLetra('${l}')">${l}</div>`; });
             
-            renderizarFiltroGerenciar(); // chama a função que renderiza a lista com base no filtro
+            renderizarFiltroGerenciar(); 
         } 
         else {
             boxFiltro.style.display = 'none';
@@ -1505,28 +1511,33 @@
         const filtro = document.getElementById('filtroGerenciarCat').value;
         lista.innerHTML = '';
         
-        let lastLetra = '';
         let prodOrdem = [...db.produtos].sort((a,b) => a.nome.localeCompare(b.nome));
         
         prodOrdem.forEach((p) => { 
             if (filtro !== 'todos' && p.categoria !== filtro) return;
             
-            let letra = p.nome.charAt(0).toUpperCase();
-            if (letra !== lastLetra) {
-                lista.innerHTML += `<div id="ancora_letra_${letra}" class="letra-separador">${letra}</div>`;
-                lastLetra = letra;
-            }
+            // Grava a letra inicial sem acento no atributo HTML invisível para ajudar a rolar a página depois
+            let letraInicial = removerAcentos(p.nome).charAt(0).toUpperCase();
             
-            lista.innerHTML += `<div class="gerenciar-item"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span></div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="duplicarProduto('${p.id}')">📄</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; 
+            lista.innerHTML += `<div class="gerenciar-item" data-letra="${letraInicial}"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span></div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="duplicarProduto('${p.id}')">📄</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; 
         });
     }
 
-    function rolarParaLetra(letra) {
-        const elemento = document.getElementById('ancora_letra_' + letra);
-        if(elemento) {
-            // Scroll suave dentro do container da lista
-            document.getElementById('conteudoListagem').scrollTo({
-                top: elemento.offsetTop - document.getElementById('conteudoListagem').offsetTop,
+    function rolarParaLetra(letraClicada) {
+        const alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        let indexInicial = alfabeto.indexOf(letraClicada);
+        let containerLista = document.getElementById('conteudoListagem');
+        let elementoAlvo = null;
+
+        // Procura a letra clicada. Se não achar, procura a próxima letra do alfabeto que exista na lista.
+        for (let i = indexInicial; i < alfabeto.length; i++) {
+            elementoAlvo = document.querySelector(`.gerenciar-item[data-letra="${alfabeto[i]}"]`);
+            if (elementoAlvo) break; // Achou!
+        }
+
+        if(elementoAlvo) {
+            containerLista.scrollTo({
+                top: elementoAlvo.offsetTop - containerLista.offsetTop,
                 behavior: 'smooth'
             });
         }
@@ -1544,7 +1555,6 @@
         if(confirm("Deseja duplicar este produto com os exatos mesmos dados e nome?")) {
             let p = db.produtos.find(x => x.id === id); if(!p) return;
             let copia = JSON.parse(JSON.stringify(p)); copia.id = 'p_' + Date.now(); 
-            // Não altero o nome conforme solicitado: copia.nome = copia.nome + " (Cópia)";
             db.produtos.push(copia);
             salvarBanco(); abrirGerenciar('produtos'); sincronizarFundo(false, true);
         }
