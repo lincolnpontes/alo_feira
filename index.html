@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0.4</title>
+    <title>Alô Feira v1.0.5</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -78,8 +78,8 @@
         .bg-cancelado { background-color: #9e9e9e; }
         .bg-rascunho { background-color: transparent; color: #1565C0; border: 1px solid #1565C0; padding: 1px 5px; }
 
-        .checkbox-selecao { width: 22px; height: 22px; border: 2px solid #6a1b9a; border-radius: 4px; display: inline-block; vertical-align: middle; margin-right: 10px; position: relative; pointer-events: none; }
-        .item.selecionado .checkbox-selecao::after { content: '✓'; color: #6a1b9a; position: absolute; font-size: 18px; top: -2px; left: 3px; font-weight: bold; }
+        .checkbox-selecao { width: 24px; height: 24px; border: 2px solid #6a1b9a; border-radius: 4px; display: inline-block; vertical-align: middle; margin-right: 12px; position: relative; pointer-events: none; }
+        .item.selecionado .checkbox-selecao::after { content: '✓'; color: #6a1b9a; position: absolute; font-size: 18px; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 900; }
 
         /* MODAIS & BOTOES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
@@ -133,7 +133,7 @@
         .marca-sistema .titulo { font-size: 22px; font-weight: bold; color: #1565C0; }
         .marca-sistema .versao { font-size: 12px; color: #666; }
         
-        .cat-header { background: #e0e0e0; padding: 4px 15px; font-weight: bold; font-size: 11px; color: #555; text-transform: uppercase; border-bottom: 1px solid #ccc; display: flex; align-items: center; }
+        .cat-header { background: #e0e0e0; padding: 12px 15px; font-weight: bold; font-size: 14px; color: #333; text-transform: uppercase; border-bottom: 1px solid #ccc; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
         
         /* ALFABETO E FILTRO NO GERENCIAR */
         .sidebar-alfabeto { position: absolute; right: 2px; top: 130px; bottom: 20px; width: 22px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; font-size: 10px; font-weight: bold; color: #1565C0; z-index: 10; background: rgba(255,255,255,0.8); border-radius: 10px; padding: 5px 0; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; }
@@ -148,7 +148,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0.4</div>
+    <div class="splash-versao">v1.0.5</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -332,7 +332,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0.4</div>
+            <div class="versao">v1.0.5</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -382,7 +382,11 @@
     <div class="modal" style="position: relative; width: 95%; overflow: hidden; display: flex; flex-direction: column;">
         <div class="modal-title" id="tituloListagem" style="flex-shrink: 0;">Gerenciar</div>
         
-        <div class="form-group" id="filtroGerenciarCatBox" style="display: none; flex-shrink: 0;">
+        <div class="form-group" id="filtroGerenciarCatBox" style="display: none; flex-shrink: 0; flex-direction: column; gap: 8px;">
+            <div style="display:flex; align-items:center; position:relative;">
+                <span style="position:absolute; left:10px; font-size:16px;">🔎</span>
+                <input type="text" id="inputBuscaProd" oninput="renderizarFiltroGerenciar()" placeholder="Buscar produto..." style="width:100%; padding:10px 10px 10px 35px; border:1px solid #ccc; border-radius:5px; box-sizing:border-box; font-size:14px;">
+            </div>
             <select id="filtroGerenciarCat" onchange="renderizarFiltroGerenciar()">
                 </select>
         </div>
@@ -521,7 +525,7 @@
 
 <script>
     /* =========================================================================
-       TRAVA DO BOTÃO VOLTAR DO CELULAR (ITEM 6)
+       TRAVA DO BOTÃO VOLTAR DO CELULAR
        ========================================================================= */
     history.pushState(null, null, location.href);
     window.addEventListener('popstate', function () {
@@ -546,10 +550,22 @@
             app_id: "alofeira", 
             restaurante: { nome: "", cnpj: "", rua: "", numero: "", bairro: "", cidade: "", uf: "PB", ponto: "" },
             categorias: [], fornecedores: [], colaboradores: [], produtos: [], pedidosAtivos: [],
-            configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: true, colabAtivoId: null, url: "", dadosBaixados: false, pausarSync: false } // Default TRUE agora
+            configs: { modo: "pedido", senhaAdmin: "1999", exigirColaborador: true, colabAtivoId: null, url: "", dadosBaixados: false, pausarSync: false }
         };
         let salvo = localStorage.getItem('alofeira_v1');
-        return salvo ? JSON.parse(salvo) : base;
+        if(salvo) {
+            let parsed = JSON.parse(salvo);
+            // MIGRAÇÃO BLINDADA: Garante que todo pedido antigo tenha uma data de envio imutável
+            if(parsed.pedidosAtivos) {
+                parsed.pedidosAtivos.forEach(pa => {
+                    if(!pa.dataEnvio && pa.status !== 'rascunho') {
+                        pa.dataEnvio = pa.dataStatus || parseInt(pa.idUnico.split('_')[1]);
+                    }
+                });
+            }
+            return parsed;
+        }
+        return base;
     }
     
     function salvarBanco() { localStorage.setItem('alofeira_v1', JSON.stringify(db)); }
@@ -853,19 +869,19 @@
         document.getElementById('inputSenhaColab').value = ''; document.getElementById('btnCancelColab').style.display = isTroca ? 'block' : 'none'; document.getElementById('btnSairSistema').style.display = isTroca ? 'block' : 'none'; document.getElementById('modalColaboradorObrigatorio').style.display = 'flex'; 
     }
 
-    // AQUI ESTÁ A CHAVE MESTRA IMPLEMENTADA NO CÓDIGO
     function definirColaboradorAtivo() { 
         const id = document.getElementById('selectColabInicial').value; if(!id) return alert("Selecione um perfil primeiro."); 
         const colab = db.colaboradores.find(c => c.id === id); const senhaDigitada = document.getElementById('inputSenhaColab').value;
         
-        // Verifica se tem senha. Se tiver, checa se a digitada não é a do usuário e também NÃO é a senha Mestra (Administrador)
         if (colab.senha && colab.senha !== senhaDigitada && senhaDigitada !== db.configs.senhaAdmin) { return alert("Senha incorreta!"); }
         
+        pilhaDesfazer = []; atualizarBotaoDesfazer(); // Limpa desfazer na troca
         db.configs.colabAtivoId = id; salvarBanco(); fecharModal('modalColaboradorObrigatorio'); iniciarApp(); 
     }
     
     function sairDoSistema() {
         if(db.configs.exigirColaborador === false) { db.configs.exigirColaborador = true; }
+        pilhaDesfazer = []; atualizarBotaoDesfazer(); // Limpa desfazer ao sair
         db.configs.colabAtivoId = null; salvarBanco(); fecharModal('modalColaboradorObrigatorio');
         document.getElementById('splashScreen').style.opacity = '1'; document.getElementById('splashScreen').style.display = 'flex'; setTimeout(() => location.reload(), 300);
     }
@@ -906,11 +922,23 @@
         renderizarFiltros(); renderizarLista(); 
     }
 
+    function selecionarGrupoCompras(grupoId) {
+        if(!modoSelecaoAtivo) return;
+        let itensNode = document.querySelectorAll(`.item[data-grupo="${grupoId}"]`);
+        let allIds = Array.from(itensNode).map(el => el.getAttribute('data-id'));
+        if(allIds.length === 0) return;
+        
+        let allSelected = allIds.every(id => itensSelecionadosRelatorio.has(id));
+        if(allSelected) { allIds.forEach(id => itensSelecionadosRelatorio.delete(id)); } 
+        else { allIds.forEach(id => itensSelecionadosRelatorio.add(id)); }
+        renderizarLista();
+    }
+
     function renderizarLista() {
         const lista = document.getElementById('listaPrincipal'); lista.innerHTML = ''; let itensMostrados = 0;
         let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = getCatsPermitidas(colabLogado);
         
-        let temRascunho = false; let agora = Date.now();
+        let temRascunho = false;
         let produtosOrdenados = [...db.produtos];
 
         if (categoriaAtual === null) {
@@ -921,6 +949,8 @@
             });
         } else { produtosOrdenados.sort((a, b) => a.nome.localeCompare(b.nome)); }
 
+        let btnMarcar = modoSelecaoAtivo ? `<span style="font-size:11px; color:#6a1b9a; border:1px solid #6a1b9a; padding:3px 8px; border-radius:12px; background:#fff;">✓ Todos</span>` : '';
+
         if (db.configs.modo === 'pedido') {
             let lastCatHeader = "";
             produtosOrdenados.forEach(p => {
@@ -929,7 +959,7 @@
                 
                 if (categoriaAtual === null) {
                     let cObj = db.categorias.find(c => c.id === p.categoria); let catName = cObj ? cObj.nome : "Sem Categoria";
-                    if (catName !== lastCatHeader) { lista.innerHTML += `<li class="cat-header">🏷️ ${catName}</li>`; lastCatHeader = catName; }
+                    if (catName !== lastCatHeader) { lista.innerHTML += `<li class="cat-header" style="cursor:default;"><span>🏷️ ${catName}</span></li>`; lastCatHeader = catName; }
                 }
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
@@ -1017,12 +1047,23 @@
                 if(categoriaAtual && p.categoria !== categoriaAtual) return;
                 if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 
+                let currentGroupId = "grupo_default";
                 if (agrupamentoCompradoAtivo) {
                     let currentGroup = pa.status === 'pendente' ? '⏳ PENDENTES' : (pa.status === 'pedido_forn' ? '📦 PEDIDOS AO FORNECEDOR' : (pa.status === 'cancelado' ? '🚫 CANCELADOS' : '✅ COMPRADOS / ENTREGUES'));
-                    if (currentGroup !== lastGroup) { lista.innerHTML += `<li style="background:#e0e0e0; padding:8px 15px; font-weight:bold; font-size:12px; color:#333; text-transform:uppercase; border-bottom:1px solid #ccc;">${currentGroup}</li>`; lastGroup = currentGroup; }
+                    currentGroupId = "st_" + pa.status;
+                    if (currentGroup !== lastGroup) { 
+                        lista.innerHTML += `<li class="cat-header" onclick="selecionarGrupoCompras('${currentGroupId}')"><span>${currentGroup}</span> ${btnMarcar}</li>`; 
+                        lastGroup = currentGroup; 
+                    }
                 } else if (categoriaAtual === null) {
                     let cObj = db.categorias.find(c => c.id === p.categoria); let catName = cObj ? cObj.nome : "Sem Categoria";
-                    if (catName !== lastCatHeader) { lista.innerHTML += `<li class="cat-header">🏷️ ${catName}</li>`; lastCatHeader = catName; }
+                    currentGroupId = "cat_" + (cObj ? cObj.id : "null");
+                    if (catName !== lastCatHeader) { 
+                        lista.innerHTML += `<li class="cat-header" onclick="selecionarGrupoCompras('${currentGroupId}')"><span>🏷️ ${catName}</span> ${btnMarcar}</li>`; 
+                        lastCatHeader = catName; 
+                    }
+                } else {
+                    currentGroupId = "cat_unica";
                 }
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
@@ -1051,7 +1092,7 @@
                 let exibicaoQtd = qtdStrDisplay ? `<span style="font-weight: bold; font-size: 14px; color: #6a1b9a;">${qtdStrDisplay}</span>` : "";
                 let infoDireita = `<div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusText}</div>${exibicaoQtd}`;
 
-                lista.innerHTML += `<li class="item status-${pa.status} ${itemClassExtra} ${isSelected ? 'selecionado' : ''}" data-id="${pa.idUnico}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">
+                lista.innerHTML += `<li class="item status-${pa.status} ${itemClassExtra} ${isSelected ? 'selecionado' : ''}" data-id="${pa.idUnico}" data-grupo="${currentGroupId}" onclick="cliqueItemCompra('${pa.idUnico}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">
                     ${htmlSelecao}
                     <div style="display: flex; align-items: center; flex: 1; overflow: hidden;">
                         <div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div>
@@ -1093,7 +1134,7 @@
         
         let backupPedidos = JSON.parse(JSON.stringify(db.pedidosAtivos));
         let agora = Date.now();
-        // ADICIONADO: pa.dataEnvio = agora (Isso fixa a data imutável de quando foi para as compras pela primeira vez)
+        // ESTA DATA NUNCA MAIS DEVE SER MEXIDA NO MODO COMPRAS
         rascunhos.forEach(pa => { pa.status = 'pendente'; pa.dataStatus = agora; pa.dataEnvio = agora; }); 
         salvarBanco(); 
 
@@ -1127,11 +1168,11 @@
         let hoje = new Date().setHours(0,0,0,0);
         let itensHoje = db.pedidosAtivos.filter(pa => { 
             if(pa.status === 'rascunho' || pa.excluido) return false; 
-            // Usa dataEnvio (se existir) para não perder o rastro ao mudar status de compras
-            let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : (pa.dataStatus ? new Date(pa.dataStatus).setHours(0,0,0,0) : 0); 
+            // AGORA VERIFICA EXCLUSIVAMENTE O DATAENVIO, BLINDADO CONTRA MUDANÇAS NO MODO COMPRAS
+            let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : 0; 
             return dataPa === hoje; 
         });
-        itensHoje.sort((a,b) => (b.dataEnvio || b.dataStatus || 0) - (a.dataEnvio || a.dataStatus || 0));
+        itensHoje.sort((a,b) => (b.dataEnvio || 0) - (a.dataEnvio || 0));
 
         if(itensHoje.length === 0) { lista.innerHTML = '<div style="padding:20px; text-align:center; color:#666; font-size:14px;">Nenhum pedido enviado hoje.</div>'; } 
         else {
@@ -1169,7 +1210,7 @@
         let hoje = new Date().setHours(0,0,0,0);
         let itensHoje = db.pedidosAtivos.filter(pa => { 
             if(pa.status === 'rascunho' || pa.excluido) return false; 
-            let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : (pa.dataStatus ? new Date(pa.dataStatus).setHours(0,0,0,0) : 0); 
+            let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : 0; 
             return dataPa === hoje; 
         });
         
@@ -1229,7 +1270,7 @@
     }
 
     /* =========================================================================
-       SISTEMA DE DESFAZER E GESTOS (MANTIDOS)
+       SISTEMA DE DESFAZER E GESTOS
        ========================================================================= */
     function registrarDesfazer(pa) { pilhaDesfazer.push(JSON.parse(JSON.stringify(pa))); atualizarBotaoDesfazer(); }
     function desfazerAcao() {
@@ -1507,7 +1548,8 @@
             const selFiltro = document.getElementById('filtroGerenciarCat');
             selFiltro.innerHTML = '<option value="todos">-- Todas as Categorias --</option>';
             db.categorias.forEach(c => selFiltro.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
-            boxFiltro.style.display = 'block';
+            boxFiltro.style.display = 'flex';
+            document.getElementById('inputBuscaProd').value = ''; // Limpa a busca ao abrir
             
             barAlfabeto.style.display = 'flex';
             barAlfabeto.innerHTML = '';
@@ -1540,15 +1582,18 @@
     function renderizarFiltroGerenciar() {
         const lista = document.getElementById('conteudoListagem');
         const filtro = document.getElementById('filtroGerenciarCat').value;
+        const busca = document.getElementById('inputBuscaProd').value.toLowerCase().trim();
         lista.innerHTML = '';
         
         let prodOrdem = [...db.produtos].sort((a,b) => a.nome.localeCompare(b.nome));
         
         prodOrdem.forEach((p) => { 
             if (filtro !== 'todos' && p.categoria !== filtro) return;
+            if (busca && !p.nome.toLowerCase().includes(busca)) return;
+            
             let letraInicial = removerAcentos(p.nome).charAt(0).toUpperCase();
             
-            lista.innerHTML += `<div class="gerenciar-item" data-letra="${letraInicial}"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span></div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="duplicarProduto('${p.id}')">📄</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; 
+            lista.innerHTML += `<div class="gerenciar-item" data-letra="${letraInicial}"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span></div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="duplicarProduto('${p.id}')" title="Duplicar">♴</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; 
         });
     }
 
