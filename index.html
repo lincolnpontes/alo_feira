@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.1.4</title>
+    <title>Alô Feira v1.1.5</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -150,7 +150,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.1.4</div>
+    <div class="splash-versao">v1.1.5</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -238,7 +238,7 @@
 
 <div class="modal-overlay" id="modalEditarPedido">
     <div class="modal">
-        <div class="modal-title" id="tituloModalEditarPedido">Detalhes e Histórico</div>
+        <div class="modal-title" id="tituloModalEditarPedido">Detalhes do Pedido</div>
         <input type="hidden" id="editPedidoId">
         
         <div id="editPedidoArea">
@@ -252,13 +252,6 @@
                 <input type="text" id="editPedidoObs" placeholder="Ex: maduro, marca tal..." onfocus="this.select();">
             </div>
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-        </div>
-
-        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Preços</h4>
-        <div style="background:#fff3e0; padding:10px; border-radius:5px; margin-bottom:15px;">
-            <div id="resumoHistPrecosEdit"></div>
-            <button onclick="toggleDiv('completoHistPrecosEdit')" style="background:none;border:none;color:#1565C0;font-size:12px;padding:5px 0 0 0;cursor:pointer;">Ver detalhes e excluir...</button>
-            <div id="completoHistPrecosEdit" style="display:none; margin-top:5px; border-top:1px solid #ccc; padding-top:5px; max-height:100px; overflow-y:auto;"></div>
         </div>
 
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Pedidos</h4>
@@ -277,7 +270,7 @@
 
 <div class="modal-overlay" id="modalHistoricoCompra">
     <div class="modal">
-        <div class="modal-title">Detalhes da Compra</div>
+        <div class="modal-title">Painel de Compra</div>
         <input type="hidden" id="histCompraId">
         
         <div id="histCompraDataConclusao"></div>
@@ -294,11 +287,25 @@
             </div>
         </div>
 
-        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Marcas no Relatório</h4>
-        <div id="histMarcasLista" style="font-size:13px; margin-bottom:15px; background:#e3f2fd; padding:10px; border-radius:5px;"></div>
+        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Preços</h4>
+        <div style="background:#fff3e0; padding:10px; border-radius:5px; margin-bottom:15px;">
+            <div id="resumoHistPrecosCompra"></div>
+            <button onclick="toggleDiv('completoHistPrecosCompra')" style="background:none;border:none;color:#e65100;font-size:12px;padding:5px 0 0 0;cursor:pointer;">Ver detalhes e excluir...</button>
+            <div id="completoHistPrecosCompra" style="display:none; margin-top:5px; border-top:1px solid #ccc; padding-top:5px; max-height:100px; overflow-y:auto;"></div>
+        </div>
 
-        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Edições</h4>
-        <div id="histCompraLista" style="font-size:13px; margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px; max-height: 80px; overflow-y: auto;"></div>
+        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Análise de Compras</h4>
+        <div style="background:#e3f2fd; padding:10px; border-radius:5px; margin-bottom:15px;">
+            <div id="resumoAnaliseCompras"></div>
+            <button onclick="toggleDiv('completoAnaliseCompras')" style="background:none;border:none;color:#1565C0;font-size:12px;padding:5px 0 0 0;cursor:pointer;">Ver histórico passado...</button>
+            <div id="completoAnaliseCompras" style="display:none; margin-top:5px; border-top:1px solid #ccc; padding-top:5px; max-height:100px; overflow-y:auto;"></div>
+        </div>
+
+        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Marcas no Relatório</h4>
+        <div id="histMarcasLista" style="font-size:13px; margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px; border:1px solid #eee;"></div>
+
+        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Edições deste Pedido Atual</h4>
+        <div id="histCompraLista" style="font-size:13px; margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px; max-height: 80px; overflow-y: auto; border:1px solid #eee;"></div>
 
         <div class="modal-actions">
             <button class="btn-cancel" onclick="fecharModal('modalHistoricoCompra')">Cancelar</button>
@@ -350,7 +357,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.1.4</div>
+            <div class="versao">v1.1.5</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -1414,8 +1421,13 @@
             if(p && p.historicoPrecos) {
                 p.historicoPrecos.splice(idx, 1);
                 salvarBanco(); sincronizarFundo(false, true);
-                if(paId || document.getElementById('modalEditarPedido').style.display === 'flex') abrirModalEditarPedido(paId, pId);
-                else abrirFormProduto(pId);
+                if (document.getElementById('modalHistoricoCompra').style.display === 'flex') {
+                    abrirHistoricoCompra(paId);
+                } else if(document.getElementById('modalEditarPedido').style.display === 'flex') {
+                    abrirModalEditarPedido(paId, pId);
+                } else {
+                    abrirFormProduto(pId);
+                }
             }
         }
     }
@@ -1435,7 +1447,7 @@
     function abrirModalEditarPedido(paId, pId) { 
         const p = db.produtos.find(x => x.id === pId); if(!p) return;
         
-        document.getElementById('tituloModalEditarPedido').innerText = paId ? "Detalhes e Histórico" : "Histórico do Produto";
+        document.getElementById('tituloModalEditarPedido').innerText = paId ? "Detalhes do Pedido" : "Histórico de Pedidos";
         document.getElementById('btnCancelarEdicaoPedido').innerText = paId ? "Cancelar" : "Fechar";
 
         if (paId) {
@@ -1453,21 +1465,6 @@
             document.getElementById('editPedidoId').value = ''; 
         }
 
-        // Histórico de Preços (Com Resumo)
-        let revPrecos = (p.historicoPrecos && p.historicoPrecos.length > 0) ? [...p.historicoPrecos].reverse() : [];
-        let htmlPrecosResumo = ""; let htmlPrecosCompleto = "";
-        
-        if(revPrecos.length > 0) {
-            htmlPrecosResumo = `<div style="font-size:13px; color:#333;">Último Preço: ${revPrecos[0].data} - <b style="color:#e65100;">R$ ${revPrecos[0].preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></div>`;
-            revPrecos.forEach((h, i) => {
-                let realIdx = p.historicoPrecos.length - 1 - i;
-                htmlPrecosCompleto += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:13px;"><span>${h.data} - <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></span> <button onclick="deletarPrecoDireto('${pId}', ${realIdx}, '${paId || ''}')" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
-            });
-        } else {
-            htmlPrecosResumo = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
-            htmlPrecosCompleto = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
-        }
-
         // Histórico de Pedidos (Com Resumo)
         let peds = db.pedidosAtivos.filter(x => x.produtoId === pId && x.status !== 'rascunho' && !x.excluido).sort((a,b) => (b.dataEnvio||b.dataStatus||0) - (a.dataEnvio||a.dataStatus||0));
         let htmlPedResumo = ""; let htmlPedCompleto = "";
@@ -1479,13 +1476,9 @@
                 htmlPedCompleto += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:12px;"><span>${formatarDataHora(paInfo.dataEnvio || paInfo.dataStatus)} - <b>${paInfo.qtd} ${paInfo.unidade}</b> (${paInfo.status})</span> <button onclick="deletarPedidoDireto('${paInfo.idUnico}', '${pId}', '${paId || ''}')" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
             });
         } else {
-            htmlPedResumo = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
-            htmlPedCompleto = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
+            htmlPedResumo = "<div style='font-size:13px; color:#666;'>Sem histórico de pedidos</div>";
+            htmlPedCompleto = "<div style='font-size:13px; color:#666;'>Sem histórico de pedidos</div>";
         }
-
-        document.getElementById('resumoHistPrecosEdit').innerHTML = htmlPrecosResumo;
-        document.getElementById('completoHistPrecosEdit').innerHTML = htmlPrecosCompleto;
-        document.getElementById('completoHistPrecosEdit').style.display = 'none';
 
         document.getElementById('resumoHistPedidosEdit').innerHTML = htmlPedResumo;
         document.getElementById('completoHistPedidosEdit').innerHTML = htmlPedCompleto;
@@ -1506,14 +1499,81 @@
     }
 
     function abrirHistoricoCompra(paId) {
-        const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(prod => prod.id === pa.produtoId);
-        document.getElementById('histCompraId').value = paId; document.getElementById('histCompraQtd').value = pa.qtd; document.getElementById('histCompraObs').value = pa.obs || '';
-        const selUn = document.getElementById('histCompraUnd'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); 
+        const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; 
+        const pId = pa.produtoId;
+        const p = db.produtos.find(prod => prod.id === pId); if(!p) return;
+        
+        document.getElementById('histCompraId').value = paId; 
+        document.getElementById('histCompraQtd').value = pa.qtd; 
+        document.getElementById('histCompraObs').value = pa.obs || '';
+        
+        const selUn = document.getElementById('histCompraUnd'); selUn.innerHTML = ''; 
+        p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); 
 
         let htmlDataConclusao = "";
         if((pa.status === 'comprado' || pa.status === 'entregue') && pa.dataConclusao) { htmlDataConclusao = `<p style="color:#1b5e20; font-weight:bold; margin-top:0; font-size:13px;">✅ Marcado como ${pa.status} em: ${formatarDataHora(pa.dataConclusao)}</p>`; }
         document.getElementById('histCompraDataConclusao').innerHTML = htmlDataConclusao;
 
+        // HISTORICO DE PREÇOS
+        let revPrecos = (p.historicoPrecos && p.historicoPrecos.length > 0) ? [...p.historicoPrecos].reverse() : [];
+        let htmlPrecosResumo = ""; let htmlPrecosCompleto = "";
+        
+        if(revPrecos.length > 0) {
+            htmlPrecosResumo = `<div style="font-size:13px; color:#333;">Último Preço: ${revPrecos[0].data} - <b style="color:#e65100;">R$ ${revPrecos[0].preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></div>`;
+            revPrecos.forEach((h, i) => {
+                let realIdx = p.historicoPrecos.length - 1 - i;
+                htmlPrecosCompleto += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:13px;"><span>${h.data} - <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></span> <button onclick="deletarPrecoDireto('${pId}', ${realIdx}, '${paId}')" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
+            });
+        } else {
+            htmlPrecosResumo = "<div style='font-size:13px; color:#666;'>Nenhum preço registrado. Vá em 'Gerenciar Produtos' para adicionar.</div>";
+            htmlPrecosCompleto = "<div style='font-size:13px; color:#666;'>Nenhum preço registrado.</div>";
+        }
+
+        document.getElementById('resumoHistPrecosCompra').innerHTML = htmlPrecosResumo;
+        document.getElementById('completoHistPrecosCompra').innerHTML = htmlPrecosCompleto;
+        document.getElementById('completoHistPrecosCompra').style.display = 'none';
+
+        // ANÁLISE DE COMPRAS PASSADAS
+        let comprasPassadas = db.pedidosAtivos.filter(x => x.produtoId === pId && (x.status === 'comprado' || x.status === 'entregue') && x.dataConclusao && x.idUnico !== paId);
+        comprasPassadas.sort((a,b) => b.dataConclusao - a.dataConclusao);
+
+        let htmlAnaliseResumo = ""; let htmlAnaliseCompleto = "";
+
+        if(comprasPassadas.length > 0) {
+            let ultima = comprasPassadas[0];
+            let qStr = ultima.qtd !== '' ? ultima.qtd : null;
+            let uStr = ultima.unidade ? ultima.unidade : null;
+            let qtdUltima = (qStr !== null && uStr !== null) ? `${qStr} ${uStr}` : (qStr !== null ? `${qStr}` : `${uStr}`);
+            
+            htmlAnaliseResumo += `<div style="font-size:13px; color:#333; margin-bottom:5px;">Última vez: <b>${formatarDataHora(ultima.dataConclusao)}</b> (${qtdUltima})</div>`;
+
+            if(comprasPassadas.length > 1) {
+                let primeira = comprasPassadas[comprasPassadas.length - 1];
+                let diffDias = Math.max(1, Math.round((ultima.dataConclusao - primeira.dataConclusao) / (1000 * 60 * 60 * 24)));
+                let frequencia = Math.round(diffDias / (comprasPassadas.length - 1));
+                if(frequencia > 0) {
+                    htmlAnaliseResumo += `<div style="font-size:13px; color:#1565C0;">Freq. Média: <b>a cada ${frequencia} dias</b></div>`;
+                }
+            } else {
+                htmlAnaliseResumo += `<div style="font-size:13px; color:#666;">Apenas 1 compra anterior registrada.</div>`;
+            }
+
+            comprasPassadas.slice(0, 10).forEach(cp => {
+                let qV = cp.qtd !== '' ? cp.qtd : null;
+                let uV = cp.unidade ? cp.unidade : null;
+                let qF = (qV !== null && uV !== null) ? `${qV} ${uV}` : (qV !== null ? `${qV}` : `${uV}`);
+                htmlAnaliseCompleto += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:12px;"><span>${formatarDataHora(cp.dataConclusao)} - <b>${qF}</b></span></div>`;
+            });
+        } else {
+            htmlAnaliseResumo = "<div style='font-size:13px; color:#666;'>Nenhuma compra anterior (concluída) registrada no histórico.</div>";
+            htmlAnaliseCompleto = "<div style='font-size:13px; color:#666;'>Sem histórico passado.</div>";
+        }
+
+        document.getElementById('resumoAnaliseCompras').innerHTML = htmlAnaliseResumo;
+        document.getElementById('completoAnaliseCompras').innerHTML = htmlAnaliseCompleto;
+        document.getElementById('completoAnaliseCompras').style.display = 'none';
+
+        // MARCAS
         let htmlMarcas = "";
         if(p && p.marcasAprovadas) {
             let marcasArr = p.marcasAprovadas.split(',').map(m=>m.trim()).filter(m=>m);
@@ -1522,7 +1582,9 @@
         } else { htmlMarcas = "Nenhuma marca cadastrada no produto."; }
         document.getElementById('histMarcasLista').innerHTML = htmlMarcas;
 
-        let htmlEdicao = "<ul>"; if(pa.historico) pa.historico.forEach(h => { htmlEdicao += `<li>${h.data} - ${h.msg}</li>`; }); else htmlEdicao += "<li>Sem histórico</li>"; htmlEdicao += "</ul>"; document.getElementById('histCompraLista').innerHTML = htmlEdicao;
+        // EDIÇÕES
+        let htmlEdicao = "<ul style='margin:0; padding-left:20px;'>"; if(pa.historico && pa.historico.length > 0) pa.historico.forEach(h => { htmlEdicao += `<li>${h.data} - ${h.msg}</li>`; }); else htmlEdicao += "<li>Sem edições feitas.</li>"; htmlEdicao += "</ul>"; document.getElementById('histCompraLista').innerHTML = htmlEdicao;
+        
         document.getElementById('modalHistoricoCompra').style.display = 'flex';
     }
 
