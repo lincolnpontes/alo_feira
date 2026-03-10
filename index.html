@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0.9</title>
+    <title>Alô Feira v1.1.0</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -150,7 +150,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0.9</div>
+    <div class="splash-versao">v1.1.0</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -238,20 +238,35 @@
 
 <div class="modal-overlay" id="modalEditarPedido">
     <div class="modal">
-        <div class="modal-title">Detalhes do Pedido</div>
+        <div class="modal-title" id="tituloModalEditarPedido">Detalhes e Histórico</div>
         <input type="hidden" id="editPedidoId">
-        <div style="display: flex; gap:10px;">
-            <div class="form-group" style="flex:1;"><label>Quantidade:</label>
-                <input type="text" inputmode="decimal" id="editPedidoQtd" onfocus="this.select();">
+        
+        <div id="editPedidoArea">
+            <div style="display: flex; gap:10px;">
+                <div class="form-group" style="flex:1;"><label>Quantidade:</label>
+                    <input type="text" inputmode="decimal" id="editPedidoQtd" onfocus="this.select();">
+                </div>
+                <div class="form-group" style="flex:1;"><label>Unidade:</label><select id="editPedidoUnidade"></select></div>
             </div>
-            <div class="form-group" style="flex:1;"><label>Unidade:</label><select id="editPedidoUnidade"></select></div>
+            <div class="form-group"><label>Observação (Opcional):</label>
+                <input type="text" id="editPedidoObs" placeholder="Ex: maduro, marca tal..." onfocus="this.select();">
+            </div>
+            <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
         </div>
-        <div class="form-group"><label>Observação (Opcional):</label>
-            <input type="text" id="editPedidoObs" placeholder="Ex: maduro, marca tal..." onfocus="this.select();">
+
+        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Preços</h4>
+        <div id="boxHistPrecosModalEdit" style="font-size:13px; margin-bottom:15px; background:#fff3e0; padding:10px; border-radius:5px; max-height: 80px; overflow-y: auto;">
+            <div id="listaHistPrecosModalEdit"></div>
         </div>
+
+        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Pedidos</h4>
+        <div id="boxHistPedidosModalEdit" style="font-size:13px; margin-bottom:15px; background:#e3f2fd; padding:10px; border-radius:5px; max-height: 100px; overflow-y: auto;">
+            <div id="listaHistPedidosModalEdit"></div>
+        </div>
+
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharModal('modalEditarPedido')">Cancelar</button>
-            <button class="btn-action" onclick="salvarEdicaoPedido()">Salvar</button>
+            <button class="btn-cancel" id="btnCancelarEdicaoPedido" onclick="fecharModal('modalEditarPedido')">Cancelar</button>
+            <button class="btn-action" id="btnSalvarEdicaoPedido" onclick="salvarEdicaoPedido()">Salvar Pedido</button>
         </div>
     </div>
 </div>
@@ -334,7 +349,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0.9</div>
+            <div class="versao">v1.1.0</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -451,8 +466,13 @@
         </div>
 
         <div id="boxHistoricoPrecos" style="font-size:12px; border:1px solid #ccc; border-radius:5px; padding:8px; max-height:120px; overflow-y:auto; background:#fafafa; margin-bottom:10px; display:none;">
-            <strong style="display:block; margin-bottom:5px;">Histórico Gravado:</strong>
+            <strong style="display:block; margin-bottom:5px;">Histórico Gravado de Preços:</strong>
             <div id="listaPrecosProduto"></div>
+        </div>
+
+        <div id="boxHistoricoPedidosProdutoForm" style="font-size:12px; border:1px solid #ccc; border-radius:5px; padding:8px; max-height:120px; overflow-y:auto; background:#e3f2fd; margin-bottom:15px;">
+            <strong style="display:block; margin-bottom:5px;">Histórico de Pedidos:</strong>
+            <div id="listaHistoricoPedidosProdutoForm"></div>
         </div>
 
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormProduto'); abrirGerenciar('produtos', true);">Cancelar</button><button class="btn-action" onclick="salvarProduto()">Salvar Produto</button></div>
@@ -815,7 +835,7 @@
             db.pedidosAtivos = []; marcarMudancaEstrutural();
             
             if (db.configs.url) {
-                isSyncingFundo = true; document.getElementById('loadingOverlay').style.display = 'flex';
+                isSyncingFundo = true document.getElementById('loadingOverlay').style.display = 'flex';
                 document.getElementById('loadingText').innerHTML = "Apagando histórico na nuvem...<br><span style='font-size: 14px; font-weight: normal; margin-top: 10px; display: block;'>Por favor, aguarde.</span>";
                 try {
                     let dbParaNuvem = JSON.parse(JSON.stringify(db)); 
@@ -981,9 +1001,9 @@
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
                 
-                const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id && !pa.excluido);
+                const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === p.id && (!pa.excluido || pa.excluidoCompras === true));
                 const ultimoPedido = pedidosDeste[pedidosDeste.length-1];
-                const pedidoEditavel = pedidosDeste.find(pa => (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
+                const pedidoEditavel = pedidosDeste.find(pa => !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
                 
                 let classesExtra = ""; let infoDireita = "";
                 let defaultUn = p.unidades && p.unidades.length > 0 ? p.unidades[0] : '';
@@ -993,7 +1013,10 @@
                 
                 if (ultimoPedido) { 
                     let statusName = "Excluído"; let statusClass = "bg-excluido";
-                    if(!ultimoPedido.excluido) {
+                    
+                    if (ultimoPedido.excluido && ultimoPedido.excluidoCompras) {
+                        statusName = "Excluído"; statusClass = "bg-excluido";
+                    } else if (!ultimoPedido.excluido) {
                         switch(ultimoPedido.status) {
                             case 'rascunho': statusName = 'Rascunho'; statusClass = 'bg-rascunho'; break;
                             case 'pendente': statusName = 'Pendente'; statusClass = 'bg-pendente'; break;
@@ -1003,7 +1026,8 @@
                             case 'cancelado': statusName = 'Cancelado'; statusClass = 'bg-cancelado'; break;
                         }
                     }
-                    let obsVisual = ultimoPedido.obs ? `<br><span style="color:#000; font-size:11px;">Obs: ${ultimoPedido.obs}</span>` : "";
+                    
+                    let obsVisual = ultimoPedido.obs && (!ultimoPedido.excluido) ? `<br><span style="color:#000; font-size:11px;">Obs: ${ultimoPedido.obs}</span>` : "";
                     
                     let qtdStrDisplay = "";
                     let qtyVal = ultimoPedido.qtd !== '' ? ultimoPedido.qtd : null;
@@ -1012,7 +1036,7 @@
                     else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`;
                     else if(unVal !== null) qtdStrDisplay = `${unVal}`;
                     
-                    let exibicaoQtd = qtdStrDisplay ? `<span style="font-weight: bold; font-size: 14px; color: #1565C0;">${qtdStrDisplay}</span>` : "";
+                    let exibicaoQtd = qtdStrDisplay && (!ultimoPedido.excluido) ? `<span style="font-weight: bold; font-size: 14px; color: #1565C0;">${qtdStrDisplay}</span>` : "";
                     infoDireita = `<div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div>${exibicaoQtd}${obsVisual}`;
                     if(pedidoEditavel) { classesExtra += (pedidoEditavel.status === 'rascunho') ? "item-pedido-rascunho " : "item-pedido-ativo "; if(pedidoEditavel.status === 'rascunho') temRascunho = true; }
                 }
@@ -1196,7 +1220,7 @@
                 let statusNome = pa.status;
                 if(pa.status === 'pendente') statusNome = 'Pendente ⏳'; else if(pa.status === 'pedido_forn') statusNome = 'No Fornecedor 📦'; else if(pa.status === 'comprado') statusNome = 'Comprado ✅'; else if(pa.status === 'entregue') statusNome = 'Entregue ✅'; else if(pa.status === 'cancelado') statusNome = 'Cancelado 🚫';
                 let acoes = '';
-                if(pa.status === 'pendente') { acoes = `<button onclick="prepararEdicaoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px;">✏️</button><button onclick="excluirPedidoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px; color:#d32f2f;">🗑️</button>`; } else { let textLimpo = statusNome.replace(/ ✅| 📦| ⏳| 🚫/g, ''); acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${textLimpo})</span>`; }
+                if(pa.status === 'pendente') { acoes = `<button onclick="abrirModalEditarPedido('${pa.idUnico}', '${pa.produtoId}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px;">✏️</button><button onclick="excluirPedidoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px; color:#d32f2f;">🗑️</button>`; } else { let textLimpo = statusNome.replace(/ ✅| 📦| ⏳| 🚫/g, ''); acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${textLimpo})</span>`; }
                 let obsVisual = pa.obs ? `<br><span style="font-size:11px; color:#666;">Obs: ${pa.obs}</span>` : ''; 
                 let qtyVal = pa.qtd !== '' ? pa.qtd : null; let unVal = pa.unidade ? pa.unidade : null; let qtdStrDisplay = "";
                 if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`; else if(unVal !== null) qtdStrDisplay = `${unVal}`;
@@ -1208,9 +1232,7 @@
         modal.style.display = 'flex';
     }
     
-    function prepararEdicaoHoje(idUnico) { abrirModalEditarPedido(idUnico); }
-    
-    function excluirPedidoHoje(idUnico) { if(confirm("Deseja apagar definitivamente este pedido feito hoje?")) { let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(pa) { pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); salvarBanco(); abrirPedidosHoje(); renderizarLista(); sincronizarFundo(false, true); } } }
+    function excluirPedidoHoje(idUnico) { if(confirm("Deseja apagar definitivamente este pedido feito hoje?")) { let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(pa) { pa.excluido = true; pa.status = 'excluido'; pa.excluidoPorPedidos = true; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); salvarBanco(); abrirPedidosHoje(); renderizarLista(); sincronizarFundo(false, true); } } }
 
     async function compartilharTxtNativo() {
         let hoje = new Date().setHours(0,0,0,0);
@@ -1300,8 +1322,10 @@
     
     function acaoDuploToque(el) {
         if(db.configs.modo === 'pedido') { 
-            const pId = el.getAttribute('data-id'); const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === pId && !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
-            const pedidoEditavel = pedidosDeste[pedidosDeste.length-1]; if(pedidoEditavel) { abrirModalEditarPedido(pedidoEditavel.idUnico); }
+            const pId = el.getAttribute('data-id'); 
+            const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === pId && !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
+            const pedidoEditavel = pedidosDeste[pedidosDeste.length-1]; 
+            abrirModalEditarPedido(pedidoEditavel ? pedidoEditavel.idUnico : null, pId);
         } else {
             if (getPermissaoColab()) return alert("Seu perfil não permite editar os detalhes das compras.");
             const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && !pa.excluido) { abrirHistoricoCompra(paId); }
@@ -1316,7 +1340,7 @@
             if(pa) {
                 if(pa.excluido) {
                     if (apenasReceber) return alert("Seu perfil não permite alterar itens excluídos.");
-                    if(confirm("Desfazer exclusão do item e voltar à lista?")) { registrarDesfazer(pa); pa.excluido = false; pa.status = 'pendente'; pa.dataStatus = Date.now(); salvarBanco(); renderizarLista(); sincronizarFundo(false, true); }
+                    if(confirm("Desfazer exclusão do item e voltar à lista?")) { registrarDesfazer(pa); pa.excluido = false; pa.excluidoCompras = false; pa.status = 'pendente'; pa.dataStatus = Date.now(); salvarBanco(); renderizarLista(); sincronizarFundo(false, true); }
                 } else if (pa.status === 'cancelado') {
                     if (apenasReceber) return alert("Seu perfil não permite alterar itens cancelados.");
                     registrarDesfazer(pa); pa.status = 'pendente'; pa.dataStatus = Date.now(); salvarBanco(); renderizarLista(); sincronizarFundo(false, true);
@@ -1350,20 +1374,66 @@
                 if(pa.status === 'entregue') { if(confirm("Deseja voltar este item para 'Pedido ao Fornecedor'?")) { pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
                 else if (pa.status === 'pedido_forn' || pa.status === 'comprado') { if(confirm("Deseja voltar este item para 'Pendente'?")) { pa.status = 'pendente'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } }
                 else if (pa.status === 'pendente') { pa.status = 'cancelado'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); }
-                else if (pa.status === 'cancelado') { pa.excluido = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); }
+                else if (pa.status === 'cancelado') { 
+                    // ITEM EXCLUIDO DO MODO COMPRAS (Vai aparecer no modo Pedidos como Excluído)
+                    pa.excluido = true; pa.excluidoCompras = true; pa.status = 'excluido'; pa.dataExclusao = Date.now(); pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); 
+                }
             } 
         }
     }
 
-    function abrirModalEditarPedido(paId) { 
-        const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(x => x.id === pa.produtoId); 
-        document.getElementById('editPedidoId').value = paId; document.getElementById('editPedidoQtd').value = pa.qtd; document.getElementById('editPedidoObs').value = pa.obs || '';
-        const selUn = document.getElementById('editPedidoUnidade'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); 
+    function abrirModalEditarPedido(paId, pId) { 
+        const p = db.produtos.find(x => x.id === pId); if(!p) return;
+        
+        document.getElementById('tituloModalEditarPedido').innerText = paId ? "Detalhes e Histórico" : "Histórico do Produto";
+        document.getElementById('btnCancelarEdicaoPedido').innerText = paId ? "Cancelar" : "Fechar";
+
+        if (paId) {
+            const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
+            document.getElementById('editPedidoArea').style.display = 'block';
+            document.getElementById('btnSalvarEdicaoPedido').style.display = 'block';
+            document.getElementById('editPedidoId').value = paId; 
+            document.getElementById('editPedidoQtd').value = pa.qtd; 
+            document.getElementById('editPedidoObs').value = pa.obs || '';
+            const selUn = document.getElementById('editPedidoUnidade'); selUn.innerHTML = ''; 
+            p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); 
+        } else {
+            document.getElementById('editPedidoArea').style.display = 'none';
+            document.getElementById('btnSalvarEdicaoPedido').style.display = 'none';
+            document.getElementById('editPedidoId').value = ''; 
+        }
+
+        // Histórico de Preços
+        let htmlPrecos = "<ul>"; 
+        if(p.historicoPrecos && p.historicoPrecos.length > 0) { 
+            let rev = [...p.historicoPrecos].reverse(); 
+            rev.forEach(h => { htmlPrecos += `<li>${h.data}: <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></li>`; }); 
+        } else { htmlPrecos += "<li>Sem histórico</li>"; } 
+        htmlPrecos += "</ul>"; 
+        document.getElementById('listaHistPrecosModalEdit').innerHTML = htmlPrecos;
+
+        // Histórico de Pedidos
+        let htmlPed = "<ul>";
+        let peds = db.pedidosAtivos.filter(x => x.produtoId === pId && x.status !== 'rascunho').sort((a,b) => (b.dataEnvio||b.dataStatus||0) - (a.dataEnvio||a.dataStatus||0));
+        if(peds.length > 0) {
+            peds.slice(0, 10).forEach(paInfo => {
+                let d = formatarDataHora(paInfo.dataEnvio || paInfo.dataStatus);
+                htmlPed += `<li>${d} - <b>${paInfo.qtd} ${paInfo.unidade}</b> (${paInfo.status})</li>`;
+            });
+        } else {
+            htmlPed += "<li>Sem histórico de pedidos</li>";
+        }
+        htmlPed += "</ul>";
+        document.getElementById('listaHistPedidosModalEdit').innerHTML = htmlPed;
+
         document.getElementById('modalEditarPedido').style.display = 'flex'; 
     }
     
     function salvarEdicaoPedido() { 
-        const paId = document.getElementById('editPedidoId').value; const qtd = parseFloatBr(document.getElementById('editPedidoQtd').value); 
+        const paId = document.getElementById('editPedidoId').value; 
+        if(!paId) return fecharModal('modalEditarPedido');
+
+        const qtd = parseFloatBr(document.getElementById('editPedidoQtd').value); 
         let pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
         if(pa) { pa.qtd = qtd; pa.unidade = document.getElementById('editPedidoUnidade').value; pa.obs = document.getElementById('editPedidoObs').value; salvarBanco(); } 
         fecharModal('modalEditarPedido'); renderizarLista(); if(document.getElementById('modalPedidosHoje').style.display === 'flex') { abrirPedidosHoje(); }
@@ -1539,8 +1609,17 @@
                     let subcatsHtml = '';
                     if (c.subcategorias && c.subcategorias.length > 0) {
                         subcatsHtml = `<div style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">`;
-                        c.subcategorias.forEach(sub => {
-                            subcatsHtml += `<div style="background-color: ${c.cor}; color: ${c.corTexto}; padding: 4px 10px; border-radius: 4px; font-size: 12px; margin-left: 20px; opacity: 0.85; display: inline-block; width: fit-content;">▪ ${sub}</div>`;
+                        c.subcategorias.forEach((sub, subIndex) => {
+                            subcatsHtml += `
+                            <div style="background-color: ${c.cor}; color: ${c.corTexto}; padding: 4px 10px; border-radius: 4px; font-size: 12px; margin-left: 20px; opacity: 0.85; display: flex; align-items: center; justify-content: space-between;">
+                                <span>▪ ${sub}</span>
+                                <div class="gerenciar-actions" style="display:flex; gap:2px;">
+                                    <button style="font-size:11px; padding:2px 5px;" onclick="moverSubcategoria('${c.id}', ${subIndex}, -1)">⬆️</button>
+                                    <button style="font-size:11px; padding:2px 5px;" onclick="moverSubcategoria('${c.id}', ${subIndex}, 1)">⬇️</button>
+                                    <button style="font-size:11px; padding:2px 5px;" onclick="editarSubcategoria('${c.id}', ${subIndex})">✏️</button>
+                                    <button style="font-size:11px; padding:2px 5px;" onclick="excluirSubcategoria('${c.id}', ${subIndex})">🗑️</button>
+                                </div>
+                            </div>`;
                         });
                         subcatsHtml += `</div>`;
                     }
@@ -1609,6 +1688,40 @@
         else if (direcao === 1 && index < db.categorias.length - 1) { let temp = db.categorias[index]; db.categorias[index] = db.categorias[index + 1]; db.categorias[index + 1] = temp; }
         marcarMudancaEstrutural(); abrirGerenciar('categorias', true); sincronizarFundo(false, true);
     }
+    
+    function moverSubcategoria(catId, subIndex, direcao) {
+        let cat = db.categorias.find(c => c.id === catId);
+        if(!cat || !cat.subcategorias) return;
+        if (direcao === -1 && subIndex > 0) { 
+            let temp = cat.subcategorias[subIndex]; cat.subcategorias[subIndex] = cat.subcategorias[subIndex - 1]; cat.subcategorias[subIndex - 1] = temp; 
+        } else if (direcao === 1 && subIndex < cat.subcategorias.length - 1) { 
+            let temp = cat.subcategorias[subIndex]; cat.subcategorias[subIndex] = cat.subcategorias[subIndex + 1]; cat.subcategorias[subIndex + 1] = temp; 
+        }
+        marcarMudancaEstrutural(); abrirGerenciar('categorias', true); sincronizarFundo(false, true);
+    }
+
+    function editarSubcategoria(catId, subIndex) {
+        let cat = db.categorias.find(c => c.id === catId);
+        if(!cat || !cat.subcategorias) return;
+        let novoNome = prompt("Editar Subcategoria:", cat.subcategorias[subIndex]);
+        if(novoNome !== null && novoNome.trim() !== "") {
+            let nomeAntigo = cat.subcategorias[subIndex];
+            cat.subcategorias[subIndex] = novoNome.trim();
+            db.produtos.forEach(p => { if(p.categoria === catId && p.subcategoria === nomeAntigo) { p.subcategoria = novoNome.trim(); } });
+            marcarMudancaEstrutural(); abrirGerenciar('categorias', true); sincronizarFundo(false, true);
+        }
+    }
+
+    function excluirSubcategoria(catId, subIndex) {
+        let cat = db.categorias.find(c => c.id === catId);
+        if(!cat || !cat.subcategorias) return;
+        if(confirm(`Tem certeza que deseja excluir a subcategoria "${cat.subcategorias[subIndex]}"? Os produtos continuarão na categoria mãe.`)) {
+            let nomeAntigo = cat.subcategorias[subIndex];
+            cat.subcategorias.splice(subIndex, 1);
+            db.produtos.forEach(p => { if(p.categoria === catId && p.subcategoria === nomeAntigo) { p.subcategoria = ""; } });
+            marcarMudancaEstrutural(); abrirGerenciar('categorias', true); sincronizarFundo(false, true);
+        }
+    }
 
     function excluirItem(tipo, id) { if(confirm("Tem certeza?")) { db[tipo] = db[tipo].filter(x => x.id !== id); marcarMudancaEstrutural(); abrirGerenciar(tipo, true); renderizarLista(); sincronizarFundo(false, true); } }
 
@@ -1639,7 +1752,49 @@
         if(cat && cat.subcategorias) { cat.subcategorias.forEach(s => combo.innerHTML += `<option value="${s}" ${selecionada===s?'selected':''}>${s}</option>`); }
     }
 
-    function abrirFormProduto(id) { fecharModal('modalListagem'); const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`); document.getElementById('prodPreco').value = ''; document.getElementById('prodPrecoData').value = getHojeSTR(); let p = null; if(id) { p = db.produtos.find(x => x.id === id); document.getElementById('prodId').value = id; document.getElementById('prodNome').value = p.nome; document.getElementById('prodDesc').value = p.descFornecedor || ''; document.getElementById('prodObsPadrao').value = p.obsPadrao || ''; document.getElementById('prodCategoria').value = p.categoria; document.getElementById('prodUnidades').value = p.unidades.join(', '); document.getElementById('prodMarcasOk').value = p.marcasAprovadas; document.getElementById('prodMarcasNok').value = p.marcasReprovadas; document.getElementById('prodQtdPadrao').value = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; tempPrecosProduto = p.historicoPrecos ? JSON.parse(JSON.stringify(p.historicoPrecos)) : []; tempFornecedoresProduto = p.fornecedores ? JSON.parse(JSON.stringify(p.fornecedores)) : []; atualizarComboSubcat(p.subcategoria); } else { document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = ''; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodQtdPadrao').value = ''; tempPrecosProduto = []; tempFornecedoresProduto = []; atualizarComboSubcat(); } renderizarFornecedoresVinculados(); renderizarPrecosTemporarios(); document.getElementById('modalFormProduto').style.display = 'flex'; }
+    function abrirFormProduto(id) { 
+        fecharModal('modalListagem'); 
+        const combo = document.getElementById('prodCategoria'); combo.innerHTML = ''; 
+        db.categorias.forEach(c => combo.innerHTML += `<option value="${c.id}">${c.nome}</option>`); 
+        document.getElementById('prodPreco').value = ''; 
+        document.getElementById('prodPrecoData').value = getHojeSTR(); 
+        
+        let p = null; 
+        let htmlHistPed = "<ul>";
+        
+        if(id) { 
+            p = db.produtos.find(x => x.id === id); 
+            document.getElementById('prodId').value = id; 
+            document.getElementById('prodNome').value = p.nome; 
+            document.getElementById('prodDesc').value = p.descFornecedor || ''; 
+            document.getElementById('prodObsPadrao').value = p.obsPadrao || ''; 
+            document.getElementById('prodCategoria').value = p.categoria; 
+            document.getElementById('prodUnidades').value = p.unidades.join(', '); 
+            document.getElementById('prodMarcasOk').value = p.marcasAprovadas; 
+            document.getElementById('prodMarcasNok').value = p.marcasReprovadas; 
+            document.getElementById('prodQtdPadrao').value = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; 
+            tempPrecosProduto = p.historicoPrecos ? JSON.parse(JSON.stringify(p.historicoPrecos)) : []; 
+            tempFornecedoresProduto = p.fornecedores ? JSON.parse(JSON.stringify(p.fornecedores)) : []; 
+            atualizarComboSubcat(p.subcategoria); 
+
+            let peds = db.pedidosAtivos.filter(x => x.produtoId === id && x.status !== 'rascunho').sort((a,b) => (b.dataEnvio||b.dataStatus||0) - (a.dataEnvio||a.dataStatus||0));
+            if(peds.length > 0) {
+                peds.slice(0, 10).forEach(paInfo => {
+                    let d = formatarDataHora(paInfo.dataEnvio || paInfo.dataStatus);
+                    htmlHistPed += `<li>${d} - <b>${paInfo.qtd} ${paInfo.unidade}</b> (${paInfo.status})</li>`;
+                });
+            } else { htmlHistPed += "<li>Nenhum pedido realizado</li>"; }
+
+        } else { 
+            document.getElementById('prodId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = ''; document.getElementById('prodObsPadrao').value = ''; document.getElementById('prodUnidades').value = ''; document.getElementById('prodMarcasOk').value = ''; document.getElementById('prodMarcasNok').value = ''; document.getElementById('prodQtdPadrao').value = ''; tempPrecosProduto = []; tempFornecedoresProduto = []; atualizarComboSubcat(); 
+            htmlHistPed += "<li>Produto novo (sem histórico)</li>";
+        } 
+        
+        htmlHistPed += "</ul>";
+        document.getElementById('listaHistoricoPedidosProdutoForm').innerHTML = htmlHistPed;
+
+        renderizarFornecedoresVinculados(); renderizarPrecosTemporarios(); document.getElementById('modalFormProduto').style.display = 'flex'; 
+    }
     
     function salvarProduto() { const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : ''; if(pVal > 0) { tempPrecosProduto.push({ data: pData, preco: pVal }); } const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, subcategoria: document.getElementById('prodSubcategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: tempFornecedoresProduto }; const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo); marcarMudancaEstrutural(); fecharModal('modalFormProduto'); abrirGerenciar('produtos', true); renderizarLista(); sincronizarFundo(false, true); }
 
