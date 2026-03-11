@@ -1056,8 +1056,8 @@
         if (idxSubA !== idxSubB) return idxSubA - idxSubB;
         if (subA !== subB) return subA.localeCompare(subB);
         
-        let nomeA = pA.descFornecedor ? pA.descFornecedor : pA.nome;
-        let nomeB = pB.descFornecedor ? pB.descFornecedor : pB.nome;
+        let nomeA = pA.descFornecedor ? pA.descFornecedor : (pA.nome || "");
+        let nomeB = pB.descFornecedor ? pB.descFornecedor : (pB.nome || "");
         return nomeA.localeCompare(nomeB);
     }
 
@@ -1125,6 +1125,21 @@
         let temRascunho = false;
         let produtosOrdenados = [...db.produtos];
 
+        // INJEÇÃO FANTASMA: Coloca um produto vazio no topo das categorias que aceitam avulsos para forçar o cabeçalho a aparecer
+        if (db.configs.modo === 'pedido') {
+            db.categorias.forEach(cat => {
+                if (cat.permiteAvulso) {
+                    produtosOrdenados.push({
+                        id: 'dummy_' + cat.id,
+                        categoria: cat.id,
+                        subcategoria: '',
+                        nome: '', // string vazia garante que ele fique em 1º lugar na categoria dele
+                        isDummy: true
+                    });
+                }
+            });
+        }
+
         // LÓGICA DE ORDENAÇÃO
         produtosOrdenados.sort(ordernarPorCategoriaESub);
 
@@ -1148,10 +1163,14 @@
                     
                     if (categoriaAtual === null || categoriaAtual === catId) {
                         lista.innerHTML += `<li class="cat-header" style="cursor:default;"><span>🏷️ ${catName}</span> ${btnAvulso}</li>`;
+                        itensMostrados++; // Conta o cabeçalho para a lista não dizer que está "vazia"
                     }
                     lastCatId = catId; lastSubcat = null;
                 }
                 
+                // MÁGICA: Se for o item fantasma, ele para aqui. Já cumpriu a missão de renderizar o cabeçalho!
+                if (p.isDummy) return;
+
                 if (subcat !== lastSubcat && subcat !== "") {
                     lista.innerHTML += `<li class="subcat-header" style="cursor:default;"><span>▪ ${subcat}</span></li>`;
                     lastSubcat = subcat;
@@ -1163,6 +1182,11 @@
                 const ultimoPedido = pedidosDeste[pedidosDeste.length-1];
                 const pedidoEditavel = pedidosDeste.find(pa => !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
                 
+                // ITENS AVULSOS ESCONDIDOS: Se for avulso e não tiver pedido ativo/visível, ele não aparece na lista de Pedidos para ser clicado!
+                if (p.avulso && (!ultimoPedido || (ultimoPedido.excluido && ultimoPedido.excluidoCompras))) {
+                    return; 
+                }
+
                 let classesExtra = ""; let infoDireita = "";
                 let defaultUn = p.unidades && p.unidades.length > 0 ? p.unidades[0] : '';
                 
@@ -1199,10 +1223,6 @@
                     if(pedidoEditavel) { classesExtra += (pedidoEditavel.status === 'rascunho') ? "item-pedido-rascunho " : "item-pedido-ativo "; if(pedidoEditavel.status === 'rascunho') temRascunho = true; }
                 }
 
-                // ITENS AVULSOS ESCONDIDOS: Se for avulso e não tiver pedido ativo/visível, ele não aparece na lista de Pedidos para ser clicado!
-                if (p.avulso && (!ultimoPedido || (ultimoPedido.excluido && ultimoPedido.excluidoCompras))) {
-                    return; // Pula este item na renderização, ele fica invisível.
-                }
 
                 let pedIdAtributo = pedidoEditavel ? pedidoEditavel.idUnico : '';
 
@@ -1335,7 +1355,6 @@
             db.pedidosAtivos = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho'); 
             salvarBanco(); 
             renderizarLista(); 
-            // ESCUDO CONTRA CLIQUE FANTASMA AQUI!
             isModalFechando = true;
             setTimeout(() => { isModalFechando = false; }, 400);
         }
