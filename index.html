@@ -193,6 +193,22 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="modalFormAvulso">
+    <div class="modal">
+        <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">Novo Item Avulso</div>
+        <input type="hidden" id="avulsoCatId">
+        <div class="form-group"><label>Nome do Item:</label><input type="text" id="avulsoNome" placeholder="Ex: Papel Alumínio Extra"></div>
+        <div style="display: flex; gap:10px;">
+            <div class="form-group" style="flex:1;"><label>Qtd (opc):</label><input type="text" id="avulsoQtd" inputmode="decimal"></div>
+            <div class="form-group" style="flex:1;"><label>Unidade (opc):</label><input type="text" id="avulsoUn" placeholder="Ex: rolo, un"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="fecharModal('modalFormAvulso')">Cancelar</button>
+            <button class="btn-action" onclick="salvarAvulso()">Adicionar</button>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="modalPedidosHoje">
     <div class="modal">
         <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">Pedidos Enviados Hoje</div>
@@ -528,6 +544,12 @@
         <div style="display: flex; gap: 10px;">
             <div class="form-group" style="flex:1;"><label>Cor Fundo:</label><input type="color" class="input-cor" id="catCor"></div>
             <div class="form-group" style="flex:1;"><label>Cor Texto:</label><input type="color" class="input-cor" id="catCorTexto"></div>
+        </div>
+
+        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+        <div class="form-group" style="display:flex; align-items:center; margin-bottom:15px;">
+            <label class="switch"><input type="checkbox" id="catPermiteAvulso"><span class="slider"></span></label>
+            <span style="font-weight:bold; font-size:12px; color:#555;">Permitir Itens Avulsos <br><span style="font-size:9px; font-weight:normal;">(Apenas marcável na criação da categoria)</span></span>
         </div>
         
         <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
@@ -891,7 +913,10 @@
             if(isSyncingFundo) return alert("⏳ Aguarde o sistema terminar de conversar com a nuvem antes de apagar o histórico.");
             if(!confirm("⚠️ TEM CERTEZA? Isso vai apagar todos os pedidos de TODOS os aparelhos conectados. Essa ação não afeta produtos, categorias, fornecedores nem os perfis.")) return;
 
-            db.pedidosAtivos = []; marcarMudancaEstrutural();
+            db.pedidosAtivos = []; 
+            // FAXINA: Limpa todos os produtos avulsos gerados para eles não ficarem no banco pra sempre
+            db.produtos = db.produtos.filter(p => !p.avulso);
+            marcarMudancaEstrutural();
             
             if (db.configs.url) {
                 isSyncingFundo = true; document.getElementById('loadingOverlay').style.display = 'flex';
@@ -1007,7 +1032,7 @@
     }
 
     /* =========================================================================
-       FUNÇÃO GLOBAL DE ORDENAÇÃO CUSTOMIZADA
+       FUNÇÃO GLOBAL DE ORDENAÇÃO CUSTOMIZADA E AVULSOS
        ========================================================================= */
     function ordernarPorCategoriaESub(a, b) {
         let pA = a.p || a; let pB = b.p || b;
@@ -1036,6 +1061,63 @@
         return nomeA.localeCompare(nomeB);
     }
 
+    function abrirModalAvulso(catId) {
+        document.getElementById('avulsoCatId').value = catId;
+        document.getElementById('avulsoNome').value = '';
+        document.getElementById('avulsoQtd').value = '';
+        document.getElementById('avulsoUn').value = '';
+        document.getElementById('modalFormAvulso').style.display = 'flex';
+        setTimeout(() => document.getElementById('avulsoNome').focus(), 100);
+    }
+
+    function salvarAvulso() {
+        const catId = document.getElementById('avulsoCatId').value;
+        const nome = document.getElementById('avulsoNome').value.trim();
+        if(!nome) return alert("Por favor, digite o nome do item avulso.");
+        
+        const qtdStr = document.getElementById('avulsoQtd').value.trim();
+        const qtd = qtdStr !== '' ? parseFloatBr(qtdStr) : '';
+        const un = document.getElementById('avulsoUn').value.trim();
+
+        // 1. Cria o Produto Fantasma
+        const newProdId = 'p_av_' + Date.now();
+        const novoProd = {
+            id: newProdId,
+            nome: nome + " (Avulso)",
+            descFornecedor: "",
+            obsPadrao: "",
+            categoria: catId,
+            subcategoria: "",
+            qtdPadrao: "",
+            unidades: un ? [un] : [''],
+            marcasAprovadas: "",
+            marcasReprovadas: "",
+            historicoPrecos: [],
+            fornecedores: [],
+            avulso: true // ESSE É O MARCADOR MÁGICO
+        };
+        db.produtos.push(novoProd);
+
+        // 2. Cria o Rascunho
+        const novoPedId = 'pa_' + Date.now();
+        db.pedidosAtivos.push({
+            idUnico: novoPedId,
+            produtoId: newProdId,
+            qtd: qtd,
+            unidade: un,
+            obs: "Item Avulso",
+            status: 'rascunho',
+            dataStatus: Date.now(),
+            excluido: false,
+            historico: [],
+            colaboradorId: db.configs.colabAtivoId
+        });
+
+        salvarBanco();
+        fecharModal('modalFormAvulso');
+        renderizarLista();
+    }
+
     function renderizarLista() {
         const lista = document.getElementById('listaPrincipal'); lista.innerHTML = ''; let itensMostrados = 0;
         let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = getCatsPermitidas(colabLogado);
@@ -1060,9 +1142,13 @@
                 let catId = cObj ? cObj.id : "sem_cat";
                 let subcat = p.subcategoria || "";
 
-                if (categoriaAtual === null && catId !== lastCatId) {
+                if (catId !== lastCatId) {
                     let catName = cObj ? cObj.nome : "Sem Categoria";
-                    lista.innerHTML += `<li class="cat-header" style="cursor:default;"><span>🏷️ ${catName}</span></li>`; 
+                    let btnAvulso = (cObj && cObj.permiteAvulso) ? `<button onclick="abrirModalAvulso('${cObj.id}'); event.stopPropagation();" style="background:#fff; border:1px solid #ccc; border-radius:4px; color:#1565C0; font-size:12px; padding:2px 8px; cursor:pointer; font-weight:bold;">+ Avulso</button>` : '';
+                    
+                    if (categoriaAtual === null || categoriaAtual === catId) {
+                        lista.innerHTML += `<li class="cat-header" style="cursor:default;"><span>🏷️ ${catName}</span> ${btnAvulso}</li>`;
+                    }
                     lastCatId = catId; lastSubcat = null;
                 }
                 
@@ -1111,6 +1197,11 @@
                     let exibicaoQtd = qtdStrDisplay && (!ultimoPedido.excluido) ? `<span style="font-weight: bold; font-size: 14px; color: #1565C0;">${qtdStrDisplay}</span>` : "";
                     infoDireita = `<div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div>${exibicaoQtd}${obsVisual}`;
                     if(pedidoEditavel) { classesExtra += (pedidoEditavel.status === 'rascunho') ? "item-pedido-rascunho " : "item-pedido-ativo "; if(pedidoEditavel.status === 'rascunho') temRascunho = true; }
+                }
+
+                // ITENS AVULSOS ESCONDIDOS: Se for avulso e não tiver pedido ativo/visível, ele não aparece na lista de Pedidos para ser clicado!
+                if (p.avulso && (!ultimoPedido || (ultimoPedido.excluido && ultimoPedido.excluidoCompras))) {
+                    return; // Pula este item na renderização, ele fica invisível.
                 }
 
                 let pedIdAtributo = pedidoEditavel ? pedidoEditavel.idUnico : '';
@@ -1240,7 +1331,14 @@
        PEDIDOS DO DIA E CANCELAMENTO (BOTÕES DE RODAPÉ)
        ========================================================================= */
     function cancelarRascunhos() {
-        if(confirm("Deseja realmente cancelar a seleção e remover os rascunhos?")) { db.pedidosAtivos = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho'); salvarBanco(); renderizarLista(); }
+        if(confirm("Deseja realmente cancelar a seleção e remover os rascunhos?")) { 
+            db.pedidosAtivos = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho'); 
+            salvarBanco(); 
+            renderizarLista(); 
+            // ESCUDO CONTRA CLIQUE FANTASMA AQUI!
+            isModalFechando = true;
+            setTimeout(() => { isModalFechando = false; }, 400);
+        }
     }
 
     async function enviarPedidosParaCompras() { 
@@ -1934,6 +2032,7 @@
         let prodOrdem = [...db.produtos].sort((a,b) => a.nome.localeCompare(b.nome));
         
         prodOrdem.forEach((p) => { 
+            if (p.avulso) return; // MÁGICA: Esconde itens avulsos da lista de produtos permanentes!
             if (filtro !== 'todos' && p.categoria !== filtro) return;
             if (busca && !p.nome.toLowerCase().includes(busca)) return;
             
@@ -2129,6 +2228,9 @@
         fecharModal('modalListagem'); 
         document.getElementById('novaSubcatNome').value = ''; 
         tempRenames = []; 
+        
+        const chkAvulso = document.getElementById('catPermiteAvulso');
+
         if(id) { 
             const c = db.categorias.find(x => x.id === id); 
             document.getElementById('catId').value = id; 
@@ -2136,12 +2238,16 @@
             document.getElementById('catCor').value = c.cor; 
             document.getElementById('catCorTexto').value = c.corTexto; 
             tempSubcats = c.subcategorias ? [...c.subcategorias] : []; 
+            chkAvulso.checked = c.permiteAvulso || false;
+            chkAvulso.disabled = true; // Bloqueia edição de permitir avulsos após criação
         } else { 
             document.getElementById('catId').value = ''; 
             document.getElementById('catNome').value = ''; 
             document.getElementById('catCor').value = '#1565C0'; 
             document.getElementById('catCorTexto').value = '#ffffff'; 
             tempSubcats = []; 
+            chkAvulso.checked = false;
+            chkAvulso.disabled = false;
         } 
         renderFormSubcats(); 
         document.getElementById('modalFormCategoria').style.display = 'flex'; 
@@ -2159,10 +2265,23 @@
             });
         }
 
-        const novo = { id: id, nome: document.getElementById('catNome').value, cor: document.getElementById('catCor').value, corTexto: document.getElementById('catCorTexto').value, subcategorias: tempSubcats }; 
+        const novo = { 
+            id: id, 
+            nome: document.getElementById('catNome').value, 
+            cor: document.getElementById('catCor').value, 
+            corTexto: document.getElementById('catCorTexto').value, 
+            subcategorias: tempSubcats,
+            permiteAvulso: document.getElementById('catPermiteAvulso').checked
+        }; 
+        
         const idx = db.categorias.findIndex(x => x.id === id); 
-        if(idx >= 0) db.categorias[idx] = novo; 
-        else db.categorias.push(novo); 
+        if(idx >= 0) {
+            // Se já existe, mantém a configuração antiga de avulso se o cara tentou hackear o disabled
+            novo.permiteAvulso = db.categorias[idx].permiteAvulso || false;
+            db.categorias[idx] = novo; 
+        } else {
+            db.categorias.push(novo); 
+        }
         
         marcarMudancaEstrutural(); fecharModal('modalFormCategoria'); abrirGerenciar('categorias', true); renderizarLista(); sincronizarFundo(false, true); 
     }
