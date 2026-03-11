@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0</title>
+    <title>Alô Feira v1</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -150,7 +150,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0</div>
+    <div class="splash-versao">v1</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -372,7 +372,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0</div>
+            <div class="versao">v1</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -1408,6 +1408,16 @@
             const pId = el.getAttribute('data-id'); 
             const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === pId && !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
             const pedidoEditavel = pedidosDeste[pedidosDeste.length-1]; 
+
+            // CADEADO DE EDIÇÃO (2 TOQUES)
+            if(pedidoEditavel && pedidoEditavel.status !== 'rascunho') {
+                let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
+                let isAdmin = (!colabLogado || colabLogado.isAdmin);
+                if(!isAdmin && pedidoEditavel.colaboradorId !== db.configs.colabAtivoId) {
+                    return alert("🔒 Acesso Negado: Você só pode visualizar e editar pedidos que foram enviados pelo seu próprio perfil.");
+                }
+            }
+
             abrirModalEditarPedido(pedidoEditavel ? pedidoEditavel.idUnico : null, pId);
         } else {
             if (getPermissaoColab()) return alert("Seu perfil não permite editar os detalhes das compras.");
