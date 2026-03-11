@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0.2</title>
+    <title>Alô Feira v1.0.3</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -149,7 +149,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0.2</div>
+    <div class="splash-versao">v1.0.3</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -180,7 +180,7 @@
                 <button class="btn-action-bar" onclick="acaoEmMassa('pedido_forn')" id="btnMassaPedForn" style="display:none; background:#8e24aa;" title="P/ Fornecedor">📦</button>
                 <button class="btn-action-bar" onclick="acaoEmMassa('comprado')" id="btnMassaComprado" style="display:none; background:#2e7d32;" title="Comprados">✅</button>
                 <button class="btn-action-bar" onclick="abrirModalMassaVincular()" id="btnMassaVincular" style="display:none; background:#1565C0;" title="Vincular Fornecedor">🔗</button>
-                <button class="btn-action-bar" onclick="abrirModalFiltroFornCompras()" id="btnFiltroForn" title="Filtrar Forn.">🔎📦</button>
+                <button class="btn-action-bar" onclick="abrirModalFiltroFornCompras()" id="btnFiltroForn" title="Filtrar Forn." style="padding: 8px 6px;">🔎📦</button>
                 <button class="btn-action-bar" onclick="abrirModalRelatorio()" id="btnRelatorioBar" title="Relatório">📄</button>
             </div>
             <button class="btn-action-bar" onclick="desfazerAcao()" id="btnDesfazerBar" style="display:none; color:#ffb74d;" title="Desfazer">↩️</button>
@@ -421,7 +421,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0.2</div>
+            <div class="versao">v1.0.3</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -1065,6 +1065,13 @@
         document.getElementById('btnMassaComprado').style.display = modoSelecaoAtivo ? 'flex' : 'none';
         document.getElementById('btnMassaPedForn').style.display = modoSelecaoAtivo ? 'flex' : 'none';
         document.getElementById('btnMassaVincular').style.display = modoSelecaoAtivo ? 'flex' : 'none';
+        
+        if (modoSelecaoAtivo) {
+            document.getElementById('btnDesfazerBar').style.display = 'none';
+        } else {
+            atualizarBotaoDesfazer();
+        }
+
         if(!modoSelecaoAtivo) itensSelecionadosRelatorio.clear(); 
         renderizarLista(); 
     }
@@ -1625,7 +1632,7 @@
 
     function atualizarBotaoDesfazer() { 
         const btn = document.getElementById('btnDesfazerBar'); 
-        if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0) { 
+        if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0 && !modoSelecaoAtivo) { 
             btn.style.display = 'flex'; 
         } else { 
             btn.style.display = 'none'; 
@@ -1703,7 +1710,14 @@
         }
     }
     
-    function acaoSegurar(el) { if(db.configs.modo === 'compras') { if (getPermissaoColab()) return; const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && !pa.excluido && pa.status !== 'cancelado') { registrarDesfazer(pa); pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } } }
+    function acaoSegurar(el) { 
+        if(db.configs.modo === 'compras') { 
+            if(modoSelecaoAtivo) return;
+            if (getPermissaoColab()) return; 
+            const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
+            if(pa && !pa.excluido && pa.status !== 'cancelado') { registrarDesfazer(pa); pa.status = 'pedido_forn'; pa.dataStatus = Date.now(); delete pa.dataConclusao; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); } 
+        } 
+    }
     
     function acaoDeslizarDireita(el) {
         if(db.configs.modo === 'compras') {
