@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.1.5</title>
+    <title>Alô Feira v1.1.6</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -150,7 +150,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.1.5</div>
+    <div class="splash-versao">v1.1.6</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -289,6 +289,19 @@
 
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Preços</h4>
         <div style="background:#fff3e0; padding:10px; border-radius:5px; margin-bottom:15px;">
+            
+            <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-end; border-bottom: 1px dashed #ffb74d; padding-bottom: 10px;">
+                <div class="form-group" style="flex:1; margin-bottom:0;">
+                    <label style="color:#e65100;">Novo Preço R$:</label>
+                    <input type="text" id="novoPrecoCompra" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00">
+                </div>
+                <div class="form-group" style="flex:2; margin-bottom:0;">
+                    <label style="color:#e65100;">Local:</label>
+                    <select id="novoPrecoFornCompra"></select>
+                </div>
+                <button class="btn-action" style="padding: 10px 15px; flex-shrink: 0; background:#e65100;" onclick="adicionarPrecoRapido()">➕</button>
+            </div>
+
             <div id="resumoHistPrecosCompra"></div>
             <button onclick="toggleDiv('completoHistPrecosCompra')" style="background:none;border:none;color:#e65100;font-size:12px;padding:5px 0 0 0;cursor:pointer;">Ver detalhes e excluir...</button>
             <div id="completoHistPrecosCompra" style="display:none; margin-top:5px; border-top:1px solid #ccc; padding-top:5px; max-height:100px; overflow-y:auto;"></div>
@@ -357,7 +370,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.1.5</div>
+            <div class="versao">v1.1.6</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -467,9 +480,13 @@
 
         <div style="background:#fff3e0; padding:10px; border-radius:5px; margin-bottom:10px;">
             <strong style="font-size:12px; display:block; margin-bottom:8px; color:#e65100;">Registrar Novo Preço</strong>
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; margin-bottom: 5px;">
                 <div class="form-group" style="flex:1; margin-bottom:0;"><label>Preço (R$):</label><input type="text" id="prodPreco" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00"></div>
                 <div class="form-group" style="flex:1; margin-bottom:0;"><label>Data:</label><input type="date" id="prodPrecoData"></div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>Fornecedor (Opcional):</label>
+                <select id="prodPrecoForn"></select>
             </div>
         </div>
 
@@ -631,6 +648,21 @@
     function formatarDataHora(ts) {
         if(!ts) return ""; let d = new Date(ts);
         return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} às ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+
+    function formatarDataBr(dataStr) {
+        if(!dataStr) return "";
+        if(dataStr.includes('-')) {
+            const partes = dataStr.split('-');
+            if(partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+        return dataStr;
+    }
+
+    function getNomeFornHTML(id) { 
+        if(!id) return ""; 
+        let f = db.fornecedores.find(x => x.id === id); 
+        return f ? `<span style="color:#666; font-size:11px; display:block; margin-top:2px;">📍 ${f.nome}</span>` : ""; 
     }
     
     function tempoRelativo(ts) {
@@ -1498,6 +1530,57 @@
         sincronizarFundo(false, true);
     }
 
+    function renderizarHistoricoPrecosCompra(pId, paId) {
+        const p = db.produtos.find(prod => prod.id === pId);
+        let revPrecos = (p.historicoPrecos && p.historicoPrecos.length > 0) ? [...p.historicoPrecos].reverse() : [];
+        let htmlPrecosResumo = ""; let htmlPrecosCompleto = "";
+        
+        if(revPrecos.length > 0) {
+            htmlPrecosResumo = `<div style="font-size:13px; color:#333; margin-bottom: 5px;">Último Preço: ${formatarDataBr(revPrecos[0].data)} - <b style="color:#e65100;">R$ ${revPrecos[0].preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b>${getNomeFornHTML(revPrecos[0].fornecedorId)}</div>`;
+            revPrecos.forEach((h, i) => {
+                let realIdx = p.historicoPrecos.length - 1 - i;
+                htmlPrecosCompleto += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:13px;"><div style="line-height:1.2;">${formatarDataBr(h.data)} - <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b>${getNomeFornHTML(h.fornecedorId)}</div> <button onclick="deletarPrecoDireto('${pId}', ${realIdx}, '${paId || ''}')" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
+            });
+        } else {
+            htmlPrecosResumo = "<div style='font-size:13px; color:#666;'>Nenhum preço registrado.</div>";
+            htmlPrecosCompleto = "<div style='font-size:13px; color:#666;'>Nenhum preço registrado.</div>";
+        }
+
+        document.getElementById('resumoHistPrecosCompra').innerHTML = htmlPrecosResumo;
+        document.getElementById('completoHistPrecosCompra').innerHTML = htmlPrecosCompleto;
+    }
+
+    function adicionarPrecoRapido() {
+        const paId = document.getElementById('histCompraId').value;
+        const pa = db.pedidosAtivos.find(x => x.idUnico === paId);
+        if(!pa) return;
+        const p = db.produtos.find(prod => prod.id === pa.produtoId);
+        if(!p) return;
+
+        const valStr = document.getElementById('novoPrecoCompra').value;
+        const pVal = parseMoeda(valStr);
+        if(pVal <= 0) return alert("Por favor, digite um preço válido.");
+
+        const fornId = document.getElementById('novoPrecoFornCompra').value;
+
+        if(!p.historicoPrecos) p.historicoPrecos = [];
+        p.historicoPrecos.push({ data: getHojeSTR(), preco: pVal, fornecedorId: fornId });
+
+        if(fornId) {
+            if(!p.fornecedores) p.fornecedores = [];
+            if(!p.fornecedores.includes(fornId)) {
+                p.fornecedores.push(fornId);
+            }
+        }
+
+        salvarBanco();
+        sincronizarFundo(false, true);
+
+        renderizarHistoricoPrecosCompra(p.id, paId);
+        document.getElementById('novoPrecoCompra').value = '';
+        document.getElementById('novoPrecoFornCompra').value = '';
+    }
+
     function abrirHistoricoCompra(paId) {
         const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; 
         const pId = pa.produtoId;
@@ -1514,23 +1597,15 @@
         if((pa.status === 'comprado' || pa.status === 'entregue') && pa.dataConclusao) { htmlDataConclusao = `<p style="color:#1b5e20; font-weight:bold; margin-top:0; font-size:13px;">✅ Marcado como ${pa.status} em: ${formatarDataHora(pa.dataConclusao)}</p>`; }
         document.getElementById('histCompraDataConclusao').innerHTML = htmlDataConclusao;
 
-        // HISTORICO DE PREÇOS
-        let revPrecos = (p.historicoPrecos && p.historicoPrecos.length > 0) ? [...p.historicoPrecos].reverse() : [];
-        let htmlPrecosResumo = ""; let htmlPrecosCompleto = "";
-        
-        if(revPrecos.length > 0) {
-            htmlPrecosResumo = `<div style="font-size:13px; color:#333;">Último Preço: ${revPrecos[0].data} - <b style="color:#e65100;">R$ ${revPrecos[0].preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></div>`;
-            revPrecos.forEach((h, i) => {
-                let realIdx = p.historicoPrecos.length - 1 - i;
-                htmlPrecosCompleto += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:13px;"><span>${h.data} - <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></span> <button onclick="deletarPrecoDireto('${pId}', ${realIdx}, '${paId}')" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
-            });
-        } else {
-            htmlPrecosResumo = "<div style='font-size:13px; color:#666;'>Nenhum preço registrado. Vá em 'Gerenciar Produtos' para adicionar.</div>";
-            htmlPrecosCompleto = "<div style='font-size:13px; color:#666;'>Nenhum preço registrado.</div>";
-        }
+        // POPULA COMBO DE FORNECEDOR PARA NOVO PREÇO
+        const selForn = document.getElementById('novoPrecoFornCompra');
+        selForn.innerHTML = '<option value="">(Opcional)</option>';
+        let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome));
+        fornOrdem.forEach(f => selForn.innerHTML += `<option value="${f.id}">${f.nome}</option>`);
+        document.getElementById('novoPrecoCompra').value = '';
 
-        document.getElementById('resumoHistPrecosCompra').innerHTML = htmlPrecosResumo;
-        document.getElementById('completoHistPrecosCompra').innerHTML = htmlPrecosCompleto;
+        // HISTORICO DE PREÇOS (Nova Lógica Desacoplada)
+        renderizarHistoricoPrecosCompra(pId, paId);
         document.getElementById('completoHistPrecosCompra').style.display = 'none';
 
         // ANÁLISE DE COMPRAS PASSADAS
@@ -1821,6 +1896,12 @@
         document.getElementById('prodPreco').value = ''; 
         document.getElementById('prodPrecoData').value = getHojeSTR(); 
         
+        // POPULA COMBO DE FORNECEDOR PARA NOVO PREÇO NO FORM
+        const selFornForm = document.getElementById('prodPrecoForn');
+        selFornForm.innerHTML = '<option value="">(Opcional)</option>';
+        let fornOrdemForm = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome));
+        fornOrdemForm.forEach(f => selFornForm.innerHTML += `<option value="${f.id}">${f.nome}</option>`);
+
         let p = null; 
         
         if(id) { 
@@ -1851,10 +1932,10 @@
         let htmlPrecosResumoForm = ""; let htmlPrecosCompletoForm = "";
         if(tempPrecosProduto.length > 0) {
             let revPrecos = [...tempPrecosProduto].reverse();
-            htmlPrecosResumoForm = `<div style="font-size:13px; color:#333;">Último Preço: ${revPrecos[0].data} - <b style="color:#e65100;">R$ ${revPrecos[0].preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></div>`;
+            htmlPrecosResumoForm = `<div style="font-size:13px; color:#333;">Último Preço: ${formatarDataBr(revPrecos[0].data)} - <b style="color:#e65100;">R$ ${revPrecos[0].preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b>${getNomeFornHTML(revPrecos[0].fornecedorId)}</div>`;
             revPrecos.forEach((h, i) => {
                 let realIdx = tempPrecosProduto.length - 1 - i;
-                htmlPrecosCompletoForm += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:13px;"><span>${h.data} - <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b></span> <button onclick="deletarPrecoDireto('${id}', ${realIdx}, null)" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
+                htmlPrecosCompletoForm += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:13px;"><div style="line-height:1.2;">${formatarDataBr(h.data)} - <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b>${getNomeFornHTML(h.fornecedorId)}</div> <button onclick="deletarPrecoDireto('${id}', ${realIdx}, null)" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
             });
         } else {
             htmlPrecosResumoForm = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
@@ -1889,7 +1970,30 @@
         document.getElementById('modalFormProduto').style.display = 'flex'; 
     }
     
-    function salvarProduto() { const id = document.getElementById('prodId').value || 'p_'+Date.now(); const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); const pVal = parseMoeda(document.getElementById('prodPreco').value); const pData = document.getElementById('prodPrecoData').value; let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : ''; if(pVal > 0) { tempPrecosProduto.push({ data: pData, preco: pVal }); } const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, subcategoria: document.getElementById('prodSubcategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: tempFornecedoresProduto }; const idx = db.produtos.findIndex(x => x.id === id); if(idx >= 0) db.produtos[idx] = novo; else db.produtos.push(novo); marcarMudancaEstrutural(); fecharModal('modalFormProduto'); abrirGerenciar('produtos', true); renderizarLista(); sincronizarFundo(false, true); }
+    function salvarProduto() { 
+        const id = document.getElementById('prodId').value || 'p_'+Date.now(); 
+        const unArr = document.getElementById('prodUnidades').value.toLowerCase().split(',').map(u=>u.trim()).filter(u=>u); 
+        const pVal = parseMoeda(document.getElementById('prodPreco').value); 
+        const pData = document.getElementById('prodPrecoData').value; 
+        let qtdStr = document.getElementById('prodQtdPadrao').value.trim(); 
+        const qtdPadrao = qtdStr !== '' ? parseFloatBr(qtdStr) : ''; 
+        const fornIdPreco = document.getElementById('prodPrecoForn').value;
+
+        if(pVal > 0) { 
+            tempPrecosProduto.push({ data: pData, preco: pVal, fornecedorId: fornIdPreco }); 
+            if(fornIdPreco && !tempFornecedoresProduto.includes(fornIdPreco)) {
+                tempFornecedoresProduto.push(fornIdPreco);
+            }
+        } 
+        
+        const novo = { id: id, nome: document.getElementById('prodNome').value, descFornecedor: document.getElementById('prodDesc').value, obsPadrao: document.getElementById('prodObsPadrao').value, categoria: document.getElementById('prodCategoria').value, subcategoria: document.getElementById('prodSubcategoria').value, qtdPadrao: qtdPadrao, unidades: unArr.length>0 ? unArr : [''], marcasAprovadas: document.getElementById('prodMarcasOk').value, marcasReprovadas: document.getElementById('prodMarcasNok').value, historicoPrecos: tempPrecosProduto, fornecedores: tempFornecedoresProduto }; 
+        const idx = db.produtos.findIndex(x => x.id === id); 
+        
+        if(idx >= 0) db.produtos[idx] = novo; 
+        else db.produtos.push(novo); 
+        
+        marcarMudancaEstrutural(); fecharModal('modalFormProduto'); abrirGerenciar('produtos', true); renderizarLista(); sincronizarFundo(false, true); 
+    }
 
     function renderFormSubcats() { 
         const list = document.getElementById('listaSubcatsForm'); 
