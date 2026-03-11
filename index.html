@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.1.6</title>
+    <title>Alô Feira v1.1.7</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -84,7 +84,7 @@
         /* MODAIS & BOTOES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
         .modal { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
-        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; border-bottom: 2px solid #1565C0; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; border-bottom: 2px solid #1565C0; padding-bottom: 10px; }
         
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; margin-bottom: 4px; color: #555; font-weight: bold; font-size: 12px; }
@@ -150,7 +150,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.1.6</div>
+    <div class="splash-versao">v1.1.7</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -170,7 +170,7 @@
         <div class="header-actions">
             <button id="btnTrocarPerfil" onclick="abrirSelecaoColaboradorInicial(true)" style="margin-right: 12px; font-size: 22px;">👤</button>
             <button id="btnHistHoje" onclick="abrirPedidosHoje()" style="margin-right: 12px; font-size: 22px;">📋</button>
-            <button id="btnAdmin" onclick="abrirAdmin()">⚙️</button>
+            <button id="btnAdmin" onclick="document.getElementById('modalPainelUnificado').style.display='flex'">⚙️</button>
         </div>
     </div>
 
@@ -195,7 +195,7 @@
 
 <div class="modal-overlay" id="modalPedidosHoje">
     <div class="modal">
-        <div class="modal-title">Pedidos Enviados Hoje</div>
+        <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">Pedidos Enviados Hoje</div>
         <div id="listaPedidosHoje" style="max-height: 50vh; overflow-y: auto; padding-right: 5px;"></div>
         
         <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
@@ -209,7 +209,7 @@
 
 <div class="modal-overlay" id="modalColaboradorObrigatorio">
     <div class="modal">
-        <div class="modal-title">Identificação</div>
+        <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">Identificação</div>
         <div class="form-group"><label>Quem está operando o sistema?</label><select id="selectColabInicial"></select></div>
         <div class="form-group"><label>Senha do Perfil:</label><input type="password" id="inputSenhaColab" placeholder="Deixe em branco se não houver" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions" style="display: flex; gap: 8px;">
@@ -220,17 +220,9 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="modalSenhaAdmin">
-    <div class="modal">
-        <div class="modal-title">Acesso Restrito</div>
-        <div class="form-group"><label>Senha:</label><input type="password" id="inputSenhaAdmin" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
-        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAdmin')">Cancelar</button></div>
-    </div>
-</div>
-
 <div class="modal-overlay" id="modalSenhaAvancada">
     <div class="modal">
-        <div class="modal-title" style="color:#d32f2f;">Zona de Risco</div>
+        <div class="modal-title" style="color:#d32f2f; display: flex; justify-content: space-between; align-items: center;">Zona de Risco</div>
         <div class="form-group"><label>Senha Avançada:</label><input type="password" id="senhaAvancada" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAvancada')">Cancelar</button></div>
     </div>
@@ -238,7 +230,10 @@
 
 <div class="modal-overlay" id="modalEditarPedido">
     <div class="modal">
-        <div class="modal-title" id="tituloModalEditarPedido">Detalhes do Pedido</div>
+        <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span id="tituloModalEditarPedido" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Detalhes do Pedido</span>
+            <button id="btnEditProdPedido" style="display:none; background:none; border:none; font-size:20px; cursor:pointer; padding:0 0 0 10px;">⚙️</button>
+        </div>
         <input type="hidden" id="editPedidoId">
         
         <div id="editPedidoArea">
@@ -270,7 +265,10 @@
 
 <div class="modal-overlay" id="modalHistoricoCompra">
     <div class="modal">
-        <div class="modal-title">Painel de Compra</div>
+        <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span id="tituloModalHistoricoCompra" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Painel de Compra</span>
+            <button id="btnEditProdCompra" style="display:none; background:none; border:none; font-size:20px; cursor:pointer; padding:0 0 0 10px;">⚙️</button>
+        </div>
         <input type="hidden" id="histCompraId">
         
         <div id="histCompraDataConclusao"></div>
@@ -290,16 +288,20 @@
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Preços</h4>
         <div style="background:#fff3e0; padding:10px; border-radius:5px; margin-bottom:15px;">
             
-            <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-end; border-bottom: 1px dashed #ffb74d; padding-bottom: 10px;">
+            <div style="display: flex; gap: 6px; margin-bottom: 10px; align-items: flex-end; border-bottom: 1px dashed #ffb74d; padding-bottom: 10px;">
+                <div class="form-group" style="flex:1.2; margin-bottom:0;">
+                    <label style="color:#e65100; font-size:11px;">R$:</label>
+                    <input type="text" id="novoPrecoCompra" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00" style="padding: 8px;">
+                </div>
                 <div class="form-group" style="flex:1; margin-bottom:0;">
-                    <label style="color:#e65100;">Novo Preço R$:</label>
-                    <input type="text" id="novoPrecoCompra" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00">
+                    <label style="color:#e65100; font-size:11px;">Und:</label>
+                    <select id="novoPrecoUndCompra" style="padding: 8px;"></select>
                 </div>
-                <div class="form-group" style="flex:2; margin-bottom:0;">
-                    <label style="color:#e65100;">Local:</label>
-                    <select id="novoPrecoFornCompra"></select>
+                <div class="form-group" style="flex:2.5; margin-bottom:0;">
+                    <label style="color:#e65100; font-size:11px;">Local:</label>
+                    <select id="novoPrecoFornCompra" style="padding: 8px;"></select>
                 </div>
-                <button class="btn-action" style="padding: 10px 15px; flex-shrink: 0; background:#e65100;" onclick="adicionarPrecoRapido()">➕</button>
+                <button class="btn-action" style="padding: 8px; width: 38px; height: 38px; flex-shrink: 0; background:#e65100; display:flex; align-items:center; justify-content:center;" onclick="adicionarPrecoRapido()">➕</button>
             </div>
 
             <div id="resumoHistPrecosCompra"></div>
@@ -329,7 +331,7 @@
 
 <div class="modal-overlay" id="modalRelatorio">
     <div class="modal">
-        <div class="modal-title" style="border-color:#25d366;">Relatório p/ Fornecedor</div>
+        <div class="modal-title" style="border-color:#25d366; display: flex; justify-content: space-between; align-items: center;">Relatório p/ Fornecedor</div>
         
         <div style="background:#f1f8e9; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #c5e1a5; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
             <div style="display:flex; align-items:center;">
@@ -370,7 +372,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.1.6</div>
+            <div class="versao">v1.1.7</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -394,7 +396,7 @@
 
 <div class="modal-overlay" id="modalConfigAvancadas">
     <div class="modal" style="max-height: 90vh; overflow-y: auto;">
-        <div class="modal-title" style="color:#d32f2f;">Zona de Risco</div>
+        <div class="modal-title" style="color:#d32f2f; display: flex; justify-content: space-between; align-items: center;">Zona de Risco</div>
         <div class="form-group"><label>URL Google Script:</label><input type="text" id="configUrlApp" placeholder="https://script.google.com/macros/s/..."><button class="btn-action" style="width: 100%; margin-top: 10px; background-color: #4CAF50;" onclick="salvarURL()">💾 Salvar URL e Puxar Dados</button></div>
         
         <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
@@ -418,7 +420,7 @@
 
 <div class="modal-overlay" id="modalListagem">
     <div class="modal" style="position: relative; width: 95%; overflow: hidden; display: flex; flex-direction: column;">
-        <div class="modal-title" id="tituloListagem" style="flex-shrink: 0;">Gerenciar</div>
+        <div class="modal-title" id="tituloListagem" style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">Gerenciar</div>
         
         <div class="form-group" id="filtroGerenciarCatBox" style="display: none; flex-shrink: 0; flex-direction: column; gap: 8px;">
             <div style="display:flex; align-items:center; position:relative;">
@@ -437,7 +439,7 @@
 
 <div class="modal-overlay" id="modalFormRestaurante">
     <div class="modal">
-        <div class="modal-title">Restaurante</div>
+        <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">Restaurante</div>
         <div class="form-group"><label>Nome Fantasia:</label><input type="text" id="restNome"></div>
         <div class="form-group"><label>CNPJ:</label><input type="text" id="restCNPJ" inputmode="numeric" oninput="maskCNPJ(this)" maxlength="18"></div>
         <div class="form-group"><label>Rua:</label><input type="text" id="restRua"></div>
@@ -450,7 +452,7 @@
 
 <div class="modal-overlay" id="modalFormProduto">
     <div class="modal">
-        <div class="modal-title">Produto</div>
+        <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">Produto</div>
         <input type="hidden" id="prodId">
         <div class="form-group"><label>Nome (Visão Interna):</label><input type="text" id="prodNome"></div>
         <div class="form-group"><label>Nome para o Relatório (Opcional):</label><input type="text" id="prodDesc"></div>
@@ -510,7 +512,7 @@
 
 <div class="modal-overlay" id="modalSelecaoFornecedores" style="z-index: 1005;">
     <div class="modal">
-        <div class="modal-title">Selecionar Fornecedores</div>
+        <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">Selecionar Fornecedores</div>
         <div id="boxListaFornecedoresSelecao" style="max-height: 50vh; overflow-y: auto; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; padding: 5px;"></div>
         <div class="modal-actions">
             <button class="btn-action" onclick="confirmarSelecaoFornecedores()" style="width: 100%;">Confirmar Seleção</button>
@@ -520,7 +522,7 @@
 
 <div class="modal-overlay" id="modalFormCategoria">
     <div class="modal">
-        <div class="modal-title">Categoria</div>
+        <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">Categoria</div>
         <input type="hidden" id="catId">
         <div class="form-group"><label>Nome:</label><input type="text" id="catNome"></div>
         <div style="display: flex; gap: 10px;">
@@ -544,7 +546,7 @@
 
 <div class="modal-overlay" id="modalFormColaborador">
     <div class="modal">
-        <div class="modal-title">Colaborador</div>
+        <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">Colaborador</div>
         <input type="hidden" id="colabId">
         <div class="form-group"><label>Nome:</label><input type="text" id="colabNome"></div>
         <div class="form-group"><label>Senha do Perfil:</label><input type="password" id="colabSenha" placeholder="Deixe em branco se não houver" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
@@ -568,7 +570,7 @@
 
 <div class="modal-overlay" id="modalFormFornecedor">
     <div class="modal">
-        <div class="modal-title">Fornecedor</div>
+        <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">Fornecedor</div>
         <input type="hidden" id="fornId">
         <div class="form-group"><label>Nome da Empresa:</label><input type="text" id="fornNome"></div>
         <div class="form-group"><label>Nome do Vendedor (Opcional):</label><input type="text" id="fornVendedor"></div>
@@ -662,7 +664,7 @@
     function getNomeFornHTML(id) { 
         if(!id) return ""; 
         let f = db.fornecedores.find(x => x.id === id); 
-        return f ? `<span style="color:#666; font-size:11px; display:block; margin-top:2px;">📍 ${f.nome}</span>` : ""; 
+        return f ? ` - ${f.nome}` : ""; 
     }
     
     function tempoRelativo(ts) {
@@ -1479,7 +1481,18 @@
     function abrirModalEditarPedido(paId, pId) { 
         const p = db.produtos.find(x => x.id === pId); if(!p) return;
         
-        document.getElementById('tituloModalEditarPedido').innerText = paId ? "Detalhes do Pedido" : "Histórico de Pedidos";
+        document.getElementById('tituloModalEditarPedido').innerText = p.nome;
+        
+        let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
+        let isAdmin = (colabLogado && colabLogado.isAdmin) || db.colaboradores.length === 0;
+        let btnEditPed = document.getElementById('btnEditProdPedido');
+        if(isAdmin) {
+            btnEditPed.style.display = 'block';
+            btnEditPed.onclick = () => { fecharModal('modalEditarPedido'); abrirFormProduto(p.id); };
+        } else {
+            btnEditPed.style.display = 'none';
+        }
+
         document.getElementById('btnCancelarEdicaoPedido').innerText = paId ? "Cancelar" : "Fechar";
 
         if (paId) {
@@ -1536,10 +1549,12 @@
         let htmlPrecosResumo = ""; let htmlPrecosCompleto = "";
         
         if(revPrecos.length > 0) {
-            htmlPrecosResumo = `<div style="font-size:13px; color:#333; margin-bottom: 5px;">Último Preço: ${formatarDataBr(revPrecos[0].data)} - <b style="color:#e65100;">R$ ${revPrecos[0].preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b>${getNomeFornHTML(revPrecos[0].fornecedorId)}</div>`;
+            let undStr = revPrecos[0].unidade ? ` (${revPrecos[0].unidade})` : '';
+            htmlPrecosResumo = `<div style="font-size:13px; color:#333; margin-bottom: 5px;">Último Preço: ${formatarDataBr(revPrecos[0].data)} - <b style="color:#e65100;">R$ ${revPrecos[0].preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}${undStr}</b>${getNomeFornHTML(revPrecos[0].fornecedorId)}</div>`;
             revPrecos.forEach((h, i) => {
                 let realIdx = p.historicoPrecos.length - 1 - i;
-                htmlPrecosCompleto += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:13px;"><div style="line-height:1.2;">${formatarDataBr(h.data)} - <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b>${getNomeFornHTML(h.fornecedorId)}</div> <button onclick="deletarPrecoDireto('${pId}', ${realIdx}, '${paId || ''}')" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
+                let hUnd = h.unidade ? ` (${h.unidade})` : '';
+                htmlPrecosCompleto += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:13px;"><div style="line-height:1.2;">${formatarDataBr(h.data)} - <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}${hUnd}</b>${getNomeFornHTML(h.fornecedorId)}</div> <button onclick="deletarPrecoDireto('${pId}', ${realIdx}, '${paId || ''}')" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
             });
         } else {
             htmlPrecosResumo = "<div style='font-size:13px; color:#666;'>Nenhum preço registrado.</div>";
@@ -1562,9 +1577,10 @@
         if(pVal <= 0) return alert("Por favor, digite um preço válido.");
 
         const fornId = document.getElementById('novoPrecoFornCompra').value;
+        const und = document.getElementById('novoPrecoUndCompra').value;
 
         if(!p.historicoPrecos) p.historicoPrecos = [];
-        p.historicoPrecos.push({ data: getHojeSTR(), preco: pVal, fornecedorId: fornId });
+        p.historicoPrecos.push({ data: getHojeSTR(), preco: pVal, unidade: und, fornecedorId: fornId });
 
         if(fornId) {
             if(!p.fornecedores) p.fornecedores = [];
@@ -1586,6 +1602,18 @@
         const pId = pa.produtoId;
         const p = db.produtos.find(prod => prod.id === pId); if(!p) return;
         
+        document.getElementById('tituloModalHistoricoCompra').innerText = p.nome;
+        
+        let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
+        let isAdmin = (colabLogado && colabLogado.isAdmin) || db.colaboradores.length === 0;
+        let btnEditComp = document.getElementById('btnEditProdCompra');
+        if(isAdmin) {
+            btnEditComp.style.display = 'block';
+            btnEditComp.onclick = () => { fecharModal('modalHistoricoCompra'); abrirFormProduto(p.id); };
+        } else {
+            btnEditComp.style.display = 'none';
+        }
+
         document.getElementById('histCompraId').value = paId; 
         document.getElementById('histCompraQtd').value = pa.qtd; 
         document.getElementById('histCompraObs').value = pa.obs || '';
@@ -1597,7 +1625,11 @@
         if((pa.status === 'comprado' || pa.status === 'entregue') && pa.dataConclusao) { htmlDataConclusao = `<p style="color:#1b5e20; font-weight:bold; margin-top:0; font-size:13px;">✅ Marcado como ${pa.status} em: ${formatarDataHora(pa.dataConclusao)}</p>`; }
         document.getElementById('histCompraDataConclusao').innerHTML = htmlDataConclusao;
 
-        // POPULA COMBO DE FORNECEDOR PARA NOVO PREÇO
+        // POPULA COMBO DE UNIDADE E FORNECEDOR PARA NOVO PREÇO
+        const selUnPreco = document.getElementById('novoPrecoUndCompra');
+        selUnPreco.innerHTML = '';
+        p.unidades.forEach(u => selUnPreco.innerHTML += `<option value="${u}">${u}</option>`);
+        
         const selForn = document.getElementById('novoPrecoFornCompra');
         selForn.innerHTML = '<option value="">(Opcional)</option>';
         let fornOrdem = [...db.fornecedores].sort((a,b) => a.nome.localeCompare(b.nome));
@@ -1932,10 +1964,12 @@
         let htmlPrecosResumoForm = ""; let htmlPrecosCompletoForm = "";
         if(tempPrecosProduto.length > 0) {
             let revPrecos = [...tempPrecosProduto].reverse();
-            htmlPrecosResumoForm = `<div style="font-size:13px; color:#333;">Último Preço: ${formatarDataBr(revPrecos[0].data)} - <b style="color:#e65100;">R$ ${revPrecos[0].preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b>${getNomeFornHTML(revPrecos[0].fornecedorId)}</div>`;
+            let undStr = revPrecos[0].unidade ? ` (${revPrecos[0].unidade})` : '';
+            htmlPrecosResumoForm = `<div style="font-size:13px; color:#333;">Último Preço: ${formatarDataBr(revPrecos[0].data)} - <b style="color:#e65100;">R$ ${revPrecos[0].preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}${undStr}</b>${getNomeFornHTML(revPrecos[0].fornecedorId)}</div>`;
             revPrecos.forEach((h, i) => {
                 let realIdx = tempPrecosProduto.length - 1 - i;
-                htmlPrecosCompletoForm += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:13px;"><div style="line-height:1.2;">${formatarDataBr(h.data)} - <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</b>${getNomeFornHTML(h.fornecedorId)}</div> <button onclick="deletarPrecoDireto('${id}', ${realIdx}, null)" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
+                let hUnd = h.unidade ? ` (${h.unidade})` : '';
+                htmlPrecosCompletoForm += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:13px;"><div style="line-height:1.2;">${formatarDataBr(h.data)} - <b>R$ ${h.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}${hUnd}</b>${getNomeFornHTML(h.fornecedorId)}</div> <button onclick="deletarPrecoDireto('${id}', ${realIdx}, null)" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`;
             });
         } else {
             htmlPrecosResumoForm = "<div style='font-size:13px; color:#666;'>Sem histórico</div>";
