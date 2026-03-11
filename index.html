@@ -1289,11 +1289,12 @@
                 if(pa.status === 'pendente') statusNome = 'Pendente ⏳'; else if(pa.status === 'pedido_forn') statusNome = 'No Fornecedor 📦'; else if(pa.status === 'comprado') statusNome = 'Comprado ✅'; else if(pa.status === 'entregue') statusNome = 'Entregue ✅'; else if(pa.status === 'cancelado') statusNome = 'Cancelado 🚫';
                 let acoes = '';
                 
-                let podeDeletar = isAdmin || pa.colaboradorId === db.configs.colabAtivoId;
-                let btnDel = podeDeletar ? `<button onclick="excluirPedidoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px; color:#d32f2f;">🗑️</button>` : '';
+                let podeDeletarEditar = isAdmin || pa.colaboradorId === db.configs.colabAtivoId;
+                let btnEdit = podeDeletarEditar ? `<button onclick="abrirModalEditarPedido('${pa.idUnico}', '${pa.produtoId}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px;">✏️</button>` : '';
+                let btnDel = podeDeletarEditar ? `<button onclick="excluirPedidoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px; color:#d32f2f;">🗑️</button>` : '';
 
                 if(pa.status === 'pendente') { 
-                    acoes = `<button onclick="abrirModalEditarPedido('${pa.idUnico}', '${pa.produtoId}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px;">✏️</button>${btnDel}`; 
+                    acoes = `${btnEdit}${btnDel}`; 
                 } else { 
                     let textLimpo = statusNome.replace(/ ✅| 📦| ⏳| 🚫/g, ''); 
                     acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${textLimpo})</span>`; 
