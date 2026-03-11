@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.1.7</title>
+    <title>Alô Feira v1.0</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -150,7 +150,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.1.7</div>
+    <div class="splash-versao">v1.0</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -257,7 +257,7 @@
         </div>
 
         <div class="modal-actions">
-            <button class="btn-cancel" id="btnCancelarEdicaoPedido" onclick="fecharModal('modalEditarPedido')">Cancelar</button>
+            <button class="btn-cancel" id="btnCancelarEdicaoPedido" onclick="cancelarEdicaoPedido()">Cancelar</button>
             <button class="btn-action" id="btnSalvarEdicaoPedido" onclick="salvarEdicaoPedido()">Salvar Pedido</button>
         </div>
     </div>
@@ -372,7 +372,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.1.7</div>
+            <div class="versao">v1.0</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -605,8 +605,9 @@
     let tempPrecosProduto = [];
     let tempFornecedoresProduto = [];
     let tempSubcats = [];
-    let tempRenames = []; // Guarda as renomeações de subcategorias
+    let tempRenames = []; 
     let isSyncingFundo = false;
+    let isModalFechando = false;
     
     // Variáveis de memória para a tela de Gerenciamento
     let currentGerenciarFiltro = 'todos';
@@ -681,6 +682,12 @@
     function toggleDiv(id) {
         let el = document.getElementById(id);
         el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+    }
+
+    function fecharModal(id) { 
+        document.getElementById(id).style.display = 'none'; 
+        isModalFechando = true;
+        setTimeout(() => { isModalFechando = false; }, 400); 
     }
 
     /* =========================================================================
@@ -882,7 +889,7 @@
         let frase = document.getElementById('inputExcluirTudo').value.trim().toLowerCase(); 
         if(frase === "quero excluir todo o histórico") { 
             if(isSyncingFundo) return alert("⏳ Aguarde o sistema terminar de conversar com a nuvem antes de apagar o histórico.");
-            if(!confirm("⚠️ TEM CERTEZA? Isso vai apagar todos os pedidos de TODOS os aparelhos conectados. Essa ação não afeta produtos ou categorias.")) return;
+            if(!confirm("⚠️ TEM CERTEZA? Isso vai apagar todos os pedidos de TODOS os aparelhos conectados. Essa ação não afeta produtos, categorias, fornecedores nem os perfis.")) return;
 
             db.pedidosAtivos = []; marcarMudancaEstrutural();
             
@@ -1219,7 +1226,15 @@
     }
 
     function toggleModoSelecao() { modoSelecaoAtivo = !modoSelecaoAtivo; document.getElementById('btnModoSelecao').style.backgroundColor = modoSelecaoAtivo ? '#6a1b9a' : '#ab47bc'; if(!modoSelecaoAtivo) itensSelecionadosRelatorio.clear(); renderizarLista(); }
-    function cliqueItemCompra(idUnico) { if(modoSelecaoAtivo) { if(itensSelecionadosRelatorio.has(idUnico)) itensSelecionadosRelatorio.delete(idUnico); else itensSelecionadosRelatorio.add(idUnico); renderizarLista(); } }
+    
+    function cliqueItemCompra(idUnico) { 
+        if(isModalFechando) return;
+        if(modoSelecaoAtivo) { 
+            if(itensSelecionadosRelatorio.has(idUnico)) itensSelecionadosRelatorio.delete(idUnico); 
+            else itensSelecionadosRelatorio.add(idUnico); 
+            renderizarLista(); 
+        } 
+    }
 
     /* =========================================================================
        PEDIDOS DO DIA E CANCELAMENTO (BOTÕES DE RODAPÉ)
@@ -1263,6 +1278,9 @@
         let itensHojeDetalhado = itensHoje.map(pa => ({ pa: pa, p: db.produtos.find(x => x.id === pa.produtoId) })).filter(item => item.p);
         itensHojeDetalhado.sort(ordernarPorCategoriaESub);
 
+        let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
+        let isAdmin = (!colabLogado || colabLogado.isAdmin);
+
         if(itensHojeDetalhado.length === 0) { lista.innerHTML = '<div style="padding:20px; text-align:center; color:#666; font-size:14px;">Nenhum pedido enviado hoje.</div>'; } 
         else {
             itensHojeDetalhado.forEach(item => {
@@ -1270,7 +1288,17 @@
                 let statusNome = pa.status;
                 if(pa.status === 'pendente') statusNome = 'Pendente ⏳'; else if(pa.status === 'pedido_forn') statusNome = 'No Fornecedor 📦'; else if(pa.status === 'comprado') statusNome = 'Comprado ✅'; else if(pa.status === 'entregue') statusNome = 'Entregue ✅'; else if(pa.status === 'cancelado') statusNome = 'Cancelado 🚫';
                 let acoes = '';
-                if(pa.status === 'pendente') { acoes = `<button onclick="abrirModalEditarPedido('${pa.idUnico}', '${pa.produtoId}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px;">✏️</button><button onclick="excluirPedidoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px; color:#d32f2f;">🗑️</button>`; } else { let textLimpo = statusNome.replace(/ ✅| 📦| ⏳| 🚫/g, ''); acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${textLimpo})</span>`; }
+                
+                let podeDeletar = isAdmin || pa.colaboradorId === db.configs.colabAtivoId;
+                let btnDel = podeDeletar ? `<button onclick="excluirPedidoHoje('${pa.idUnico}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px; color:#d32f2f;">🗑️</button>` : '';
+
+                if(pa.status === 'pendente') { 
+                    acoes = `<button onclick="abrirModalEditarPedido('${pa.idUnico}', '${pa.produtoId}')" style="background:none; border:none; font-size:18px; cursor:pointer; padding:5px;">✏️</button>${btnDel}`; 
+                } else { 
+                    let textLimpo = statusNome.replace(/ ✅| 📦| ⏳| 🚫/g, ''); 
+                    acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${textLimpo})</span>`; 
+                }
+                
                 let obsVisual = pa.obs ? `<br><span style="font-size:11px; color:#666;">Obs: ${pa.obs}</span>` : ''; 
                 let qtyVal = pa.qtd !== '' ? pa.qtd : null; let unVal = pa.unidade ? pa.unidade : null; let qtdStrDisplay = "";
                 if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`; else if(unVal !== null) qtdStrDisplay = `${unVal}`;
@@ -1330,9 +1358,19 @@
 
     let touchStartX = 0; let touchStartY = 0; let pressTimer; let isLongPress = false; let lastTap = 0; let lastTapId = null; let isScrolling = false;
 
-    function handleTouchStart(e, el) { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; isLongPress = false; isScrolling = false; pressTimer = setTimeout(() => { if (!isScrolling) { isLongPress = true; acaoSegurar(el); } }, 600); }
-    function handleTouchMove(e) { let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY); let diffX = Math.abs(e.changedTouches[0].screenX - touchStartX); if (diffY > 40 || diffX > 20) { isScrolling = true; clearTimeout(pressTimer); } }
+    function handleTouchStart(e, el) { 
+        if(isModalFechando) return;
+        touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; isLongPress = false; isScrolling = false; 
+        pressTimer = setTimeout(() => { if (!isScrolling) { isLongPress = true; acaoSegurar(el); } }, 600); 
+    }
+    
+    function handleTouchMove(e) { 
+        let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY); let diffX = Math.abs(e.changedTouches[0].screenX - touchStartX); 
+        if (diffY > 40 || diffX > 20) { isScrolling = true; clearTimeout(pressTimer); } 
+    }
+    
     function handleTouchEnd(e, el) { 
+        if(isModalFechando) return;
         clearTimeout(pressTimer); if(isLongPress || modoSelecaoAtivo) return;
         let diffX = e.changedTouches[0].screenX - touchStartX; let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
         if (diffY > 40 || (isScrolling && Math.abs(diffX) < 40)) return;
@@ -1484,7 +1522,7 @@
         document.getElementById('tituloModalEditarPedido').innerText = p.nome;
         
         let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
-        let isAdmin = (colabLogado && colabLogado.isAdmin) || db.colaboradores.length === 0;
+        let isAdmin = (!colabLogado || colabLogado.isAdmin);
         let btnEditPed = document.getElementById('btnEditProdPedido');
         if(isAdmin) {
             btnEditPed.style.display = 'block';
@@ -1492,8 +1530,6 @@
         } else {
             btnEditPed.style.display = 'none';
         }
-
-        document.getElementById('btnCancelarEdicaoPedido').innerText = paId ? "Cancelar" : "Fechar";
 
         if (paId) {
             const pa = db.pedidosAtivos.find(x => x.idUnico === paId); 
@@ -1532,6 +1568,21 @@
         document.getElementById('modalEditarPedido').style.display = 'flex'; 
     }
     
+    function cancelarEdicaoPedido() {
+        const paId = document.getElementById('editPedidoId').value;
+        if(paId) {
+            let pa = db.pedidosAtivos.find(x => x.idUnico === paId);
+            if(pa && pa.status === 'rascunho') {
+                db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== paId);
+                salvarBanco();
+                renderizarLista();
+                let temRascunho = db.pedidosAtivos.some(x => x.status === 'rascunho' && !x.excluido);
+                if(!temRascunho) document.getElementById('containerBotoesEnvio').style.display = 'none';
+            }
+        }
+        fecharModal('modalEditarPedido');
+    }
+
     function salvarEdicaoPedido() { 
         const paId = document.getElementById('editPedidoId').value; 
         if(!paId) return fecharModal('modalEditarPedido');
@@ -1605,7 +1656,7 @@
         document.getElementById('tituloModalHistoricoCompra').innerText = p.nome;
         
         let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
-        let isAdmin = (colabLogado && colabLogado.isAdmin) || db.colaboradores.length === 0;
+        let isAdmin = (!colabLogado || colabLogado.isAdmin);
         let btnEditComp = document.getElementById('btnEditProdCompra');
         if(isAdmin) {
             btnEditComp.style.display = 'block';
@@ -1786,7 +1837,6 @@
     /* =========================================================================
        ADMIN & CRUDS & FILTROS DE GERENCIAR E ALFABETO
        ========================================================================= */
-    function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
     function abrirAdmin() { document.getElementById('inputSenhaAdmin').value = ''; document.getElementById('modalSenhaAdmin').style.display = 'flex'; setTimeout(() => document.getElementById('inputSenhaAdmin').focus(), 100); }
     document.getElementById('inputSenhaAdmin').addEventListener('input', function(e) { if(this.value === db.configs.senhaAdmin) { this.blur(); this.value = ''; fecharModal('modalSenhaAdmin'); document.getElementById('modalPainelUnificado').style.display = 'flex'; } });
     
