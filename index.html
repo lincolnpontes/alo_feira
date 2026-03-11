@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0.1</title>
+    <title>Alô Feira v1.0.2</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -41,10 +41,9 @@
         body.theme-pedido .header { background-color: #1565C0 !important; }
         body.theme-compras .header { background-color: #6a1b9a !important; }
 
-        /* NOVA BARRA DE AÇÕES (MODO COMPRAS) */
-        .action-bar-compras { display: flex; gap: 8px; padding: 10px 15px; background: #424242; overflow-x: auto; white-space: nowrap; flex-shrink: 0; align-items: center; }
-        .action-bar-compras::-webkit-scrollbar { display: none; }
-        .btn-action-bar { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; flex-shrink: 0; outline: none; transition: background 0.2s; }
+        /* NOVA BARRA DE AÇÕES (MODO COMPRAS) - MINIMALISTA */
+        .action-bar-compras { display: flex; justify-content: space-between; padding: 10px 15px; background: #424242; align-items: center; flex-shrink: 0; }
+        .btn-action-bar { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 6px; padding: 8px 12px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; outline: none; transition: background 0.2s; flex-shrink: 0; }
         .btn-action-bar:active { background: rgba(255,255,255,0.3); }
 
         .area-conteudo { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -150,7 +149,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0.1</div>
+    <div class="splash-versao">v1.0.2</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -176,13 +175,15 @@
 
     <div class="area-conteudo">
         <div id="actionBarCompras" class="action-bar-compras" style="display: none;">
-            <button class="btn-action-bar" onclick="desfazerAcao()" id="btnDesfazerBar" style="display:none; color:#ffb74d;">↩️ Desfazer</button>
-            <button class="btn-action-bar" onclick="toggleModoSelecao()" id="btnModoSelecaoBar">☑️ Selecionar</button>
-            <button class="btn-action-bar" onclick="acaoEmMassa('pedido_forn')" id="btnMassaPedForn" style="display:none; background:#8e24aa;">⏳ P/ Fornecedor</button>
-            <button class="btn-action-bar" onclick="acaoEmMassa('comprado')" id="btnMassaComprado" style="display:none; background:#2e7d32;">✅ Comprados</button>
-            <button class="btn-action-bar" onclick="abrirModalMassaVincular()" id="btnMassaVincular" style="display:none; background:#1565C0;">🔗 Vincular</button>
-            <button class="btn-action-bar" onclick="abrirModalFiltroFornCompras()" id="btnFiltroForn">🏢 Filtrar Forn.</button>
-            <button class="btn-action-bar" onclick="abrirModalRelatorio()" id="btnRelatorioBar">📄 Relatório</button>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-action-bar" onclick="toggleModoSelecao()" id="btnModoSelecaoBar" title="Selecionar">☑️</button>
+                <button class="btn-action-bar" onclick="acaoEmMassa('pedido_forn')" id="btnMassaPedForn" style="display:none; background:#8e24aa;" title="P/ Fornecedor">📦</button>
+                <button class="btn-action-bar" onclick="acaoEmMassa('comprado')" id="btnMassaComprado" style="display:none; background:#2e7d32;" title="Comprados">✅</button>
+                <button class="btn-action-bar" onclick="abrirModalMassaVincular()" id="btnMassaVincular" style="display:none; background:#1565C0;" title="Vincular Fornecedor">🔗</button>
+                <button class="btn-action-bar" onclick="abrirModalFiltroFornCompras()" id="btnFiltroForn" title="Filtrar Forn.">🔎📦</button>
+                <button class="btn-action-bar" onclick="abrirModalRelatorio()" id="btnRelatorioBar" title="Relatório">📄</button>
+            </div>
+            <button class="btn-action-bar" onclick="desfazerAcao()" id="btnDesfazerBar" style="display:none; color:#ffb74d;" title="Desfazer">↩️</button>
         </div>
 
         <div class="filters" id="containerFiltros"></div>
@@ -420,7 +421,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0.1</div>
+            <div class="versao">v1.0.2</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -1032,7 +1033,6 @@
             document.getElementById('containerBotoesEnvio').style.display = 'none'; document.getElementById('btnHistHoje').style.display = 'none';
             document.getElementById('actionBarCompras').style.display = 'flex';
             
-            // Reinicia visual do botão de seleção e os outros da Action Bar
             document.getElementById('btnModoSelecaoBar').style.backgroundColor = 'rgba(255,255,255,0.15)';
             document.getElementById('btnMassaComprado').style.display = 'none';
             document.getElementById('btnMassaPedForn').style.display = 'none';
@@ -1113,7 +1113,7 @@
             pilhaDesfazer.push(backupEstados);
             atualizarBotaoDesfazer();
             salvarBanco();
-            toggleModoSelecao(); // Desativa o modo de seleção após a ação
+            toggleModoSelecao(); 
             renderizarLista();
             sincronizarFundo(false, true);
         }
@@ -1167,11 +1167,8 @@
         
         const btn = document.getElementById('btnFiltroForn');
         if (filtroFornecedorComprasId) {
-            let f = db.fornecedores.find(x => x.id === filtroFornecedorComprasId);
-            btn.innerHTML = `🏢 Filtro: ${f ? f.nome.substring(0,8)+'...' : 'Ativo'}`;
             btn.style.backgroundColor = '#1565C0';
         } else {
-            btn.innerHTML = `🏢 Filtrar Forn.`;
             btn.style.backgroundColor = 'rgba(255,255,255,0.15)';
         }
         renderizarLista();
@@ -1288,9 +1285,13 @@
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
                 
-                // MÁGICA 7 DIAS: Filtra os pedidos e ignora os concluídos antigos
+                // MÁGICA DA EXCLUSÃO BLINDADA E 7 DIAS
                 const pedidosDeste = db.pedidosAtivos.filter(pa => {
                     if (pa.produtoId !== p.id) return false;
+                    
+                    // NOVA REGRA DE BLINDAGEM: Se excluiu no "Pedidos Hoje", não aparece como feedback!
+                    if (pa.excluido && pa.excluidoPorPedidos) return false;
+                    
                     if (!pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn')) return true; 
                     
                     // Se for status terminal, verifica a idade
@@ -1302,7 +1303,6 @@
                     return false;
                 });
                 
-                // Pega sempre o mais recente válido (que passou no filtro de 7 dias)
                 const ultimoPedido = pedidosDeste[pedidosDeste.length-1];
                 const pedidoEditavel = pedidosDeste.find(pa => !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn'));
                 
@@ -1389,7 +1389,7 @@
                 // Filtro do Fornecedor Ativo no Modo Compras
                 if (filtroFornecedorComprasId) {
                     if (!p.fornecedores || !p.fornecedores.includes(filtroFornecedorComprasId)) {
-                        return; // Pula este item pois ele não é do fornecedor filtrado
+                        return; 
                     }
                 }
 
@@ -1405,7 +1405,7 @@
                 let subcatGroupId = "cat_" + catId + "_sub_" + subcat.replace(/\s/g,'_');
                 
                 if (agrupamentoCompradoAtivo) {
-                    let currentGroup = pa.status === 'pendente' ? '⏳ PENDENTES' : (pa.status === 'pedido_forn' ? '📦 PEDIDOS AO FORNECEDOR' : (pa.status === 'cancelado' ? '🚫 CANCELADOS' : '✅ COMPRADOS / ENTREGUES'));
+                    let currentGroup = pa.status === 'pendente' ? '⏳ PENDENTES' : (pa.status === 'pedido_forn' ? '🚚 PEDIDOS AO FORNECEDOR' : (pa.status === 'cancelado' ? '🚫 CANCELADOS' : '✅ COMPRADOS / ENTREGUES'));
                     if (currentGroup !== lastGroup) { 
                         lista.innerHTML += `<li class="cat-header" style="background:#546e7a; color:#fff;"><span>${currentGroup}</span></li>`; 
                         lastGroup = currentGroup; lastCatId = ""; lastSubcat = null;
@@ -1428,7 +1428,7 @@
                 }
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
-                let emojiStatus = pa.status === 'pendente' ? '⏳' : (pa.status === 'comprado' ? '✅' : (pa.status === 'pedido_forn' ? '📦' : (pa.status === 'entregue' ? '✅' : (pa.status === 'cancelado' ? '🚫' : ''))));
+                let emojiStatus = pa.status === 'pendente' ? '⏳' : (pa.status === 'comprado' ? '✅' : (pa.status === 'pedido_forn' ? '🚚' : (pa.status === 'entregue' ? '✅' : (pa.status === 'cancelado' ? '🚫' : ''))));
                 let isSelected = itensSelecionadosRelatorio.has(pa.idUnico); let htmlSelecao = modoSelecaoAtivo ? `<div class="checkbox-selecao"></div>` : '';
                 
                 let qtyVal = pa.qtd !== '' ? pa.qtd : null; let unVal = pa.unidade ? pa.unidade : null; let qtdStrDisplay = "";
@@ -1532,7 +1532,7 @@
             itensHojeDetalhado.forEach(item => {
                 let pa = item.pa; let p = item.p;
                 let statusNome = pa.status;
-                if(pa.status === 'pendente') statusNome = 'Pendente ⏳'; else if(pa.status === 'pedido_forn') statusNome = 'No Fornecedor 📦'; else if(pa.status === 'comprado') statusNome = 'Comprado ✅'; else if(pa.status === 'entregue') statusNome = 'Entregue ✅'; else if(pa.status === 'cancelado') statusNome = 'Cancelado 🚫';
+                if(pa.status === 'pendente') statusNome = 'Pendente ⏳'; else if(pa.status === 'pedido_forn') statusNome = 'No Fornecedor 🚚'; else if(pa.status === 'comprado') statusNome = 'Comprado ✅'; else if(pa.status === 'entregue') statusNome = 'Entregue ✅'; else if(pa.status === 'cancelado') statusNome = 'Cancelado 🚫';
                 let acoes = '';
                 
                 let podeDeletarEditar = isAdmin || pa.colaboradorId === db.configs.colabAtivoId;
@@ -1542,7 +1542,7 @@
                 if(pa.status === 'pendente') { 
                     acoes = `${btnEdit}${btnDel}`; 
                 } else { 
-                    let textLimpo = statusNome.replace(/ ✅| 📦| ⏳| 🚫/g, ''); 
+                    let textLimpo = statusNome.replace(/ ✅| 🚚| ⏳| 🚫/g, ''); 
                     acoes = `<span style="font-size:10px; color:#888; font-weight:bold;">(Bloqueado: ${textLimpo})</span>`; 
                 }
                 
@@ -1643,7 +1643,6 @@
     function handleTouchMove(e) { 
         let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY); 
         let diffX = Math.abs(e.changedTouches[0].screenX - touchStartX); 
-        // CORREÇÃO: Limite bem baixo (10px) garante que qualquer micro-rolagem aborte o long-press
         if (diffY > 10 || diffX > 10) { 
             isScrolling = true; 
             clearTimeout(pressTimer); 
@@ -2065,7 +2064,6 @@
         
         if (isCotacao) blocos.push(`*ITENS PARA COTAÇÃO:*`); if (isPedido) blocos.push(`*ITENS DO PEDIDO:*`);
 
-        // NOVIDADE: Se não houver seleção, ele pega TODOS os itens pendentes da tela. Se houver, usa só os selecionados.
         let itensOrigem = itensSelecionadosRelatorio.size > 0 ? Array.from(itensSelecionadosRelatorio) : Array.from(document.querySelectorAll('.item')).map(el => el.getAttribute('data-id')).filter(id => id && id.includes('_'));
 
         let itensProcessados = itensOrigem.map(idUnico => { const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); const p = pa ? db.produtos.find(x => x.id === pa.produtoId) : null; return { pa, p }; }).filter(item => item.pa && item.p);
@@ -2214,7 +2212,7 @@
             let letraInicial = removerAcentos(p.nome).charAt(0).toUpperCase();
             let nSubcat = p.subcategoria ? ` <span style="font-size:10px; color:#888;">(${p.subcategoria})</span>` : '';
             
-            lista.innerHTML += `<div class="gerenciar-item" data-letra="${letraInicial}"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span>${nSubcat}</div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="duplicarProduto('${p.id}')" title="Duplicar">♴</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; 
+            lista.innerHTML += `<div class="gerenciar-item" data-letra="${letraInicial}"><div class="gerenciar-info"><strong>${p.nome}</strong><br><span style="color:#666">${db.categorias.find(c=>c.id===p.categoria)?.nome || ''}</span>${nSubcat}</div><div class="gerenciar-actions"><button onclick="abrirFormProduto('${p.id}')">✏️</button><button onclick="duplicarProduto('${p.id}')" title="Duplicar">📑</button><button onclick="excluirItem('produtos', '${p.id}')">🗑️</button></div></div>`; 
         });
     }
 
