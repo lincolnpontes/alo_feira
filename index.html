@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0.4</title>
+    <title>Alô Feira v1.0.5</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -41,7 +41,7 @@
         body.theme-pedido .header { background-color: #1565C0 !important; }
         body.theme-compras .header { background-color: #6a1b9a !important; }
 
-        /* NOVA BARRA DE AÇÕES (MODO COMPRAS) - MINIMALISTA */
+        /* NOVA BARRA DE AÇÕES (MODO COMPRAS E PEDIDO ADMIN) */
         .action-bar-compras { display: flex; justify-content: space-between; padding: 10px 15px; background: #424242; align-items: center; flex-shrink: 0; }
         .btn-action-bar { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 6px; padding: 8px 12px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; outline: none; transition: background 0.2s; flex-shrink: 0; }
         .btn-action-bar:active { background: rgba(255,255,255,0.3); }
@@ -85,6 +85,10 @@
 
         .checkbox-selecao { width: 24px; height: 24px; border: 2px solid #6a1b9a; border-radius: 4px; display: inline-block; vertical-align: middle; margin-right: 12px; position: relative; pointer-events: none; }
         .item.selecionado .checkbox-selecao::after { content: '✓'; color: #6a1b9a; position: absolute; font-size: 18px; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 900; }
+        
+        /* Cor da seleção no modo Pedido */
+        body.theme-pedido .checkbox-selecao { border-color: #1565C0; }
+        body.theme-pedido .item.selecionado .checkbox-selecao::after { color: #1565C0; }
 
         /* MODAIS & BOTOES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
@@ -149,7 +153,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0.4</div>
+    <div class="splash-versao">v1.0.5</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -220,7 +224,7 @@
             <select id="filtroComprasForn"></select>
         </div>
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharModal('modalFiltroFornCompras')">Cancelar</button>
+            <button class="btn-cancel" onclick="zerarFiltroForn()">Zerar Filtros</button>
             <button class="btn-action" onclick="aplicarFiltroFornCompras()">Aplicar Filtro</button>
         </div>
     </div>
@@ -421,7 +425,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0.4</div>
+            <div class="versao">v1.0.5</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -1024,19 +1028,50 @@
         document.body.className = `theme-${modo}`; document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#6a1b9a'; 
         
         let dicas = document.getElementById('dicasCabecalho');
+        let isAdmin = false;
+        let colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
+        if (!db.configs.exigirColaborador && db.colaboradores.length === 0) isAdmin = true;
+        if (colab && colab.isAdmin) isAdmin = true;
+
+        const actionBar = document.getElementById('actionBarCompras');
+        const btnModoSelecao = document.getElementById('btnModoSelecaoBar');
+        const btnFiltroForn = document.getElementById('btnFiltroForn');
+        const btnRelatorio = document.getElementById('btnRelatorioBar');
+        const btnMassaComprado = document.getElementById('btnMassaComprado');
+        const btnMassaPedForn = document.getElementById('btnMassaPedForn');
+        const btnMassaVincular = document.getElementById('btnMassaVincular');
+
         if(modo === 'pedido') { 
             dicas.innerHTML = "<div>👆 Toque: Pedir</div><div>👈 Deslize: Apagar</div><div>✌️ 2 Toques: Detalhes</div>"; 
             document.getElementById('btnHistHoje').style.display = 'inline-block';
-            document.getElementById('actionBarCompras').style.display = 'none';
+            
+            if (isAdmin) {
+                actionBar.style.display = 'flex';
+                btnModoSelecao.style.display = 'flex';
+                btnFiltroForn.style.display = 'flex';
+                
+                btnRelatorio.style.display = 'none';
+                btnMassaComprado.style.display = 'none';
+                btnMassaPedForn.style.display = 'none';
+                btnMassaVincular.style.display = 'none';
+                btnModoSelecao.style.backgroundColor = 'rgba(255,255,255,0.15)';
+            } else {
+                actionBar.style.display = 'none';
+            }
+
         } else { 
             dicas.innerHTML = "<div>👉 Deslize: Avançar Status</div><div>👈 Deslize: Voltar/Cancelar</div><div>👆 Segure: P/ Fornecedor</div><div>✌️ 2 Toques: Detalhes</div>"; 
             document.getElementById('containerBotoesEnvio').style.display = 'none'; document.getElementById('btnHistHoje').style.display = 'none';
-            document.getElementById('actionBarCompras').style.display = 'flex';
             
-            document.getElementById('btnModoSelecaoBar').style.backgroundColor = 'rgba(255,255,255,0.15)';
-            document.getElementById('btnMassaComprado').style.display = 'none';
-            document.getElementById('btnMassaPedForn').style.display = 'none';
-            document.getElementById('btnMassaVincular').style.display = 'none';
+            actionBar.style.display = 'flex';
+            btnModoSelecao.style.display = 'flex';
+            btnFiltroForn.style.display = 'flex';
+            btnRelatorio.style.display = 'flex';
+            
+            btnMassaComprado.style.display = 'none';
+            btnMassaPedForn.style.display = 'none';
+            btnMassaVincular.style.display = 'none';
+            btnModoSelecao.style.backgroundColor = 'rgba(255,255,255,0.15)';
         }
         atualizarVisibilidadeAdmin(); salvarBanco(); atualizarBotaoDesfazer(); renderizarFiltros(); renderizarLista();
     }
@@ -1057,14 +1092,19 @@
     }
 
     /* =========================================================================
-       AÇÕES EM MASSA (NOVA ACTION BAR) E FILTRO FORN.
+       AÇÕES EM MASSA E FILTRO FORN. (MODO COMPRAS E PEDIDOS ADMIN)
        ========================================================================= */
     function toggleModoSelecao() { 
         modoSelecaoAtivo = !modoSelecaoAtivo; 
-        document.getElementById('btnModoSelecaoBar').style.backgroundColor = modoSelecaoAtivo ? '#6a1b9a' : 'rgba(255,255,255,0.15)'; 
-        document.getElementById('btnMassaComprado').style.display = modoSelecaoAtivo ? 'flex' : 'none';
-        document.getElementById('btnMassaPedForn').style.display = modoSelecaoAtivo ? 'flex' : 'none';
-        document.getElementById('btnMassaVincular').style.display = modoSelecaoAtivo ? 'flex' : 'none';
+        document.getElementById('btnModoSelecaoBar').style.backgroundColor = modoSelecaoAtivo ? (db.configs.modo === 'pedido' ? '#1565C0' : '#6a1b9a') : 'rgba(255,255,255,0.15)'; 
+        
+        if (db.configs.modo === 'compras') {
+            document.getElementById('btnMassaComprado').style.display = modoSelecaoAtivo ? 'flex' : 'none';
+            document.getElementById('btnMassaPedForn').style.display = modoSelecaoAtivo ? 'flex' : 'none';
+            document.getElementById('btnMassaVincular').style.display = modoSelecaoAtivo ? 'flex' : 'none';
+        } else {
+            document.getElementById('btnMassaVincular').style.display = modoSelecaoAtivo ? 'flex' : 'none';
+        }
         
         if (modoSelecaoAtivo) {
             document.getElementById('btnDesfazerBar').style.display = 'none';
@@ -1083,6 +1123,18 @@
         let allIds = Array.from(itensNode).map(el => el.getAttribute('data-id'));
         if(allIds.length === 0) return;
         
+        let allSelected = allIds.every(id => itensSelecionadosRelatorio.has(id));
+        if(allSelected) { allIds.forEach(id => itensSelecionadosRelatorio.delete(id)); } else { allIds.forEach(id => itensSelecionadosRelatorio.add(id)); }
+        renderizarLista();
+    }
+
+    function selecionarGrupoPedido(grupoId, tipo = 'cat') {
+        if(!modoSelecaoAtivo) return;
+        let seletor = tipo === 'cat' ? `.item[data-cat-id="${grupoId}"]` : `.item[data-sub-id="${grupoId}"]`;
+        let itensNode = document.querySelectorAll(seletor);
+        let allIds = Array.from(itensNode).map(el => el.getAttribute('data-id'));
+        if(allIds.length === 0) return;
+
         let allSelected = allIds.every(id => itensSelecionadosRelatorio.has(id));
         if(allSelected) { allIds.forEach(id => itensSelecionadosRelatorio.delete(id)); } else { allIds.forEach(id => itensSelecionadosRelatorio.add(id)); }
         renderizarLista();
@@ -1139,15 +1191,19 @@
         const fornId = document.getElementById('massaVincularForn').value;
         if(!fornId) return alert("Selecione um fornecedor.");
         
-        itensSelecionadosRelatorio.forEach(idUnico => {
-            let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico);
-            if (pa) {
-                let p = db.produtos.find(prod => prod.id === pa.produtoId);
-                if (p) {
-                    if (!p.fornecedores) p.fornecedores = [];
-                    if (!p.fornecedores.includes(fornId)) {
-                        p.fornecedores.push(fornId);
-                    }
+        itensSelecionadosRelatorio.forEach(idSelecionado => {
+            let p;
+            if (db.configs.modo === 'compras') {
+                let pa = db.pedidosAtivos.find(x => x.idUnico === idSelecionado);
+                if (pa) p = db.produtos.find(prod => prod.id === pa.produtoId);
+            } else {
+                p = db.produtos.find(prod => prod.id === idSelecionado);
+            }
+
+            if (p) {
+                if (!p.fornecedores) p.fornecedores = [];
+                if (!p.fornecedores.includes(fornId)) {
+                    p.fornecedores.push(fornId);
                 }
             }
         });
@@ -1174,10 +1230,18 @@
         
         const btn = document.getElementById('btnFiltroForn');
         if (filtroFornecedorComprasId) {
-            btn.style.backgroundColor = '#1565C0';
+            btn.style.backgroundColor = db.configs.modo === 'pedido' ? '#1565C0' : '#6a1b9a';
         } else {
             btn.style.backgroundColor = 'rgba(255,255,255,0.15)';
         }
+        renderizarLista();
+    }
+    
+    function zerarFiltroForn() {
+        filtroFornecedorComprasId = null;
+        document.getElementById('filtroComprasForn').value = "";
+        fecharModal('modalFiltroFornCompras');
+        document.getElementById('btnFiltroForn').style.backgroundColor = 'rgba(255,255,255,0.15)';
         renderizarLista();
     }
 
@@ -1258,13 +1322,21 @@
 
         produtosOrdenados.sort(ordernarPorCategoriaESub);
 
-        let btnMarcar = modoSelecaoAtivo ? `<span style="font-size:11px; color:#6a1b9a; border:1px solid #6a1b9a; padding:3px 8px; border-radius:12px; background:#fff;">✓ Todos</span>` : '';
+        let btnMarcar = modoSelecaoAtivo ? `<span style="font-size:11px; color:#fff; border:1px solid #fff; padding:3px 8px; border-radius:12px; background:rgba(0,0,0,0.2);">✓ Todos</span>` : '';
 
         if (db.configs.modo === 'pedido') {
             let lastCatId = "";
             let lastSubcat = null;
             
             produtosOrdenados.forEach(p => {
+                
+                // Filtro do Fornecedor Ativo no Modo Pedido
+                if (filtroFornecedorComprasId) {
+                    if (!p.fornecedores || !p.fornecedores.includes(filtroFornecedorComprasId)) {
+                        return; 
+                    }
+                }
+
                 if(categoriaAtual && p.categoria !== categoriaAtual) return; 
                 if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 
@@ -1277,7 +1349,11 @@
                     let btnAvulso = (cObj && cObj.permiteAvulso) ? `<button onclick="abrirModalAvulso('${cObj.id}'); event.stopPropagation();" style="background:#fff; border:1px solid #ccc; border-radius:4px; color:#1565C0; font-size:12px; padding:2px 8px; cursor:pointer; font-weight:bold;">+ Avulso</button>` : '';
                     
                     if (categoriaAtual === null || categoriaAtual === catId) {
-                        lista.innerHTML += `<li class="cat-header" style="cursor:default;"><span>🏷️ ${catName}</span> ${btnAvulso}</li>`;
+                        let headerStyle = modoSelecaoAtivo ? 'cursor:pointer;' : 'cursor:default;';
+                        let onclickAction = modoSelecaoAtivo ? `onclick="selecionarGrupoPedido('${catId}', 'cat')"` : '';
+                        let headerContent = modoSelecaoAtivo ? btnMarcar : btnAvulso;
+                        
+                        lista.innerHTML += `<li class="cat-header" style="${headerStyle}" ${onclickAction}><span>🏷️ ${catName}</span> ${headerContent}</li>`;
                         itensMostrados++; 
                     }
                     lastCatId = catId; lastSubcat = null;
@@ -1285,23 +1361,22 @@
                 
                 if (p.isDummy) return;
 
+                let subcatGroupId = "sub_" + subcat.replace(/\s/g,'_');
+
                 if (subcat !== lastSubcat && subcat !== "") {
-                    lista.innerHTML += `<li class="subcat-header" style="cursor:default;"><span>▪ ${subcat}</span></li>`;
+                    let headerStyle = modoSelecaoAtivo ? 'cursor:pointer;' : 'cursor:default;';
+                    let subcatOnclick = modoSelecaoAtivo ? `onclick="selecionarGrupoPedido('${subcatGroupId}', 'sub')"` : '';
+                    
+                    lista.innerHTML += `<li class="subcat-header" style="${headerStyle}" ${subcatOnclick}><span>▪ ${subcat}</span> ${modoSelecaoAtivo ? btnMarcar : ''}</li>`;
                     lastSubcat = subcat;
                 }
 
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
                 
-                // MÁGICA DA EXCLUSÃO BLINDADA E 7 DIAS
                 const pedidosDeste = db.pedidosAtivos.filter(pa => {
                     if (pa.produtoId !== p.id) return false;
-                    
-                    // NOVA REGRA DE BLINDAGEM: Se excluiu no "Pedidos Hoje", não aparece como feedback!
                     if (pa.excluido && pa.excluidoPorPedidos) return false;
-                    
                     if (!pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn')) return true; 
-                    
-                    // Se for status terminal, verifica a idade
                     let ts = pa.dataExclusao || pa.dataConclusao || pa.dataStatus || parseInt(pa.idUnico.split('_')[1]);
                     if (ts) {
                         let diffDias = (Date.now() - ts) / (1000 * 60 * 60 * 24);
@@ -1353,11 +1428,13 @@
                     if(pedidoEditavel) { classesExtra += (pedidoEditavel.status === 'rascunho') ? "item-pedido-rascunho " : "item-pedido-ativo "; if(pedidoEditavel.status === 'rascunho') temRascunho = true; }
                 }
 
-
+                let isSelected = itensSelecionadosRelatorio.has(p.id);
+                let htmlSelecao = modoSelecaoAtivo ? `<div class="checkbox-selecao"></div>` : '';
                 let pedIdAtributo = pedidoEditavel ? pedidoEditavel.idUnico : '';
 
                 lista.innerHTML += `
-                <li class="item ${classesExtra}" data-id="${p.id}" data-pedid="${pedIdAtributo}" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">
+                <li class="item ${classesExtra} ${isSelected ? 'selecionado' : ''}" data-id="${p.id}" data-pedid="${pedIdAtributo}" data-cat-id="${catId}" data-sub-id="${subcatGroupId}" onclick="cliqueItemPedido('${p.id}')" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">
+                    ${htmlSelecao}
                     <div style="display: flex; align-items: center; flex: 1;">
                         <div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${p.nome.charAt(0)}</div>
                         <div class="item-info"><div class="item-title">${p.nome}</div><div class="item-subtitle">${padraoTexto}</div></div>
@@ -1393,7 +1470,6 @@
             comprasParaMostrar.forEach(pa => {
                 const p = db.produtos.find(prod => prod.id === pa.produtoId); if(!p) return; 
                 
-                // Filtro do Fornecedor Ativo no Modo Compras
                 if (filtroFornecedorComprasId) {
                     if (!p.fornecedores || !p.fornecedores.includes(filtroFornecedorComprasId)) {
                         return; 
@@ -1481,6 +1557,15 @@
             else itensSelecionadosRelatorio.add(idUnico); 
             renderizarLista(); 
         } 
+    }
+    
+    function cliqueItemPedido(pId) {
+        if(isModalFechando) return;
+        if(modoSelecaoAtivo) {
+            if(itensSelecionadosRelatorio.has(pId)) itensSelecionadosRelatorio.delete(pId);
+            else itensSelecionadosRelatorio.add(pId);
+            renderizarLista();
+        }
     }
 
     /* =========================================================================
@@ -1620,6 +1705,7 @@
         itensRestore.forEach(itemBackup => {
             let idx = db.pedidosAtivos.findIndex(x => x.idUnico === itemBackup.idUnico); 
             if(idx !== -1) { 
+                itemBackup.dataStatus = Date.now(); // FORÇA A ATUALIZAÇÃO PARA NUVEM ACEITAR
                 db.pedidosAtivos[idx] = itemBackup; 
             } 
         });
@@ -1658,7 +1744,10 @@
     
     function handleTouchEnd(e, el) { 
         if(isModalFechando) return;
-        clearTimeout(pressTimer); if(isLongPress || modoSelecaoAtivo) return;
+        clearTimeout(pressTimer); 
+        if(isLongPress) return;
+        if(modoSelecaoAtivo) return; // Se está selecionando, ignora toques/arrastes para evitar conflitos
+
         let diffX = e.changedTouches[0].screenX - touchStartX; let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
         if (diffY > 40 || (isScrolling && Math.abs(diffX) < 40)) return;
         if (Math.abs(diffX) < 30) {
