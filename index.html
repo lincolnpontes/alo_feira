@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.0.5</title>
+    <title>Alô Feira v1.0.6</title>
 
     <style>
         /* BASE & BLINDAGEM */
@@ -153,7 +153,7 @@
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.0.5</div>
+    <div class="splash-versao">v1.0.6</div>
 </div>
 
 <div id="syncIndicador"></div>
@@ -341,20 +341,20 @@
         <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Preços</h4>
         <div style="background:#fff3e0; padding:10px; border-radius:5px; margin-bottom:15px;">
             
-            <div style="display: flex; gap: 6px; margin-bottom: 10px; align-items: flex-end; border-bottom: 1px dashed #ffb74d; padding-bottom: 10px;">
+            <div style="display: flex; gap: 4px; margin-bottom: 10px; align-items: flex-end; border-bottom: 1px dashed #ffb74d; padding-bottom: 10px;">
                 <div class="form-group" style="flex:1.2; margin-bottom:0;">
                     <label style="color:#e65100; font-size:11px;">R$:</label>
-                    <input type="text" id="novoPrecoCompra" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00" style="padding: 8px;">
+                    <input type="text" id="novoPrecoCompra" inputmode="decimal" oninput="maskMoeda(this)" placeholder="0,00" style="padding: 6px 4px; font-size: 13px;">
                 </div>
-                <div class="form-group" style="flex:1; margin-bottom:0;">
+                <div class="form-group" style="flex:1.2; margin-bottom:0;">
                     <label style="color:#e65100; font-size:11px;">Und:</label>
-                    <select id="novoPrecoUndCompra" style="padding: 8px;"></select>
+                    <select id="novoPrecoUndCompra" style="padding: 6px 2px; font-size: 13px;"></select>
                 </div>
                 <div class="form-group" style="flex:2.5; margin-bottom:0;">
                     <label style="color:#e65100; font-size:11px;">Local:</label>
-                    <select id="novoPrecoFornCompra" style="padding: 8px;"></select>
+                    <select id="novoPrecoFornCompra" style="padding: 6px 2px; font-size: 13px;"></select>
                 </div>
-                <button class="btn-action" style="padding: 8px; width: 38px; height: 38px; flex-shrink: 0; background:#e65100; display:flex; align-items:center; justify-content:center;" onclick="adicionarPrecoRapido()">➕</button>
+                <button class="btn-action" style="padding: 0; width: 32px; height: 32px; flex-shrink: 0; background:#e65100; display:flex; align-items:center; justify-content:center; font-size: 14px;" onclick="adicionarPrecoRapido()">➕</button>
             </div>
 
             <div id="resumoHistPrecosCompra"></div>
@@ -403,6 +403,10 @@
                 <label class="switch"><input type="checkbox" id="relatTogglePedido" onchange="toggleExclusivoRelatorio('pedido'); gerarTextoRelatorio()"><span class="slider"></span></label>
                 <span style="font-size:12px; font-weight:bold; color:#555;">Pedido</span>
             </div>
+            <div style="display:flex; align-items:center;">
+                <label class="switch"><input type="checkbox" id="relatToggleQtd" checked onchange="gerarTextoRelatorio()"><span class="slider"></span></label>
+                <span style="font-size:12px; font-weight:bold; color:#555;">Mostrar Qtd.</span>
+            </div>
         </div>
 
         <div class="form-group"><label>Responsável (Colaborador):</label><select id="relatColaborador" onchange="gerarTextoRelatorio()"></select></div>
@@ -425,7 +429,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.0.5</div>
+            <div class="versao">v1.0.6</div>
         </div>
 
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
@@ -2174,6 +2178,8 @@
     function gerarTextoRelatorio() {
         const fornId = document.getElementById('relatFornecedor').value; const res = db.restaurante; const forn = db.fornecedores.find(f => f.id === fornId);
         const incluirCabecalho = document.getElementById('relatToggleCab').checked; const agruparCat = document.getElementById('relatToggleCat').checked; const isCotacao = document.getElementById('relatToggleItens').checked; const isPedido = document.getElementById('relatTogglePedido').checked;
+        const mostrarQtd = document.getElementById('relatToggleQtd').checked;
+        
         let blocos = [];
         
         if (incluirCabecalho) { 
@@ -2205,8 +2211,12 @@
                 let linhas = grupo.itens.map(item => { 
                     let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; 
                     let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; 
+                    
                     let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
-                    if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
+                    if (mostrarQtd) {
+                        if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
+                    }
+
                     let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; 
                     return `▪ ${nomeItem}${marcasStr}${qtdStr}${obsStr}`; 
                 });
@@ -2216,8 +2226,12 @@
             let linhas = itensProcessados.map(item => { 
                 let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; 
                 let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; 
+                
                 let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = "";
-                if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
+                if (mostrarQtd) {
+                    if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`;
+                }
+
                 let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; 
                 return `▪ ${nomeItem}${marcasStr}${qtdStr}${obsStr}`; 
             });
