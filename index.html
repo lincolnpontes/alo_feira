@@ -84,6 +84,8 @@
         .btn-whatsapp { background: #25d366; color: white; position: relative; display: flex; align-items: center; justify-content: center; width: 100%; font-size: 16px; }
         .btn-whatsapp .icon { position: absolute; left: 15px; font-size: 20px; }
         .btn-outline { background: transparent; border: 1px solid #1565C0; color: #1565C0; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 8px; text-align: left; }
+        .busca-inline { display: none; align-items: center; min-width: 150px; max-width: 230px; flex: 1; }
+        .busca-inline input { width: 100%; height: 34px; border: 1px solid rgba(255,255,255,0.45); border-radius: 6px; background: rgba(255,255,255,0.96); color: #222; font-size: 14px; padding: 0 10px; box-sizing: border-box; outline: none; }
         .modal-destaque { border-top: 5px solid #1565C0; }
         .modal-destaque.compras { border-top-color: #6a1b9a; }
         .aviso-card { border: 1px solid #e0e0e0; border-left: 5px solid #1565C0; border-radius: 8px; padding: 10px; margin-bottom: 8px; background: #fafafa; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
@@ -146,6 +148,7 @@
             <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-start;">
                 <button class="btn-action-bar" onclick="toggleModoSelecao()" id="btnModoSelecaoBar" title="Selecionar">☑️</button>
                 <button class="btn-action-bar" onclick="abrirBuscaPedido()" id="btnBuscaPedido" style="display:none;" title="Buscar item">🔎</button>
+                <div id="boxBuscaPedido" class="busca-inline"><input type="text" id="inputBuscaPedidoInline" placeholder="Buscar item..." oninput="aplicarBuscaPedido()" onkeydown="if(event.key === 'Escape') limparBuscaPedido()"></div>
                 <button class="btn-action-bar" onclick="acaoEmMassa('pedido_forn')" id="btnMassaPedForn" style="display:none; background:#8e24aa;" title="P/ Fornecedor">📦</button>
                 <button class="btn-action-bar" onclick="acaoEmMassa('comprado')" id="btnMassaComprado" style="display:none; background:#2e7d32;" title="Comprados">✅</button>
                 <button class="btn-action-bar" onclick="abrirModalMassaVincular()" id="btnMassaVincular" style="display:none; background:#1565C0;" title="Vincular Fornecedor">🔗</button>
@@ -189,20 +192,6 @@
         <div class="modal-actions">
             <button class="btn-cancel" onclick="zerarFiltroForn()">Zerar Filtros</button>
             <button class="btn-action" onclick="aplicarFiltroFornCompras()">Aplicar Filtro</button>
-        </div>
-    </div>
-</div>
-<div class="modal-overlay" id="modalBuscaPedido">
-    <div class="modal modal-destaque">
-        <div class="modal-title">Buscar Item</div>
-        <div class="form-group">
-            <label>Digite o nome, categoria ou observação:</label>
-            <input type="text" id="inputBuscaPedido" placeholder="Ex: carne, tomate, BRF..." oninput="aplicarBuscaPedido()" onkeypress="if(event.key === 'Enter') fecharModal('modalBuscaPedido')">
-        </div>
-        <div id="resumoBuscaPedido" style="font-size:12px; color:#555; margin-bottom:8px;"></div>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="limparBuscaPedido()">Limpar</button>
-            <button class="btn-action" onclick="fecharModal('modalBuscaPedido')">OK</button>
         </div>
     </div>
 </div>
@@ -447,7 +436,7 @@
         <div class="form-group"><label>Mensagem:</label><input type="text" id="avisoTitulo" placeholder="Ex: Fazer pedido na BRF"></div>
         <div style="display:flex; gap:10px;">
             <div class="form-group" style="flex:1.4;"><label>Dia:</label><select id="avisoDiaSemana"><option value="0">Domingo</option><option value="1">Segunda-feira</option><option value="2">Terça-feira</option><option value="3">Quarta-feira</option><option value="4">Quinta-feira</option><option value="5">Sexta-feira</option><option value="6">Sábado</option></select></div>
-            <div class="form-group" style="flex:1;"><label>A partir de:</label><input type="time" id="avisoHora" value="08:00"></div>
+            <div class="form-group" style="flex:1;"><label>Hora:</label><div style="display:flex; gap:4px;"><select id="avisoHoraHora" style="padding:10px 4px;"></select><select id="avisoHoraMinuto" style="padding:10px 4px;"></select></div></div>
         </div>
         <div class="form-group" style="display:flex; align-items:center;">
             <label class="switch"><input type="checkbox" id="avisoAtivo" checked><span class="slider"></span></label>
@@ -456,16 +445,6 @@
         <div class="modal-actions">
             <button class="btn-cancel" onclick="fecharModal('modalFormAviso'); abrirAvisos();">Cancelar</button>
             <button class="btn-action" onclick="salvarAviso()">Salvar</button>
-        </div>
-    </div>
-</div>
-<div class="modal-overlay" id="modalAvisoDoDia">
-    <div class="modal modal-destaque">
-        <div class="modal-title">Aviso do Dia</div>
-        <p id="textoAvisoDoDia" style="font-size:16px; font-weight:bold; color:#333; line-height:1.35;"></p>
-        <input type="hidden" id="avisoDoDiaId">
-        <div class="modal-actions">
-            <button class="btn-action" onclick="marcarAvisoVisto()">Entendi</button>
         </div>
     </div>
 </div>
@@ -743,19 +722,21 @@
     function chaveDataLocal(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
     function abrirAvisos() { fecharModal('modalPainelUnificado'); garantirAvisos(); renderizarAvisos(); document.getElementById('modalAvisos').style.display = 'flex'; }
     function renderizarAvisos() { garantirAvisos(); const lista = document.getElementById('listaAvisos'); if(db.configs.avisos.length === 0) { lista.innerHTML = '<div style="padding:18px; text-align:center; color:#666; font-size:14px;">Nenhum aviso cadastrado.</div>'; return; } lista.innerHTML = db.configs.avisos.map(aviso => `<div class="aviso-card ${aviso.ativo === false ? 'inativo' : ''}"><div><strong>${aviso.titulo}</strong><span>${diasSemanaAviso[aviso.diaSemana]} a partir de ${aviso.hora || '08:00'} ${aviso.ativo === false ? '• Pausado' : ''}</span></div><div class="aviso-actions"><button onclick="toggleAviso('${aviso.id}')" title="Ativar/Pausar">${aviso.ativo === false ? '▶' : '⏸'}</button><button onclick="abrirFormAviso('${aviso.id}')" title="Editar">✏️</button><button onclick="excluirAviso('${aviso.id}')" title="Excluir" style="color:#d32f2f;">🗑️</button></div></div>`).join(''); }
-    function abrirFormAviso(id = '') { garantirAvisos(); fecharModal('modalAvisos'); const aviso = db.configs.avisos.find(a => a.id === id); document.getElementById('tituloFormAviso').innerText = aviso ? 'Editar Aviso' : 'Novo Aviso'; document.getElementById('avisoId').value = aviso ? aviso.id : ''; document.getElementById('avisoTitulo').value = aviso ? aviso.titulo : ''; document.getElementById('avisoDiaSemana').value = aviso ? aviso.diaSemana : 1; document.getElementById('avisoHora').value = aviso ? (aviso.hora || '08:00') : '08:00'; document.getElementById('avisoAtivo').checked = aviso ? aviso.ativo !== false : true; document.getElementById('modalFormAviso').style.display = 'flex'; setTimeout(() => document.getElementById('avisoTitulo').focus(), 100); }
-    function salvarAviso() { garantirAvisos(); const titulo = document.getElementById('avisoTitulo').value.trim(); if(!titulo) return alert("Digite a mensagem do aviso."); const id = document.getElementById('avisoId').value || 'av_' + Date.now(); const novo = { id, titulo, diaSemana: parseInt(document.getElementById('avisoDiaSemana').value), hora: document.getElementById('avisoHora').value || '08:00', ativo: document.getElementById('avisoAtivo').checked, ultimaVisualizacao: "" }; const idx = db.configs.avisos.findIndex(a => a.id === id); if(idx >= 0) { novo.ultimaVisualizacao = db.configs.avisos[idx].ultimaVisualizacao || ""; db.configs.avisos[idx] = novo; } else { db.configs.avisos.push(novo); } marcarMudancaEstrutural(); fecharModal('modalFormAviso'); abrirAvisos(); sincronizarFundo(false, true); }
+    function preencherHoraAviso(valor = '08:00') { const horaSel = document.getElementById('avisoHoraHora'); const minSel = document.getElementById('avisoHoraMinuto'); if(!horaSel || !minSel) return; if(horaSel.options.length === 0) { for(let h = 0; h < 24; h++) horaSel.innerHTML += `<option value="${String(h).padStart(2,'0')}">${String(h).padStart(2,'0')}h</option>`; ['00','15','30','45'].forEach(m => minSel.innerHTML += `<option value="${m}">${m}</option>`); } const partes = (valor || '08:00').split(':'); horaSel.value = partes[0] || '08'; minSel.value = partes[1] || '00'; }
+    function getHoraAviso() { return `${document.getElementById('avisoHoraHora').value}:${document.getElementById('avisoHoraMinuto').value}`; }
+    function abrirFormAviso(id = '') { garantirAvisos(); fecharModal('modalAvisos'); const aviso = db.configs.avisos.find(a => a.id === id); document.getElementById('tituloFormAviso').innerText = aviso ? 'Editar Aviso' : 'Novo Aviso'; document.getElementById('avisoId').value = aviso ? aviso.id : ''; document.getElementById('avisoTitulo').value = aviso ? aviso.titulo : ''; document.getElementById('avisoDiaSemana').value = aviso ? aviso.diaSemana : 1; preencherHoraAviso(aviso ? (aviso.hora || '08:00') : '08:00'); document.getElementById('avisoAtivo').checked = aviso ? aviso.ativo !== false : true; document.getElementById('modalFormAviso').style.display = 'flex'; setTimeout(() => document.getElementById('avisoTitulo').focus(), 100); }
+    function solicitarPermissaoNotificacao() { if(!("Notification" in window)) return; if(Notification.permission === 'default') Notification.requestPermission().catch(() => {}); }
+    function salvarAviso() { garantirAvisos(); const titulo = document.getElementById('avisoTitulo').value.trim(); if(!titulo) return alert("Digite a mensagem do aviso."); const id = document.getElementById('avisoId').value || 'av_' + Date.now(); const novo = { id, titulo, diaSemana: parseInt(document.getElementById('avisoDiaSemana').value), hora: getHoraAviso(), ativo: document.getElementById('avisoAtivo').checked, ultimaVisualizacao: "" }; const idx = db.configs.avisos.findIndex(a => a.id === id); if(idx >= 0) { novo.ultimaVisualizacao = db.configs.avisos[idx].ultimaVisualizacao || ""; db.configs.avisos[idx] = novo; } else { db.configs.avisos.push(novo); } marcarMudancaEstrutural(); if(novo.ativo) solicitarPermissaoNotificacao(); fecharModal('modalFormAviso'); abrirAvisos(); sincronizarFundo(false, true); }
     function excluirAviso(id) { if(!confirm("Excluir este aviso programado?")) return; garantirAvisos(); db.configs.avisos = db.configs.avisos.filter(a => a.id !== id); marcarMudancaEstrutural(); renderizarAvisos(); sincronizarFundo(false, true); }
     function toggleAviso(id) { garantirAvisos(); const aviso = db.configs.avisos.find(a => a.id === id); if(!aviso) return; aviso.ativo = aviso.ativo === false; marcarMudancaEstrutural(); renderizarAvisos(); sincronizarFundo(false, true); }
     function avisoDeveAparecer(aviso, agora = new Date()) { if(!aviso || aviso.ativo === false) return false; if(parseInt(aviso.diaSemana) !== agora.getDay()) return false; const partes = (aviso.hora || '08:00').split(':'); const alvoMin = (parseInt(partes[0]) || 0) * 60 + (parseInt(partes[1]) || 0); const agoraMin = agora.getHours() * 60 + agora.getMinutes(); return agoraMin >= alvoMin && aviso.ultimaVisualizacao !== chaveDataLocal(agora); }
-    function checarAvisosProgramados() { garantirAvisos(); if(document.getElementById('modalAvisoDoDia').style.display === 'flex') return; const aviso = db.configs.avisos.find(a => avisoDeveAparecer(a)); if(!aviso) return; document.getElementById('avisoDoDiaId').value = aviso.id; document.getElementById('textoAvisoDoDia').innerText = aviso.titulo; document.getElementById('modalAvisoDoDia').style.display = 'flex'; }
-    function marcarAvisoVisto() { const id = document.getElementById('avisoDoDiaId').value; const aviso = db.configs.avisos.find(a => a.id === id); if(aviso) { aviso.ultimaVisualizacao = chaveDataLocal(); salvarBanco(); sincronizarFundo(false, true); } fecharModal('modalAvisoDoDia'); }
+    function checarAvisosProgramados() { garantirAvisos(); const aviso = db.configs.avisos.find(a => avisoDeveAparecer(a)); if(!aviso || !("Notification" in window) || Notification.permission !== 'granted') return; try { new Notification("Alô Feira", { body: aviso.titulo, icon: "icon.png", tag: aviso.id }); aviso.ultimaVisualizacao = chaveDataLocal(); salvarBanco(); sincronizarFundo(false, true); } catch(e) { console.error("Falha ao enviar notificação", e); } }
     
     function alterarModo(modo) {
         db.configs.modo = modo; modoSelecaoAtivo = false; itensSelecionadosRelatorio.clear(); agrupamentoCompradoAtivo = false; document.body.className = `theme-${modo}`; document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#6a1b9a'; 
         let dicas = document.getElementById('dicasCabecalho'); let isAdmin = false; let colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); if (!db.configs.exigirColaborador && db.colaboradores.length === 0) isAdmin = true; if (colab && colab.isAdmin) isAdmin = true;
-        const actionBar = document.getElementById('actionBarCompras'); const btnModoSelecao = document.getElementById('btnModoSelecaoBar'); const btnBuscaPedido = document.getElementById('btnBuscaPedido'); const btnFiltroForn = document.getElementById('btnFiltroForn'); const btnRelatorio = document.getElementById('btnRelatorioBar'); const btnMassaComprado = document.getElementById('btnMassaComprado'); const btnMassaPedForn = document.getElementById('btnMassaPedForn'); const btnMassaVincular = document.getElementById('btnMassaVincular'); const btnLimpar = document.getElementById('btnLimparComprasBar');
-        if(modo === 'pedido') { dicas.innerHTML = "<div>👆 Toque: Pedir</div><div>👈 Deslize: Apagar</div><div>✌️ 2 Toques: Detalhes</div>"; document.getElementById('btnHistHoje').style.display = 'inline-block'; actionBar.style.display = 'flex'; btnModoSelecao.style.display = isAdmin ? 'flex' : 'none'; btnBuscaPedido.style.display = 'flex'; btnFiltroForn.style.display = 'flex'; btnRelatorio.style.display = 'none'; if(btnLimpar) btnLimpar.style.display = 'none'; btnMassaComprado.style.display = 'none'; btnMassaPedForn.style.display = 'none'; btnMassaVincular.style.display = 'none'; btnModoSelecao.style.backgroundColor = 'rgba(255,255,255,0.15)'; btnBuscaPedido.style.backgroundColor = buscaPedidoTexto ? '#1565C0' : 'rgba(255,255,255,0.15)'; } else { dicas.innerHTML = "<div>👉 Deslize: Avançar Status</div><div>👈 Deslize: Voltar/Cancelar</div><div>👆 Segure: P/ Fornecedor</div><div>✌️ 2 Toques: Detalhes</div>"; document.getElementById('containerBotoesEnvio').style.display = 'none'; document.getElementById('btnHistHoje').style.display = 'none'; actionBar.style.display = 'flex'; btnModoSelecao.style.display = 'flex'; btnBuscaPedido.style.display = 'none'; btnFiltroForn.style.display = 'flex'; btnRelatorio.style.display = 'flex'; if(btnLimpar) btnLimpar.style.display = 'flex'; btnMassaComprado.style.display = 'none'; btnMassaPedForn.style.display = 'none'; btnMassaVincular.style.display = 'none'; btnModoSelecao.style.backgroundColor = 'rgba(255,255,255,0.15)'; }
+        const actionBar = document.getElementById('actionBarCompras'); const btnModoSelecao = document.getElementById('btnModoSelecaoBar'); const btnBuscaPedido = document.getElementById('btnBuscaPedido'); const boxBuscaPedido = document.getElementById('boxBuscaPedido'); const btnFiltroForn = document.getElementById('btnFiltroForn'); const btnRelatorio = document.getElementById('btnRelatorioBar'); const btnMassaComprado = document.getElementById('btnMassaComprado'); const btnMassaPedForn = document.getElementById('btnMassaPedForn'); const btnMassaVincular = document.getElementById('btnMassaVincular'); const btnLimpar = document.getElementById('btnLimparComprasBar');
+        if(modo === 'pedido') { dicas.innerHTML = "<div>👆 Toque: Pedir</div><div>👈 Deslize: Apagar</div><div>✌️ 2 Toques: Detalhes</div>"; document.getElementById('btnHistHoje').style.display = 'inline-block'; actionBar.style.display = 'flex'; btnModoSelecao.style.display = isAdmin ? 'flex' : 'none'; btnBuscaPedido.style.display = 'flex'; if(boxBuscaPedido) boxBuscaPedido.style.display = buscaPedidoTexto ? 'flex' : 'none'; btnFiltroForn.style.display = 'flex'; btnRelatorio.style.display = 'none'; if(btnLimpar) btnLimpar.style.display = 'none'; btnMassaComprado.style.display = 'none'; btnMassaPedForn.style.display = 'none'; btnMassaVincular.style.display = 'none'; btnModoSelecao.style.backgroundColor = 'rgba(255,255,255,0.15)'; btnBuscaPedido.style.backgroundColor = buscaPedidoTexto ? '#1565C0' : 'rgba(255,255,255,0.15)'; } else { dicas.innerHTML = "<div>👉 Deslize: Avançar Status</div><div>👈 Deslize: Voltar/Cancelar</div><div>👆 Segure: P/ Fornecedor</div><div>✌️ 2 Toques: Detalhes</div>"; document.getElementById('containerBotoesEnvio').style.display = 'none'; document.getElementById('btnHistHoje').style.display = 'none'; actionBar.style.display = 'flex'; btnModoSelecao.style.display = 'flex'; btnBuscaPedido.style.display = 'none'; if(boxBuscaPedido) boxBuscaPedido.style.display = 'none'; btnFiltroForn.style.display = 'flex'; btnRelatorio.style.display = 'flex'; if(btnLimpar) btnLimpar.style.display = 'flex'; btnMassaComprado.style.display = 'none'; btnMassaPedForn.style.display = 'none'; btnMassaVincular.style.display = 'none'; btnModoSelecao.style.backgroundColor = 'rgba(255,255,255,0.15)'; }
         atualizarVisibilidadeAdmin(); salvarBanco(); atualizarBotaoDesfazer(); renderizarFiltros(); renderizarLista();
     }
 
@@ -790,9 +771,9 @@
     function zerarFiltroForn() { filtroFornecedorComprasId = null; document.getElementById('filtroComprasForn').value = ""; fecharModal('modalFiltroFornCompras'); document.getElementById('btnFiltroForn').style.backgroundColor = 'rgba(255,255,255,0.15)'; renderizarLista(); }
 
     function normalizarTextoBusca(str) { return removerAcentos(String(str || '').toLowerCase()); }
-    function abrirBuscaPedido() { document.getElementById('inputBuscaPedido').value = buscaPedidoTexto; document.getElementById('modalBuscaPedido').style.display = 'flex'; aplicarBuscaPedido(); setTimeout(() => document.getElementById('inputBuscaPedido').focus(), 100); }
-    function aplicarBuscaPedido() { buscaPedidoTexto = document.getElementById('inputBuscaPedido').value.trim(); const btn = document.getElementById('btnBuscaPedido'); if(btn) btn.style.backgroundColor = buscaPedidoTexto ? '#1565C0' : 'rgba(255,255,255,0.15)'; renderizarLista(); }
-    function limparBuscaPedido() { buscaPedidoTexto = ""; document.getElementById('inputBuscaPedido').value = ""; const btn = document.getElementById('btnBuscaPedido'); if(btn) btn.style.backgroundColor = 'rgba(255,255,255,0.15)'; document.getElementById('resumoBuscaPedido').innerText = ""; renderizarLista(); }
+    function abrirBuscaPedido() { const box = document.getElementById('boxBuscaPedido'); const input = document.getElementById('inputBuscaPedidoInline'); const aberto = box.style.display === 'flex'; if(aberto || buscaPedidoTexto) { limparBuscaPedido(); return; } box.style.display = 'flex'; input.value = buscaPedidoTexto; setTimeout(() => input.focus(), 80); }
+    function aplicarBuscaPedido() { buscaPedidoTexto = document.getElementById('inputBuscaPedidoInline').value.trim(); const btn = document.getElementById('btnBuscaPedido'); if(btn) btn.style.backgroundColor = buscaPedidoTexto ? '#1565C0' : 'rgba(255,255,255,0.15)'; renderizarLista(); }
+    function limparBuscaPedido() { buscaPedidoTexto = ""; const input = document.getElementById('inputBuscaPedidoInline'); const box = document.getElementById('boxBuscaPedido'); if(input) input.value = ""; if(box) box.style.display = 'none'; const btn = document.getElementById('btnBuscaPedido'); if(btn) btn.style.backgroundColor = 'rgba(255,255,255,0.15)'; renderizarLista(); }
 
     function ordernarPorCategoriaESub(a, b) { let pA = a.p || a; let pB = b.p || b; let idxA = pA ? db.categorias.findIndex(c => c.id === pA.categoria) : 999; if(idxA === -1) idxA = 999; let idxB = pB ? db.categorias.findIndex(c => c.id === pB.categoria) : 999; if(idxB === -1) idxB = 999; if (idxA !== idxB) return idxA - idxB; let subA = pA && pA.subcategoria ? pA.subcategoria : ""; let subB = pB && pB.subcategoria ? pB.subcategoria : ""; let cObjA = db.categorias.find(c => c.id === (pA ? pA.categoria : null)); let idxSubA = (cObjA && cObjA.subcategorias && subA) ? cObjA.subcategorias.indexOf(subA) : 999; if(idxSubA === -1) idxSubA = 999; let cObjB = db.categorias.find(c => c.id === (pB ? pB.categoria : null)); let idxSubB = (cObjB && cObjB.subcategorias && subB) ? cObjB.subcategorias.indexOf(subB) : 999; if(idxSubB === -1) idxSubB = 999; if (idxSubA !== idxSubB) return idxSubA - idxSubB; if (subA !== subB) return subA.localeCompare(subB); let nomeA = pA.descFornecedor ? pA.descFornecedor : (pA.nome || ""); let nomeB = pB.descFornecedor ? pB.descFornecedor : (pB.nome || ""); return nomeA.localeCompare(nomeB); }
 
@@ -803,7 +784,6 @@
         const lista = document.getElementById('listaPrincipal'); 
         let htmlPrincipal = '';
         let itensMostrados = 0; 
-        let itensEncontrados = 0;
         let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); 
         let catsPermitidas = getCatsPermitidas(colabLogado); 
         let temRascunho = false; 
@@ -880,7 +860,6 @@
                 
                 let isSelected = itensSelecionadosRelatorio.has(p.id); let htmlSelecao = modoSelecaoAtivo ? `<div class="checkbox-selecao"></div>` : ''; let pedIdAtributo = pedidoEditavel ? pedidoEditavel.idUnico : '';
                 htmlPrincipal += `<li class="item ${classesExtra} ${isSelected ? 'selecionado' : ''}" data-id="${p.id}" data-pedid="${pedIdAtributo}" data-cat-id="${catId}" data-sub-id="${subcatGroupId}" onclick="cliqueItemPedido('${p.id}', this)" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div style="display: flex; align-items: center; flex: 1;"><div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${p.nome.charAt(0)}</div><div class="item-info"><div class="item-title">${p.nome}</div><div class="item-subtitle">${padraoTexto}</div></div></div><div class="info-direita" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">${infoDireita}</div></li>`; 
-                itensEncontrados++;
                 itensMostrados++;
             });
             document.getElementById('containerBotoesEnvio').style.display = temRascunho ? 'flex' : 'none';
@@ -920,11 +899,9 @@
                 switch(pa.status) { case 'pendente': nomeStatus = 'Pendente'; statusClass = 'bg-pendente'; break; case 'comprado': nomeStatus = 'Comprado'; statusClass = 'bg-comprado'; break; case 'pedido_forn': nomeStatus = 'Pedido Forn.'; statusClass = 'bg-pedido_forn'; break; case 'entregue': nomeStatus = 'Entregue'; statusClass = 'bg-entregue'; break; case 'cancelado': nomeStatus = 'Cancelado'; statusClass = 'bg-cancelado'; break; }
                 let statusText = nomeStatus + tempoTxt; let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado em compras')) ? ' <span style="font-size:10px; color:#d32f2f; font-weight:bold;">(Edit)</span>' : ''; let obsVisual = pa.obs ? `<div class="item-subtitle" style="margin-top:2px; font-weight:bold; color:#444;">Obs: ${pa.obs}</div>` : ""; let exibicaoQtd = qtdStrDisplay ? `<span style="font-weight: bold; font-size: 14px; color: #6a1b9a;">${qtdStrDisplay}</span>` : ""; let infoDireita = `<div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusText}</div>${exibicaoQtd}`;
                 htmlPrincipal += `<li class="item status-${pa.status} ${itemClassExtra} ${isSelected ? 'selecionado' : ''}" data-id="${pa.idUnico}" data-grp-cat="${catGroupId}" data-grp-sub="${subcatGroupId}" onclick="cliqueItemCompra('${pa.idUnico}', this)" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div style="display: flex; align-items: center; flex: 1; overflow: hidden;"><div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${emojiStatus}</div><div class="item-info" style="overflow: hidden; text-overflow: ellipsis; padding-right: 5px;"><div class="item-title">${tituloItem}${editIndicador}</div>${obsVisual}</div></div><div class="info-direita" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; margin-left: 5px;">${infoDireita}</div></li>`; 
-                itensEncontrados++;
                 itensMostrados++;
             });
         }
-        const resumoBusca = document.getElementById('resumoBuscaPedido'); if(resumoBusca && db.configs.modo === 'pedido') resumoBusca.innerText = buscaPedidoTexto ? `${itensEncontrados} item(ns) encontrado(s).` : "";
         if(itensMostrados === 0) htmlPrincipal = `<li style="padding: 20px; text-align: center; color: #999;">Nenhum item.</li>`;
         lista.innerHTML = htmlPrincipal;
     }
