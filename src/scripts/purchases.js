@@ -4,7 +4,7 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
 
     let touchStartX = 0; let touchStartY = 0; let pressTimer; let isLongPress = false; let lastTap = 0; let lastTapId = null; let isScrolling = false;
     function handleTouchStart(e, el) { if(isModalFechando) return; touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; isLongPress = false; isScrolling = false; pressTimer = setTimeout(() => { if (!isScrolling && db.configs.modo === 'compras') { isLongPress = true; abrirAcoesCompra(el.getAttribute('data-id'), el); } }, 650); }
-    function handleTouchMove(e) { let diffY = Math.abs(e.changedTouches[0].screenY - touchStartY); let diffX = Math.abs(e.changedTouches[0].screenX - touchStartX); if (diffY > 10 || diffX > 10) { isScrolling = true; clearTimeout(pressTimer); } }
+    function handleTouchMove(e) { const diffY = Math.abs(e.changedTouches[0].screenY - touchStartY); const diffX = Math.abs(e.changedTouches[0].screenX - touchStartX); if(diffY > 24 || diffX > 24) clearTimeout(pressTimer); if(diffY > 24 && diffY > diffX) isScrolling = true; }
     function handleTouchEnd(e, el) {
         if(isModalFechando) return;
         clearTimeout(pressTimer);
@@ -12,7 +12,8 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
         if(isLongPress) return;
         const diffX = e.changedTouches[0].screenX - touchStartX;
         const diffY = Math.abs(e.changedTouches[0].screenY - touchStartY);
-        if(diffY > 40 || (isScrolling && Math.abs(diffX) < 40)) return;
+        const diffXAbs = Math.abs(diffX);
+        if(isScrolling && diffY > 24) return;
         const currentId = el.getAttribute('data-id');
         if(modoSelecaoAtivo && db.configs.modo === 'pedido') {
             if(itensSelecionadosRelatorio.has(currentId)) {
@@ -25,8 +26,8 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
             return;
         }
         if(db.configs.modo === 'compras') {
-            if(diffX < -70) abrirConfirmarCancelamento(currentId);
-            else if(Math.abs(diffX) < 30) abrirAcoesCompra(currentId, el);
+            if(diffX < -70 && diffXAbs > diffY) abrirConfirmarCancelamento(currentId);
+            else if(diffXAbs < 50) abrirAcoesCompra(currentId, el);
             return;
         }
         if(Math.abs(diffX) < 30) {

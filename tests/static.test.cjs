@@ -41,7 +41,9 @@ test('compras usa menu compacto, selecao direta e cancelamento seguro', () => {
   assert.match(html, /class="menu-compra"/);
   assert.doesNotMatch(html + purchases, /Escolha conscientemente|Registra o momento|Para compras feitas|Pede confirmação|Toque novamente/);
   assert.match(purchases, /botaoAcaoCompra\('comprado',[\s\S]*botaoAcaoCompra\('pedido_forn',[\s\S]*botaoAcaoCompra\('detalhes',[\s\S]*botaoAcaoCompra\('cancelar'/);
-  assert.match(purchases, /diffX < -70\) abrirConfirmarCancelamento/);
+  assert.match(purchases, /diffY > 24 && diffY > diffX/);
+  assert.match(purchases, /diffXAbs < 50\) abrirAcoesCompra/);
+  assert.match(purchases, /diffX < -70 && diffXAbs > diffY\) abrirConfirmarCancelamento/);
   assert.match(catalog, /class="status-icon seletor-item-compra[\s\S]*selecionarItemCompraDireto/);
   assert.match(orders, /function selecionarItemCompraDireto[\s\S]*modoSelecaoAtivo = itensSelecionadosRelatorio\.size > 0/);
 });

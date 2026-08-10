@@ -27,12 +27,12 @@
         .menu-compra-acoes { display:grid; gap:4px; }
         .menu-compra-acao { width:100%; min-height:46px; display:flex; align-items:center; gap:10px; border:0; border-radius:6px; padding:7px 10px; text-align:left; font-size:14px; font-weight:750; cursor:pointer; transition:filter .15s, transform .15s; }
         .menu-compra-acao:active { transform:scale(.985); }
-        .menu-compra-acao:hover { filter:brightness(.97); }
-        .menu-compra-icone { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:5px; background:rgba(255,255,255,.72); flex-shrink:0; font-size:16px; font-weight:900; }
-        .menu-compra-acao.comprado { color:#145c32; background:#e3f3e8; }
-        .menu-compra-acao.fornecedor { color:#68168a; background:#f2e5f6; }
-        .menu-compra-acao.detalhes { color:#0f5799; background:#e5f0fa; }
-        .menu-compra-acao.cancelar { color:#a51d1d; background:#fbe8e8; }
+        .menu-compra-acao:hover { filter:brightness(.94); }
+        .menu-compra-icone { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:5px; color:inherit; background:rgba(255,255,255,.16); flex-shrink:0; font-size:16px; font-weight:900; }
+        .menu-compra-acao.comprado { color:#fff; background:#2e7d32; }
+        .menu-compra-acao.fornecedor { color:#fff; background:#7b1fa2; }
+        .menu-compra-acao.detalhes { color:#fff; background:#1565c0; }
+        .menu-compra-acao.cancelar { color:#fff; background:#c62828; }
         .menu-compra-acao.secundaria { color:#46515a; background:#eef1f3; }
         .pedido-hoje-item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--borda); }
         .pedido-hoje-info { display:flex; flex:1; min-width:0; flex-wrap:wrap; align-items:baseline; gap:4px 8px; }
