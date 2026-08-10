@@ -1,0 +1,10 @@
+{
+  "name": "alo-feira",
+  "version": "1.3.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "check": "node --test tests/static.test.cjs",
+    "test:browser-server": "node tests/browser-server.cjs 5175"
+  }
+}

@@ -2,53 +2,59 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#1565C0" id="metaThemeColor">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
-    <title>Alô Feira v1.2.0</title>
-    <link rel="stylesheet" href="src/styles/app.css?v=1.2.0">
+    <title>Alô Feira v1.3.0</title>
+    <link rel="stylesheet" href="src/styles/base.css?v=1.3.0-r3">
+    <link rel="stylesheet" href="src/styles/layout.css?v=1.3.0-r3">
+    <link rel="stylesheet" href="src/styles/components.css?v=1.3.0-r3">
+    <link rel="stylesheet" href="src/styles/features.css?v=1.3.0-r3">
+    <link rel="stylesheet" href="src/styles/responsive.css?v=1.3.0-r3">
 </head>
 <body class="theme-pedido">
 <div id="splashScreen">
     <img src="icon.png" alt="Ícone" class="splash-logo" onerror="this.style.display='none'">
     <div class="splash-titulo">Alô Feira</div>
-    <div class="splash-versao">v1.2.0</div>
+    <div class="splash-versao">v1.3.0</div>
     <button onclick="forcarAtualizacao()" style="margin-top: 30px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; pointer-events: auto;">🔄 Forçar Atualização do App</button>
 </div>
-<div id="syncIndicador"></div>
+<div id="syncIndicador" class="sync-indicador oculto" role="status" aria-live="polite"></div>
+<div id="appToast" class="app-toast" role="status" aria-live="polite"></div>
 <div id="loadingOverlay">
     <div class="spinner"></div>
     <div id="loadingText">Processando...<br><span style="font-size: 14px; font-weight: normal; margin-top: 10px; display: block;">Por favor, aguarde. Não feche o app.</span></div>
 </div>
 <div class="app-container">
     <div class="header" id="mainHeader">
-        <select class="header-select" id="seletorModo" onchange="alterarModo(this.value)">
+        <select class="header-select" id="seletorModo" aria-label="Modo do aplicativo" onchange="alterarModo(this.value)">
             <option value="pedido">📝 Pedido</option>
             <option value="compras">🛒 Compras</option>
         </select>
         <div id="dicasCabecalho" class="dicas-cabecalho"></div>
         <div class="header-actions">
-            <button id="btnTrocarPerfil" onclick="abrirSelecaoColaboradorInicial(true)" style="margin-right: 12px; font-size: 22px;">👤</button>
-            <button id="btnHistHoje" onclick="abrirPedidosHoje()" style="margin-right: 12px; font-size: 22px;">📋</button>
-            <button id="btnAdmin" onclick="document.getElementById('modalPainelUnificado').style.display='flex'">⚙️</button>
+            <button id="btnTrocarPerfil" aria-label="Trocar perfil" title="Trocar perfil" onclick="abrirSelecaoColaboradorInicial(true)">👤</button>
+            <button id="btnHistHoje" aria-label="Pedidos de hoje" title="Pedidos de hoje" onclick="abrirPedidosHoje()">📋</button>
+            <button id="btnAdmin" aria-label="Configurações" title="Configurações" onclick="document.getElementById('modalPainelUnificado').style.display='flex'">⚙️</button>
         </div>
     </div>
     <div class="area-conteudo">
         <div id="actionBarCompras" class="action-bar-compras" style="display: none;">
             <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-start;">
-                <button class="btn-action-bar" onclick="toggleModoSelecao()" id="btnModoSelecaoBar" title="Selecionar">☑️</button>
-                <button class="btn-action-bar" onclick="abrirBuscaPedido()" id="btnBuscaPedido" style="display:none;" title="Buscar item">🔎</button>
+                <button class="btn-action-bar" onclick="toggleModoSelecao()" id="btnModoSelecaoBar" title="Selecionar" aria-label="Selecionar itens">☑️</button>
+                <button class="btn-action-bar" onclick="abrirBuscaPedido()" id="btnBuscaPedido" style="display:none;" title="Buscar item" aria-label="Buscar item">🔎</button>
                 <div id="boxBuscaPedido" class="busca-inline"><input type="text" id="inputBuscaPedidoInline" placeholder="Buscar item..." oninput="aplicarBuscaPedido()" onkeydown="if(event.key === 'Escape') limparBuscaPedido()"></div>
-                <button class="btn-action-bar" onclick="acaoEmMassa('pedido_forn')" id="btnMassaPedForn" style="display:none; background:#8e24aa;" title="P/ Fornecedor">📦</button>
-                <button class="btn-action-bar" onclick="acaoEmMassa('comprado')" id="btnMassaComprado" style="display:none; background:#2e7d32;" title="Comprados">✅</button>
-                <button class="btn-action-bar" onclick="abrirModalMassaVincular()" id="btnMassaVincular" style="display:none; background:#1565C0;" title="Vincular Fornecedor">🔗</button>
-                <button class="btn-action-bar" onclick="abrirModalFiltroFornCompras()" id="btnFiltroForn" title="Filtrar Forn.">🚚</button>
-                <button class="btn-action-bar" onclick="abrirModalRelatorio()" id="btnRelatorioBar" title="Relatório">📄</button>
-                <button class="btn-action-bar" onclick="limparComprasAntigas()" id="btnLimparComprasBar" title="Limpar Comprados e Entregues">🧹</button>
+                <button class="btn-action-bar" onclick="acaoEmMassa('pedido_forn')" id="btnMassaPedForn" style="display:none; background:#8e24aa;" title="Pedido ao fornecedor" aria-label="Marcar como pedido ao fornecedor">📦</button>
+                <button class="btn-action-bar" onclick="acaoEmMassa('concluir')" id="btnMassaComprado" style="display:none; background:#2e7d32;" title="Concluir compra ou recebimento" aria-label="Concluir compra ou recebimento">✅</button>
+                <button class="btn-action-bar" onclick="abrirModalMassaVincular()" id="btnMassaVincular" style="display:none; background:#1565C0;" title="Vincular fornecedor" aria-label="Vincular fornecedor">🔗</button>
+                <button class="btn-action-bar" onclick="abrirModalFiltroFornCompras()" id="btnFiltroForn" title="Filtrar fornecedor" aria-label="Filtrar por fornecedor">🚚</button>
+                <button class="btn-action-bar" onclick="alternarAgrupamentoCompras()" id="btnAgruparStatus" style="display:none;" title="Agrupar por status" aria-label="Agrupar itens por status">≡</button>
+                <button class="btn-action-bar" onclick="abrirModalRelatorio()" id="btnRelatorioBar" title="Relatório" aria-label="Criar relatório">📄</button>
+                <button class="btn-action-bar" onclick="limparComprasAntigas()" id="btnLimparComprasBar" title="Limpar concluídos" aria-label="Limpar itens concluídos">🧹</button>
             </div>
-            <button class="btn-action-bar" onclick="desfazerAcao()" id="btnDesfazerBar" style="display:none; color:#ffb74d;" title="Desfazer">↩️</button>
+            <button class="btn-action-bar" onclick="desfazerAcao()" id="btnDesfazerBar" style="display:none; color:#ffb74d;" title="Desfazer" aria-label="Desfazer última ação">↩️</button>
         </div>
         <div class="filters" id="containerFiltros"></div>
         <div class="scroll-area">
@@ -57,7 +63,7 @@
     </div>
     <div class="container-envio-rodape" id="containerBotoesEnvio" style="display: none;">
         <button class="btn-enviar-pedidos" onclick="enviarPedidosParaCompras()">Enviar Pedido</button>
-        <button class="btn-cancelar-selecao" onclick="cancelarRascunhos()">✕</button>
+        <button class="btn-cancelar-selecao" aria-label="Cancelar pedido em preparação" title="Cancelar pedido em preparação" onclick="cancelarRascunhos()">✕</button>
     </div>
 </div>
 
@@ -96,6 +102,19 @@
             <button class="btn-cancel" onclick="fecharModal('modalConfirmarCancelamento'); renderizarLista();">Manter Item</button>
             <button class="btn-danger" onclick="confirmarCancelamentoCompra()">Cancelar Item</button>
         </div>
+    </div>
+</div>
+<div class="modal-overlay modal-sheet-overlay" id="modalAcaoCompra">
+    <div class="modal modal-sheet compras-sheet">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="modal-title compras-sheet-title">
+            <span id="tituloAcaoCompra">Atualizar item</span>
+            <span id="statusAtualAcaoCompra" class="status-pill"></span>
+        </div>
+        <p id="descricaoAcaoCompra" class="sheet-description"></p>
+        <div id="acoesDisponiveisCompra" class="acoes-compra-grid"></div>
+        <button class="btn-outline btn-detalhes-compra" onclick="abrirDetalhesDaAcaoCompra()">Ver detalhes, preços e observações</button>
+        <button class="btn-cancel btn-sheet-fechar" onclick="fecharModal('modalAcaoCompra')">Fechar</button>
     </div>
 </div>
 <div class="modal-overlay" id="modalFormAvulso">
@@ -139,9 +158,10 @@
 </div>
 <div class="modal-overlay" id="modalSenhaAvancada">
     <div class="modal">
-        <div class="modal-title" style="color:#d32f2f; display: flex; justify-content: space-between; align-items: center;">Zona de Risco</div>
-        <div class="form-group"><label>Senha Avançada:</label><input type="password" id="senhaAvancada" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
-        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAvancada')">Cancelar</button></div>
+        <div class="modal-title" id="tituloSenhaAvancada" style="color:#d32f2f;">Acesso avançado</div>
+        <p id="ajudaSenhaAvancada" class="texto-ajuda-form">Digite sua senha para continuar.</p>
+        <div class="form-group"><label>Senha avançada:</label><input type="password" id="senhaAvancada" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '')" onkeydown="if(event.key === 'Enter') confirmarSenhaAvancada()"></div>
+        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalSenhaAvancada')">Cancelar</button><button class="btn-action" onclick="confirmarSenhaAvancada()">Continuar</button></div>
     </div>
 </div>
 <div class="modal-overlay" id="modalEditarPedido">
@@ -256,7 +276,6 @@
                 <span style="font-size:12px; font-weight:bold; color:#555;">Mostrar Qtd.</span>
             </div>
         </div>
-        <div class="form-group"><label>Responsável (Colaborador):</label><select id="relatColaborador" onchange="gerarTextoRelatorio()"></select></div>
         <div class="form-group"><label>Fornecedor (Destino):</label><select id="relatFornecedor" onchange="gerarTextoRelatorio()"></select></div>
         <div class="form-group"><textarea id="relatTexto" rows="8" style="font-size: 12px; background: #f9f9f9;"></textarea></div>
         <div style="margin-top: 15px;">
@@ -273,7 +292,7 @@
         <div class="marca-sistema">
             <img src="icon.png" alt="Logotipo Alô Feira" onerror="this.style.display='none'">
             <div class="titulo">Alô Feira</div>
-            <div class="versao">v1.2.0</div>
+            <div class="versao">v1.3.0</div>
         </div>
         <button class="btn-outline" onclick="abrirGerenciar('restaurante')">🏢 Dados do Restaurante</button>
         <button class="btn-outline" onclick="abrirGerenciar('produtos')">🍔 Gerenciar Produtos</button>
@@ -302,6 +321,8 @@
                 <input type="file" id="fileImport" style="display:none;" accept=".json" onchange="importarDados(event)">
             </div>
         </div>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+        <div class="form-group"><label>Segurança:</label><button class="btn-outline" style="width:100%; text-align:center;" onclick="abrirTrocaSenhaAvancada()">Alterar senha avançada</button></div>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
         <p style="font-size: 13px; color: #555; margin-bottom: 5px;">Atenção: A ação abaixo é irreversível.</p>
         <div class="form-group"><label>Para apagar todos os pedidos, digite: <b>quero excluir todo o histórico</b></label><input type="text" id="inputExcluirTudo" placeholder="digite a frase exata"><button class="btn-danger" style="margin-top: 10px; width: 100%;" onclick="excluirTodoHistorico()">🗑️ Apagar Todo o Histórico</button></div>
@@ -430,7 +451,7 @@
         <div class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">Colaborador</div>
         <input type="hidden" id="colabId">
         <div class="form-group"><label>Nome:</label><input type="text" id="colabNome"></div>
-        <div class="form-group"><label>Senha do Perfil:</label><input type="password" id="colabSenha" placeholder="Deixe em branco se não houver" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
+        <div class="form-group"><label>PIN do perfil:</label><input type="password" id="colabSenha" placeholder="Opcional" inputmode="numeric" autocomplete="new-password" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="form-group" style="background:#e3f2fd; padding:10px; border-radius:5px; margin-bottom:15px; display:flex; align-items:center;">
             <label class="switch"><input type="checkbox" id="colabIsAdmin"><span class="slider"></span></label>
             <span style="font-weight:bold; font-size:12px; color:#1565C0;">Administrador do Sistema</span>
@@ -460,6 +481,20 @@
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores', true);">Cancelar</button><button class="btn-action" onclick="salvarFornecedor()">Salvar</button></div>
     </div>
 </div>
-<script src="src/scripts/app.js?v=1.2.0"></script>
+<script src="src/scripts/domain.js?v=1.3.0-r3"></script>
+<script src="src/scripts/core.js?v=1.3.0-r3"></script>
+<script src="src/scripts/security.js?v=1.3.0-r3"></script>
+<script src="src/scripts/sync.js?v=1.3.0-r3"></script>
+<script src="src/scripts/auth.js?v=1.3.0-r3"></script>
+<script src="src/scripts/orders.js?v=1.3.0-r3"></script>
+<script src="src/scripts/catalog.js?v=1.3.0-r3"></script>
+<script src="src/scripts/drafts.js?v=1.3.0-r3"></script>
+<script src="src/scripts/purchases.js?v=1.3.0-r3"></script>
+<script src="src/scripts/purchase-details.js?v=1.3.0-r3"></script>
+<script src="src/scripts/reports.js?v=1.3.0-r3"></script>
+<script src="src/scripts/settings.js?v=1.3.0-r3"></script>
+<script src="src/scripts/catalog-settings.js?v=1.3.0-r3"></script>
+<script src="src/scripts/people-settings.js?v=1.3.0-r3"></script>
+<script src="src/scripts/app.js?v=1.3.0-r3"></script>
 </body>
 </html>
