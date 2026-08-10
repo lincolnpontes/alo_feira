@@ -33,10 +33,15 @@ test('manifesto usa icones com as dimensoes declaradas', () => {
   manifest.icons.forEach(icon => assert.equal(fs.existsSync(path.join(root, icon.src)), true));
 });
 
-test('compras mantem confirmacao dupla e gesto seguro de cancelamento', () => {
+test('compras usa menu compacto, selecao direta e cancelamento seguro', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const purchases = fs.readFileSync(path.join(root, 'src', 'scripts', 'purchases.js'), 'utf8');
   const catalog = fs.readFileSync(path.join(root, 'src', 'scripts', 'catalog.js'), 'utf8');
-  assert.match(purchases, /Toque novamente para confirmar\./);
+  const orders = fs.readFileSync(path.join(root, 'src', 'scripts', 'orders.js'), 'utf8');
+  assert.match(html, /class="menu-compra"/);
+  assert.doesNotMatch(html + purchases, /Escolha conscientemente|Registra o momento|Para compras feitas|Pede confirmação|Toque novamente/);
+  assert.match(purchases, /botaoAcaoCompra\('comprado',[\s\S]*botaoAcaoCompra\('pedido_forn',[\s\S]*botaoAcaoCompra\('detalhes',[\s\S]*botaoAcaoCompra\('cancelar'/);
   assert.match(purchases, /diffX < -70\) abrirConfirmarCancelamento/);
-  assert.match(catalog, /cliqueItemCompra[\s\S]*ontouchend="handleTouchEnd/);
+  assert.match(catalog, /class="status-icon seletor-item-compra[\s\S]*selecionarItemCompraDireto/);
+  assert.match(orders, /function selecionarItemCompraDireto[\s\S]*modoSelecaoAtivo = itensSelecionadosRelatorio\.size > 0/);
 });

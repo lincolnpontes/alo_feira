@@ -1,11 +1,14 @@
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline:3px solid rgba(21,101,192,.35); outline-offset:2px; }
         button:disabled { opacity:.5; cursor:not-allowed; }
 
+        @media (max-width: 600px) {
+            .action-bar-compras { overflow-x:auto; }
+            .action-bar-compras > div { flex-wrap:nowrap !important; }
+        }
         @media (max-width: 350px) {
             .header { padding-left:8px; padding-right:8px; }
             .header-actions { margin-left:auto; }
             .header-select { font-size:16px; }
-            .action-bar-compras { overflow-x:auto; }
         }
         @media (min-width: 760px) {
             .app-container { max-width:760px; left:50%; transform:translateX(-50%); border-left:1px solid #ddd; border-right:1px solid #ddd; }

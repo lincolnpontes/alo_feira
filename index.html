@@ -8,11 +8,11 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
     <title>Alô Feira v1.3.0</title>
-    <link rel="stylesheet" href="src/styles/base.css?v=1.3.0-r3">
-    <link rel="stylesheet" href="src/styles/layout.css?v=1.3.0-r3">
-    <link rel="stylesheet" href="src/styles/components.css?v=1.3.0-r3">
-    <link rel="stylesheet" href="src/styles/features.css?v=1.3.0-r3">
-    <link rel="stylesheet" href="src/styles/responsive.css?v=1.3.0-r3">
+    <link rel="stylesheet" href="src/styles/base.css?v=1.3.0-r4">
+    <link rel="stylesheet" href="src/styles/layout.css?v=1.3.0-r4">
+    <link rel="stylesheet" href="src/styles/components.css?v=1.3.0-r4">
+    <link rel="stylesheet" href="src/styles/features.css?v=1.3.0-r4">
+    <link rel="stylesheet" href="src/styles/responsive.css?v=1.3.0-r4">
 </head>
 <body class="theme-pedido">
 <div id="splashScreen">
@@ -95,26 +95,18 @@
 </div>
 <div class="modal-overlay" id="modalConfirmarCancelamento">
     <div class="modal modal-destaque compras">
-        <div class="modal-title" style="border-color:#6a1b9a;">Cancelar Item?</div>
+        <div class="modal-title" style="border-color:#6a1b9a;">Cancelar item</div>
         <p id="textoConfirmarCancelamento" style="font-size:14px; color:#444; line-height:1.4; margin-top:0;"></p>
         <input type="hidden" id="cancelamentoCompraId">
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="fecharModal('modalConfirmarCancelamento'); renderizarLista();">Manter Item</button>
-            <button class="btn-danger" onclick="confirmarCancelamentoCompra()">Cancelar Item</button>
+            <button class="btn-cancel" onclick="fecharModal('modalConfirmarCancelamento'); renderizarLista();">Voltar</button>
+            <button class="btn-danger" onclick="confirmarCancelamentoCompra()">Cancelar</button>
         </div>
     </div>
 </div>
-<div class="modal-overlay modal-sheet-overlay" id="modalAcaoCompra">
-    <div class="modal modal-sheet compras-sheet">
-        <div class="sheet-handle" aria-hidden="true"></div>
-        <div class="modal-title compras-sheet-title">
-            <span id="tituloAcaoCompra">Atualizar item</span>
-            <span id="statusAtualAcaoCompra" class="status-pill"></span>
-        </div>
-        <p id="descricaoAcaoCompra" class="sheet-description"></p>
-        <div id="acoesDisponiveisCompra" class="acoes-compra-grid"></div>
-        <button class="btn-outline btn-detalhes-compra" onclick="abrirDetalhesDaAcaoCompra()">Ver detalhes, preços e observações</button>
-        <button class="btn-cancel btn-sheet-fechar" onclick="fecharModal('modalAcaoCompra')">Fechar</button>
+<div class="menu-compra-overlay" id="modalAcaoCompra" onclick="fecharMenuAcaoCompra()">
+    <div class="menu-compra" id="menuAcaoCompra" role="menu" aria-label="Ações do item" onclick="event.stopPropagation()">
+        <div id="acoesDisponiveisCompra" class="menu-compra-acoes"></div>
     </div>
 </div>
 <div class="modal-overlay" id="modalFormAvulso">
@@ -481,20 +473,20 @@
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores', true);">Cancelar</button><button class="btn-action" onclick="salvarFornecedor()">Salvar</button></div>
     </div>
 </div>
-<script src="src/scripts/domain.js?v=1.3.0-r3"></script>
-<script src="src/scripts/core.js?v=1.3.0-r3"></script>
-<script src="src/scripts/security.js?v=1.3.0-r3"></script>
-<script src="src/scripts/sync.js?v=1.3.0-r3"></script>
-<script src="src/scripts/auth.js?v=1.3.0-r3"></script>
-<script src="src/scripts/orders.js?v=1.3.0-r3"></script>
-<script src="src/scripts/catalog.js?v=1.3.0-r3"></script>
-<script src="src/scripts/drafts.js?v=1.3.0-r3"></script>
-<script src="src/scripts/purchases.js?v=1.3.0-r3"></script>
-<script src="src/scripts/purchase-details.js?v=1.3.0-r3"></script>
-<script src="src/scripts/reports.js?v=1.3.0-r3"></script>
-<script src="src/scripts/settings.js?v=1.3.0-r3"></script>
-<script src="src/scripts/catalog-settings.js?v=1.3.0-r3"></script>
-<script src="src/scripts/people-settings.js?v=1.3.0-r3"></script>
-<script src="src/scripts/app.js?v=1.3.0-r3"></script>
+<script src="src/scripts/domain.js?v=1.3.0-r4"></script>
+<script src="src/scripts/core.js?v=1.3.0-r4"></script>
+<script src="src/scripts/security.js?v=1.3.0-r4"></script>
+<script src="src/scripts/sync.js?v=1.3.0-r4"></script>
+<script src="src/scripts/auth.js?v=1.3.0-r4"></script>
+<script src="src/scripts/orders.js?v=1.3.0-r4"></script>
+<script src="src/scripts/catalog.js?v=1.3.0-r4"></script>
+<script src="src/scripts/drafts.js?v=1.3.0-r4"></script>
+<script src="src/scripts/purchases.js?v=1.3.0-r4"></script>
+<script src="src/scripts/purchase-details.js?v=1.3.0-r4"></script>
+<script src="src/scripts/reports.js?v=1.3.0-r4"></script>
+<script src="src/scripts/settings.js?v=1.3.0-r4"></script>
+<script src="src/scripts/catalog-settings.js?v=1.3.0-r4"></script>
+<script src="src/scripts/people-settings.js?v=1.3.0-r4"></script>
+<script src="src/scripts/app.js?v=1.3.0-r4"></script>
 </body>
 </html>
