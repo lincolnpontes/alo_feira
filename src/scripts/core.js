@@ -45,7 +45,7 @@ function criarBancoBase() {
         banco.categorias.forEach(c => { if(!c.subcategorias) c.subcategorias = []; if(c.ativo === undefined) c.ativo = true; });
         banco.produtos.forEach(p => { if(!p.unidades) p.unidades = ['']; if(!p.fornecedores) p.fornecedores = []; if(!p.historicoPrecos) p.historicoPrecos = []; if(p.ativo === undefined) p.ativo = true; });
         banco.fornecedores.forEach(f => { if(f.ativo === undefined) f.ativo = true; });
-        banco.colaboradores.forEach(c => { if(c.ativo === undefined) c.ativo = true; });
+        banco.colaboradores.forEach(c => { if(c.ativo === undefined) c.ativo = true; if(!c.emoji) c.emoji = '👤'; });
         if(banco.configs.ultimaMudancaLocal === undefined) banco.configs.ultimaMudancaLocal = 0;
         if(banco.configs.historicoApagadoEm === undefined) banco.configs.historicoApagadoEm = 0;
         if(banco.configs.syncPendente === undefined) banco.configs.syncPendente = false;
@@ -80,6 +80,7 @@ function criarBancoBase() {
     function parseFloatBr(str) { if(str === '' || str === null || str === undefined) return ''; const valor = Number(String(str).replace(',','.')); return Number.isFinite(valor) ? valor : ''; }
     function removerAcentos(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
     function atualizarVisibilidadeAdmin() { const btnAdmin = document.getElementById('btnAdmin'); if(!btnAdmin) return; let colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId && c.ativo !== false); let ativos = db.colaboradores.filter(c => c.ativo !== false); btnAdmin.style.display = (ativos.length === 0 || (colab && colab.isAdmin)) ? 'inline-flex' : 'none'; }
+    function atualizarBotaoPerfil() { const btn = document.getElementById('btnTrocarPerfil'); if(!btn) return; const colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId && c.ativo !== false); const nome = colab ? colab.nome : 'Perfil'; const emoji = colab && colab.emoji ? colab.emoji : '👤'; btn.textContent = `${emoji} ${nome}`; btn.title = `Perfil: ${nome}`; btn.setAttribute('aria-label', `Trocar perfil. Atual: ${nome}`); }
 
     function escaparHtml(valor) { return AloFeiraDomain.escaparHtml(valor); }
     function idDomSeguro(valor) { return AloFeiraDomain.idDomSeguro(valor); }
@@ -93,4 +94,4 @@ function criarBancoBase() {
         mostrarToast.timer = setTimeout(() => toast.classList.remove('visivel'), duracao);
     }
 
-let db = carregarBanco(); let categoriaAtual = null; let modoSelecaoAtivo = false; let itensSelecionadosRelatorio = new Set(); let agrupamentoCompradoAtivo = false; let pilhaDesfazer = []; let tempPrecosProduto = []; let tempFornecedoresProduto = []; let tempSubcats = []; let tempRenames = []; let isSyncingFundo = false; let isModalFechando = false; let filtroFornecedorComprasId = null; let buscaPedidoTexto = ""; let envioPedidoEmAndamento = false; let currentGerenciarFiltro = 'todos'; let currentGerenciarBusca = ''; let origemFormProduto = null; let ultimoTouchEm = 0; let modalAcaoCompraId = null;
+let db = carregarBanco(); let categoriaAtual = null; let modoSelecaoAtivo = false; let itensSelecionadosRelatorio = new Set(); let agrupamentoCompradoAtivo = false; let pilhaDesfazer = []; let tempPrecosProduto = []; let tempFornecedoresProduto = []; let tempSubcats = []; let tempRenames = []; let isSyncingFundo = false; let isModalFechando = false; let filtroFornecedorComprasId = null; let buscaPedidoTexto = ""; let envioPedidoEmAndamento = false; let currentGerenciarFiltro = 'todos'; let currentGerenciarBusca = ''; let origemFormProduto = null; let modalAcaoCompraId = null;

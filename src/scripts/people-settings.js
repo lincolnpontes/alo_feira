@@ -14,6 +14,7 @@ function abrirFormColaborador(id) {
         });
         document.getElementById('colabId').value = id || '';
         document.getElementById('colabNome').value = c ? c.nome : '';
+        document.getElementById('colabEmoji').value = c && c.emoji ? c.emoji : '👤';
         document.getElementById('colabSenha').value = '';
         document.getElementById('colabSenha').placeholder = c ? 'Em branco mantem o PIN atual' : 'Opcional';
         document.getElementById('modalFormColaborador').style.display = 'flex';
@@ -21,6 +22,7 @@ function abrirFormColaborador(id) {
     async function salvarColaborador() {
         const id = document.getElementById('colabId').value || 'col_' + Date.now();
         const nome = document.getElementById('colabNome').value.trim();
+        const emoji = document.getElementById('colabEmoji').value || '👤';
         const pin = document.getElementById('colabSenha').value.trim();
         const ativos = db.colaboradores.filter(c => c.ativo !== false);
         const primeiroPerfil = ativos.length === 0;
@@ -37,6 +39,7 @@ function abrirFormColaborador(id) {
         const novo = Object.assign({}, anterior, {
             id,
             nome,
+            emoji,
             telefone: anterior.telefone || '',
             isAdmin,
             apenasReceber,
@@ -51,6 +54,7 @@ function abrirFormColaborador(id) {
         delete novo.senha;
         if(idx >= 0) db.colaboradores[idx] = novo; else db.colaboradores.push(novo);
         marcarMudancaEstrutural(novo);
+        atualizarBotaoPerfil();
         fecharModal('modalFormColaborador');
         abrirGerenciar('colaboradores', true);
         sincronizarFundo(false, true);

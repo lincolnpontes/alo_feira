@@ -1,29 +1,29 @@
 .list { padding: 0; margin: 0; list-style: none; }
         .item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #eee; position: relative; transition: background 0.2s; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
-        .item-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px; flex-shrink: 0; color: white; font-size: 15px; }
+        body.theme-compras .item { padding:3px 10px; }
+        .item-avatar { width: 34px; height: 34px; border:0; padding:0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px; flex-shrink: 0; color: white; font-size: 15px; cursor:pointer; }
+        .seletor-item-pedido { box-shadow:0 0 0 5px transparent; transition:box-shadow .15s, transform .15s; }
+        .seletor-item-pedido:active { transform:scale(.95); }
+        .item.selecionado .seletor-item-pedido { box-shadow:0 0 0 3px #1565c0; }
         .item-info { flex: 1; pointer-events: none; display: flex; flex-direction: column; justify-content: center; }
         .item-title { font-weight: bold; font-size: 14px; margin-bottom: 2px; }
         .item-subtitle { color: #666; font-size: 11px; line-height: 1.3; }
         .riscado { opacity: 0.6; background-color: #f5f5f5; border-left: 6px solid #9e9e9e !important; }
         .riscado .item-title { text-decoration: line-through; }
         .status-pendente { border-left: 4px solid #d97706; background-color: #fffaf2; }
-        .status-comprado { border-left: 4px solid #2e7d32; background-color: #f3faf5; }
-        .status-pedido_forn { border-left: 4px solid #7b1fa2; background-color: #faf5fc; }
+        .status-comprado { border-left: 4px solid #1b5e20; background-color: #f3faf5; }
+        .status-pedido_forn { border-left: 4px solid #5e1675; background-color: #faf5fc; }
         .status-entregue { border-left: 4px solid #176b3a; background-color: #eef8f1; }
         .status-cancelado { border-left: 6px solid #9e9e9e; background-color: #f5f5f5; opacity: 0.7; }
         .item-pedido-rascunho { border-left: 4px solid #1565C0; background-color: #e3f2fd; }
         .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; color: white; display: inline-block; }
         .bg-pendente { background-color: #f57f17; }
-        .bg-pedido_forn { background-color: #9c27b0; }
+        .bg-pedido_forn { background-color: #5e1675; }
         .bg-comprado { background-color: #1b5e20; }
         .bg-entregue { background-color: #1b5e20; }
         .bg-excluido { background-color: #d32f2f; }
         .bg-cancelado { background-color: #9e9e9e; }
         .bg-rascunho { background-color: transparent; color: #1565C0; border: 1px solid #1565C0; padding: 1px 5px; }
-        .checkbox-selecao { width: 24px; height: 24px; border: 2px solid #6a1b9a; border-radius: 4px; display: inline-block; vertical-align: middle; margin-right: 12px; position: relative; pointer-events: none; }
-        .item.selecionado .checkbox-selecao::after { content: '✓'; color: #6a1b9a; position: absolute; font-size: 18px; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 900; }
-        body.theme-pedido .checkbox-selecao { border-color: #1565C0; }
-        body.theme-pedido .item.selecionado .checkbox-selecao::after { color: #1565C0; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
         .modal { background: white; padding: 20px; border-radius: 8px; width: calc(100% - 24px); max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
         .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; border-bottom: 2px solid #1565C0; padding-bottom: 10px; }
@@ -45,7 +45,7 @@
         .busca-inline { display: none; align-items: center; min-width: 150px; max-width: 230px; flex: 1; }
         .busca-inline input { width: 100%; height: 34px; border: 1px solid rgba(255,255,255,0.45); border-radius: 6px; background: rgba(255,255,255,0.96); color: #222; font-size: 14px; padding: 0 10px; box-sizing: border-box; outline: none; }
         .modal-destaque { border-top: 5px solid #1565C0; }
-        .modal-destaque.compras { border-top-color: #6a1b9a; }
+        .modal-destaque.compras { border-top-color: #5e1675; }
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; margin-right: 8px; vertical-align: middle; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px; }

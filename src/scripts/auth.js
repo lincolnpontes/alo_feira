@@ -14,7 +14,7 @@ function abrirSelecaoColaboradorInicial(isTroca = false) {
     [...ativos].sort((a,b) => a.nome.localeCompare(b.nome)).forEach(c => {
         const option = document.createElement('option');
         option.value = c.id;
-        option.textContent = c.nome;
+        option.textContent = `${c.emoji || '👤'} ${c.nome}`;
         option.selected = c.id === db.configs.colabAtivoId;
         sel.appendChild(option);
     });

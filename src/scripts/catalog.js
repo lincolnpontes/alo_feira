@@ -9,8 +9,6 @@ function renderizarLista() {
 
         if (db.configs.modo === 'pedido') { db.categorias.filter(cat => cat.ativo !== false).forEach(cat => { if (cat.permiteAvulso) { produtosOrdenados.push({ id: 'dummy_' + cat.id, categoria: cat.id, subcategoria: '', nome: '', isDummy: true }); } }); }
         produtosOrdenados.sort(ordernarPorCategoriaESub);
-        let btnMarcar = modoSelecaoAtivo ? `<span style="font-size:11px; color:#fff; border:1px solid #fff; padding:3px 8px; border-radius:12px; background:rgba(0,0,0,0.2);">✓ Todos</span>` : '';
-
         if (db.configs.modo === 'pedido') {
             let lastCatId = ""; let lastSubcat = null;
             produtosOrdenados.forEach(p => {
@@ -24,8 +22,7 @@ function renderizarLista() {
                     if (categoriaAtual === null || categoriaAtual === catId) {
                         let headerStyle = modoSelecaoAtivo ? 'cursor:pointer;' : 'cursor:default;';
                         let onclickAction = modoSelecaoAtivo ? `onclick="selecionarGrupoPedido('${catId}', 'cat')"` : '';
-                        let headerContent = modoSelecaoAtivo ? btnMarcar : btnAvulso;
-                        htmlPrincipal += `<li class="cat-header" style="${headerStyle}" ${onclickAction}><span>🏷️ ${catName}</span> ${headerContent}</li>`;
+                        htmlPrincipal += `<li class="cat-header" style="${headerStyle}" ${onclickAction}><span>🏷️ ${catName}</span> ${btnAvulso}</li>`;
                         itensMostrados++;
                     }
                     lastCatId = catId; lastSubcat = null;
@@ -35,7 +32,7 @@ function renderizarLista() {
                 if (subcat !== lastSubcat && subcat !== "") {
                     let headerStyle = modoSelecaoAtivo ? 'cursor:pointer;' : 'cursor:default;';
                     let subcatOnclick = modoSelecaoAtivo ? `onclick="selecionarGrupoPedido('${subcatGroupId}', 'sub')"` : '';
-                    htmlPrincipal += `<li class="subcat-header" style="${headerStyle}" ${subcatOnclick}><span>▪ ${escaparHtml(subcat)}</span> ${modoSelecaoAtivo ? btnMarcar : ''}</li>`;
+                    htmlPrincipal += `<li class="subcat-header" style="${headerStyle}" ${subcatOnclick}><span>▪ ${escaparHtml(subcat)}</span></li>`;
                     lastSubcat = subcat;
                 }
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
@@ -76,8 +73,8 @@ function renderizarLista() {
                     infoDireita += `<div style="text-align: right;"><div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div>${exibicaoQtd}${obsVisual}</div>`;
                 }
 
-                let isSelected = itensSelecionadosRelatorio.has(p.id); let htmlSelecao = modoSelecaoAtivo ? `<div class="checkbox-selecao"></div>` : ''; let pedIdAtributo = pedidoEditavel ? pedidoEditavel.idUnico : '';
-                htmlPrincipal += `<li class="item ${classesExtra} ${isSelected ? 'selecionado' : ''}" role="button" tabindex="0" data-id="${p.id}" data-pedid="${pedIdAtributo}" data-cat-id="${catId}" data-sub-id="${subcatGroupId}" onclick="cliqueItemPedido('${p.id}', this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); cliqueItemPedido('${p.id}', this)}" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)">${htmlSelecao}<div style="display: flex; align-items: center; flex: 1;"><div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};">${escaparHtml(p.nome.charAt(0))}</div><div class="item-info"><div class="item-title">${escaparHtml(p.nome)}</div><div class="item-subtitle">${padraoTexto}</div></div></div><div class="info-direita" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">${infoDireita}</div></li>`;
+                let isSelected = itensSelecionadosRelatorio.has(p.id); let pedIdAtributo = pedidoEditavel ? pedidoEditavel.idUnico : '';
+                htmlPrincipal += `<li class="item item-pedido ${classesExtra} ${isSelected ? 'selecionado' : ''}" data-id="${p.id}" data-pedid="${pedIdAtributo}" data-cat-id="${catId}" data-sub-id="${subcatGroupId}"><button type="button" class="item-avatar seletor-item-pedido" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};" aria-label="Selecionar ${escaparHtml(p.nome)}" aria-pressed="${isSelected}" onclick="selecionarItemPedidoDireto(event, '${p.id}')">${isSelected ? '✓' : escaparHtml(p.nome.charAt(0))}</button><button type="button" class="item-main-action" aria-label="${pedidoEditavel && pedidoEditavel.status === 'rascunho' ? 'Remover' : 'Adicionar'} ${escaparHtml(p.nome)}" onclick="cliqueItemPedido('${p.id}', this.closest('.item'))"><div class="item-info"><div class="item-title">${escaparHtml(p.nome)}</div><div class="item-subtitle">${padraoTexto}</div></div><div class="info-direita" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">${infoDireita}</div></button></li>`;
                 itensMostrados++;
             });
             document.getElementById('containerBotoesEnvio').style.display = temRascunho ? 'flex' : 'none';
@@ -103,20 +100,20 @@ function renderizarLista() {
                 let cObj = db.categorias.find(c => c.id === p.categoria); let catId = cObj ? cObj.id : "sem_cat"; let subcat = p.subcategoria || ""; let stGroupId = "st_" + pa.status; let catGroupId = "cat_" + idDomSeguro(catId); let subcatGroupId = "cat_" + idDomSeguro(catId) + "_sub_" + idDomSeguro(subcat);
                 if (agrupamentoCompradoAtivo) {
                     let statusEfetivo = (pa.transicaoProgresso && (Date.now() - pa.transicaoProgresso < 10000)) ? pa.statusAnterior : pa.status;
-                    let currentGroup = statusEfetivo === 'pendente' ? '⏳ PENDENTES' : (statusEfetivo === 'pedido_forn' ? '🚚 PEDIDOS AO FORNECEDOR' : (statusEfetivo === 'cancelado' ? '🚫 CANCELADOS' : '✅ COMPRADOS / ENTREGUES'));
+                    let currentGroup = statusEfetivo === 'pendente' ? '⏳ PENDENTES' : (statusEfetivo === 'pedido_forn' ? '✈️ PEDIDOS AO FORNECEDOR' : (statusEfetivo === 'cancelado' ? '🚫 CANCELADOS' : '✓ COMPRADOS / ENTREGUES'));
                     if (currentGroup !== lastGroup) { htmlPrincipal += `<li class="cat-header" style="background:#546e7a; color:#fff;"><span>${currentGroup}</span></li>`; lastGroup = currentGroup; lastCatId = ""; lastSubcat = null; }
                     catGroupId = stGroupId + "_" + catGroupId; subcatGroupId = stGroupId + "_" + subcatGroupId;
                 }
-                if (categoriaAtual === null || agrupamentoCompradoAtivo) { if (catId !== lastCatId) { let catName = cObj ? escaparHtml(cObj.nome) : "Sem Categoria"; htmlPrincipal += `<li class="cat-header" onclick="selecionarGrupoCompras('${catGroupId}', 'cat')"><span>🏷️ ${catName}</span> ${btnMarcar}</li>`; lastCatId = catId; lastSubcat = null; } }
-                if (subcat !== lastSubcat && subcat !== "") { htmlPrincipal += `<li class="subcat-header" onclick="selecionarGrupoCompras('${subcatGroupId}', 'sub')"><span>▪ ${escaparHtml(subcat)}</span> ${btnMarcar}</li>`; lastSubcat = subcat; }
-                const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' }; let emojiStatus = pa.status === 'pendente' ? '●' : (pa.status === 'pedido_forn' ? '↗' : (pa.status === 'cancelado' ? '×' : '✓')); let isSelected = itensSelecionadosRelatorio.has(pa.idUnico); let qtyVal = pa.qtd !== '' ? pa.qtd : null; let unVal = pa.unidade ? pa.unidade : null; let qtdStrDisplay = ""; if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`; else if(unVal !== null) qtdStrDisplay = `${unVal}`; let tituloItem = escaparHtml(p.nome);
+                if (categoriaAtual === null || agrupamentoCompradoAtivo) { if (catId !== lastCatId) { let catName = cObj ? escaparHtml(cObj.nome) : "Sem Categoria"; htmlPrincipal += `<li class="cat-header" onclick="selecionarGrupoCompras('${catGroupId}', 'cat')"><span>🏷️ ${catName}</span></li>`; lastCatId = catId; lastSubcat = null; } }
+                if (subcat !== lastSubcat && subcat !== "") { htmlPrincipal += `<li class="subcat-header" onclick="selecionarGrupoCompras('${subcatGroupId}', 'sub')"><span>▪ ${escaparHtml(subcat)}</span></li>`; lastSubcat = subcat; }
+                const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' }; let emojiStatus = pa.status === 'pendente' ? '○' : (pa.status === 'pedido_forn' ? '✈️' : (pa.status === 'cancelado' ? '×' : '✓')); let isSelected = itensSelecionadosRelatorio.has(pa.idUnico); let qtyVal = pa.qtd !== '' ? pa.qtd : null; let unVal = pa.unidade ? pa.unidade : null; let qtdStrDisplay = ""; if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`; else if(unVal !== null) qtdStrDisplay = `${unVal}`; let tituloItem = escaparHtml(p.nome);
 
                 let tsReferencia; if (pa.status === 'pendente') { tsReferencia = pa.dataEnvio || parseInt(pa.idUnico.split('_')[1]); } else if (pa.status === 'pedido_forn') { tsReferencia = pa.dataPedidoFornecedor || pa.dataStatus || pa.dataEnvio || parseInt(pa.idUnico.split('_')[1]); } else { tsReferencia = pa.dataConclusao || pa.dataExclusao || pa.dataStatus || parseInt(pa.idUnico.split('_')[1]); } let tempoTxt = tsReferencia ? ` ${tempoRelativo(tsReferencia)}` : "";
 
                 let nomeStatus = ""; let statusClass = "bg-pendente"; let itemClassExtra = pa.status === 'cancelado' ? 'riscado' : '';
                 switch(pa.status) { case 'pendente': nomeStatus = 'Pendente'; statusClass = 'bg-pendente'; break; case 'comprado': nomeStatus = 'Comprado'; statusClass = 'bg-comprado'; break; case 'pedido_forn': nomeStatus = 'Pedido Forn.'; statusClass = 'bg-pedido_forn'; break; case 'entregue': nomeStatus = 'Entregue'; statusClass = 'bg-entregue'; break; case 'cancelado': nomeStatus = 'Cancelado'; statusClass = 'bg-cancelado'; break; }
                 let statusText = nomeStatus + tempoTxt; let editIndicador = pa.historico && pa.historico.some(h => h.msg.includes('Editado em compras')) ? ' <span style="font-size:10px; color:#a61b1b; font-weight:bold;">Editado</span>' : ''; let obsVisual = pa.obs ? `<div class="item-subtitle" style="margin-top:2px; font-weight:600; color:#444;">Obs: ${escaparHtml(pa.obs)}</div>` : ""; let exibicaoQtd = qtdStrDisplay ? `<span style="font-weight:700; font-size:14px; color:#4a235a;">${escaparHtml(qtdStrDisplay)}</span>` : ""; let infoDireita = `<div class="status-pill">${statusText}</div>${exibicaoQtd}`;
-                htmlPrincipal += `<li class="item status-${pa.status} ${itemClassExtra} ${isSelected ? 'selecionado' : ''}" data-id="${pa.idUnico}" data-grp-cat="${catGroupId}" data-grp-sub="${subcatGroupId}" ontouchstart="handleTouchStart(event, this)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event, this)"><button type="button" class="status-icon seletor-item-compra ${pa.status}" aria-label="Selecionar ${tituloItem}" aria-pressed="${isSelected}" onclick="selecionarItemCompraDireto(event, '${pa.idUnico}')" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()">${isSelected ? '✓' : emojiStatus}</button><button type="button" class="item-main-action" aria-label="Ações de ${tituloItem}. ${nomeStatus}" onclick="cliqueItemCompra('${pa.idUnico}', this.closest('.item'))"><div style="display: flex; align-items: center; flex: 1; overflow: hidden;"><div class="item-info" style="overflow: hidden; text-overflow: ellipsis; padding-right: 5px;"><div class="item-title">${tituloItem}${editIndicador}</div>${obsVisual}</div></div><div class="info-direita" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; margin-left: 5px;">${infoDireita}</div></button></li>`;
+                htmlPrincipal += `<li class="item status-${pa.status} ${itemClassExtra} ${isSelected ? 'selecionado' : ''}" data-id="${pa.idUnico}" data-grp-cat="${catGroupId}" data-grp-sub="${subcatGroupId}"><button type="button" class="seletor-item-compra" aria-label="Selecionar ${tituloItem}" aria-pressed="${isSelected}" onclick="selecionarItemCompraDireto(event, '${pa.idUnico}')"><span class="status-glyph ${pa.status}">${isSelected ? '✓' : emojiStatus}</span></button><button type="button" class="item-main-action" aria-label="Ações de ${tituloItem}. ${nomeStatus}" onclick="cliqueItemCompra('${pa.idUnico}', this.closest('.item'))"><div style="display: flex; align-items: center; flex: 1; overflow: hidden;"><div class="item-info" style="overflow: hidden; text-overflow: ellipsis; padding-right: 5px;"><div class="item-title">${tituloItem}${editIndicador}</div>${obsVisual}</div></div><div class="info-direita" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; margin-left: 5px;">${infoDireita}</div></button></li>`;
                 itensMostrados++;
             });
         }
@@ -124,5 +121,5 @@ function renderizarLista() {
         lista.innerHTML = htmlPrincipal;
     }
 
-    function cliqueItemCompra(idUnico, el) { if(isModalFechando || Date.now() - ultimoTouchEm < 500) return; abrirAcoesCompra(idUnico, el); }
-    function cliqueItemPedido(pId, el) { if(isModalFechando || Date.now() - ultimoTouchEm < 500) return; if(modoSelecaoAtivo) { if(itensSelecionadosRelatorio.has(pId)) { itensSelecionadosRelatorio.delete(pId); el.classList.remove('selecionado'); } else { itensSelecionadosRelatorio.add(pId); el.classList.add('selecionado'); } } else { acaoToqueSimples(el); } }
+    function cliqueItemCompra(idUnico, el) { if(isModalFechando) return; abrirAcoesCompra(idUnico, el); }
+    function cliqueItemPedido(pId, el) { if(isModalFechando) return; acaoToqueSimples(el); }

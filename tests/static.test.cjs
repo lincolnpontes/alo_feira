@@ -33,17 +33,22 @@ test('manifesto usa icones com as dimensoes declaradas', () => {
   manifest.icons.forEach(icon => assert.equal(fs.existsSync(path.join(root, icon.src)), true));
 });
 
-test('compras usa menu compacto, selecao direta e cancelamento seguro', () => {
+test('listas usam clique direto, selecao explicita e confirmacao segura', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const purchases = fs.readFileSync(path.join(root, 'src', 'scripts', 'purchases.js'), 'utf8');
   const catalog = fs.readFileSync(path.join(root, 'src', 'scripts', 'catalog.js'), 'utf8');
   const orders = fs.readFileSync(path.join(root, 'src', 'scripts', 'orders.js'), 'utf8');
   assert.match(html, /class="menu-compra"/);
+  assert.match(html, /id="btnMenuFerramentas"/);
+  assert.match(html, /id="modalConfirmarRemoverRascunho"/);
+  assert.doesNotMatch(html, /id="btnModoSelecaoBar"|id="btnFiltroForn"|id="btnAgruparStatus"/);
   assert.doesNotMatch(html + purchases, /Escolha conscientemente|Registra o momento|Para compras feitas|Pede confirmação|Toque novamente/);
   assert.match(purchases, /botaoAcaoCompra\('comprado',[\s\S]*botaoAcaoCompra\('pedido_forn',[\s\S]*botaoAcaoCompra\('detalhes',[\s\S]*botaoAcaoCompra\('cancelar'/);
-  assert.match(purchases, /diffY > 24 && diffY > diffX/);
-  assert.match(purchases, /diffXAbs < 50\) abrirAcoesCompra/);
-  assert.match(purchases, /diffX < -70 && diffXAbs > diffY\) abrirConfirmarCancelamento/);
-  assert.match(catalog, /class="status-icon seletor-item-compra[\s\S]*selecionarItemCompraDireto/);
-  assert.match(orders, /function selecionarItemCompraDireto[\s\S]*modoSelecaoAtivo = itensSelecionadosRelatorio\.size > 0/);
+  assert.doesNotMatch(catalog + purchases, /ontouchstart|ontouchmove|ontouchend|handleTouch|acaoDeslizar/);
+  assert.doesNotMatch(catalog, /✓ Todos/);
+  assert.match(catalog, /class="seletor-item-compra"[\s\S]*selecionarItemCompraDireto/);
+  assert.match(catalog, /class="item-avatar seletor-item-pedido"[\s\S]*selecionarItemPedidoDireto/);
+  assert.match(orders, /function selecionarGrupoCompras[\s\S]*alternarSelecaoGrupo/);
+  assert.match(orders, /function selecionarItemPedidoDireto[\s\S]*alternarSelecaoDireta/);
+  assert.match(purchases, /function abrirConfirmarRemoverRascunho[\s\S]*function confirmarRemocaoRascunho/);
 });

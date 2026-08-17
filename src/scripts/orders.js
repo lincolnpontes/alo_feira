@@ -1,72 +1,351 @@
 function alterarModo(modo) {
-        db.configs.modo = modo; modoSelecaoAtivo = false; itensSelecionadosRelatorio.clear(); agrupamentoCompradoAtivo = false; document.body.className = `theme-${modo}`; document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#6a1b9a';
-        let dicas = document.getElementById('dicasCabecalho'); let isAdmin = temAcessoAdmin();
-        const actionBar = document.getElementById('actionBarCompras'); const btnModoSelecao = document.getElementById('btnModoSelecaoBar'); const btnBuscaPedido = document.getElementById('btnBuscaPedido'); const boxBuscaPedido = document.getElementById('boxBuscaPedido'); const btnFiltroForn = document.getElementById('btnFiltroForn'); const btnAgrupar = document.getElementById('btnAgruparStatus'); const btnRelatorio = document.getElementById('btnRelatorioBar'); const btnMassaComprado = document.getElementById('btnMassaComprado'); const btnMassaPedForn = document.getElementById('btnMassaPedForn'); const btnMassaVincular = document.getElementById('btnMassaVincular'); const btnLimpar = document.getElementById('btnLimparComprasBar');
-        if(modo === 'pedido') { dicas.innerHTML = "<div>Toque: adicionar ao pedido</div><div>2 toques: detalhes</div>"; document.getElementById('btnHistHoje').style.display = 'inline-flex'; actionBar.style.display = 'flex'; btnModoSelecao.style.display = isAdmin ? 'flex' : 'none'; btnBuscaPedido.style.display = 'flex'; if(boxBuscaPedido) boxBuscaPedido.style.display = buscaPedidoTexto ? 'flex' : 'none'; btnFiltroForn.style.display = 'flex'; btnAgrupar.style.display = 'none'; btnRelatorio.style.display = 'none'; if(btnLimpar) btnLimpar.style.display = 'none'; btnMassaComprado.style.display = 'none'; btnMassaPedForn.style.display = 'none'; btnMassaVincular.style.display = 'none'; btnModoSelecao.style.backgroundColor = 'rgba(255,255,255,0.15)'; btnBuscaPedido.style.backgroundColor = buscaPedidoTexto ? '#1565C0' : 'rgba(255,255,255,0.15)'; } else { dicas.innerHTML = "<div>Toque no item para atualizar</div><div>Use Desfazer quando necessário</div>"; document.getElementById('containerBotoesEnvio').style.display = 'none'; document.getElementById('btnHistHoje').style.display = 'none'; actionBar.style.display = 'flex'; btnModoSelecao.style.display = 'flex'; btnBuscaPedido.style.display = 'none'; if(boxBuscaPedido) boxBuscaPedido.style.display = 'none'; btnFiltroForn.style.display = 'flex'; btnAgrupar.style.display = 'flex'; btnAgrupar.style.backgroundColor = agrupamentoCompradoAtivo ? '#6a1b9a' : 'rgba(255,255,255,0.15)'; btnRelatorio.style.display = 'flex'; if(btnLimpar) btnLimpar.style.display = 'flex'; btnMassaComprado.style.display = 'none'; btnMassaPedForn.style.display = 'none'; btnMassaVincular.style.display = 'none'; btnModoSelecao.style.backgroundColor = 'rgba(255,255,255,0.15)'; }
-        atualizarVisibilidadeAdmin(); salvarBanco(); atualizarBotaoDesfazer(); renderizarFiltros(); renderizarLista();
-    }
+    db.configs.modo = modo;
+    modoSelecaoAtivo = false;
+    itensSelecionadosRelatorio.clear();
+    agrupamentoCompradoAtivo = false;
+    fecharMenuFerramentas();
+    fecharMenuAcaoCompra();
+    document.body.className = `theme-${modo}`;
+    document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#5e1675';
+    document.getElementById('dicasCabecalho').innerHTML = '';
+    document.getElementById('actionBarCompras').style.display = 'flex';
+    document.getElementById('btnHistHoje').style.display = modo === 'pedido' ? 'inline-flex' : 'none';
+    if(modo === 'compras') document.getElementById('containerBotoesEnvio').style.display = 'none';
+    atualizarControlesSelecao();
+    atualizarEstadoMenuFerramentas();
+    atualizarVisibilidadeAdmin();
+    atualizarBotaoPerfil();
+    salvarBanco();
+    atualizarBotaoDesfazer();
+    renderizarFiltros();
+    renderizarLista();
+}
 
-    function renderizarFiltros() { let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let catsPermitidas = getCatsPermitidas(colabLogado); let html = `<button class="chip ${categoriaAtual === null ? 'active' : ''}" onclick="filtrarCat(null)">TODOS</button>`; db.categorias.filter(cat => cat.ativo !== false).forEach(cat => { if(catsPermitidas && !catsPermitidas.includes(cat.id)) return; const isActive = categoriaAtual === cat.id; html += `<button class="chip ${isActive ? 'active' : ''}" style="background-color: ${cat.cor}; color: ${cat.corTexto};" onclick="filtrarCat('${cat.id}')">${escaparHtml(cat.nome)}</button>`; }); document.getElementById('containerFiltros').innerHTML = html; }
-    function filtrarCat(catId) { categoriaAtual = catId; renderizarFiltros(); renderizarLista(); }
-    function alternarAgrupamentoCompras() { agrupamentoCompradoAtivo = !agrupamentoCompradoAtivo; const btn = document.getElementById('btnAgruparStatus'); btn.style.backgroundColor = agrupamentoCompradoAtivo ? '#6a1b9a' : 'rgba(255,255,255,0.15)'; renderizarLista(); }
+function renderizarFiltros() {
+    const colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
+    const catsPermitidas = getCatsPermitidas(colabLogado);
+    let html = `<button class="chip ${categoriaAtual === null ? 'active' : ''}" onclick="filtrarCat(null)">TODOS</button>`;
+    db.categorias.filter(cat => cat.ativo !== false).forEach(cat => {
+        if(catsPermitidas && !catsPermitidas.includes(cat.id)) return;
+        const isActive = categoriaAtual === cat.id;
+        html += `<button class="chip ${isActive ? 'active' : ''}" style="background-color: ${cat.cor}; color: ${cat.corTexto};" onclick="filtrarCat('${cat.id}')">${escaparHtml(cat.nome)}</button>`;
+    });
+    document.getElementById('containerFiltros').innerHTML = html;
+}
 
-    function limparComprasAntigas() {
-        let concluidos = db.pedidosAtivos.filter(pa => !pa.excluido && !pa.ocultoCompras && (pa.status === 'comprado' || pa.status === 'entregue'));
-        if(concluidos.length === 0) return alert("Não há itens comprados ou entregues na tela para limpar.");
-        if(!confirm(`Deseja limpar visualmente ${concluidos.length} item(ns) concluído(s) da lista? (Eles continuarão registrados no histórico)`)) return;
-        let backupEstados = [];
-        concluidos.forEach(pa => {
-            backupEstados.push(JSON.parse(JSON.stringify(pa)));
-            pa.ocultoCompras = true;
-        });
-        pilhaDesfazer.push(backupEstados);
+function filtrarCat(catId) {
+    categoriaAtual = catId;
+    renderizarFiltros();
+    renderizarLista();
+}
+
+function abrirMenuFerramentas(origemEl) {
+    if(modoSelecaoAtivo) return;
+    const overlay = document.getElementById('overlayMenuFerramentas');
+    const menu = document.getElementById('menuFerramentas');
+    document.getElementById('opcaoAgruparStatus').style.display = db.configs.modo === 'compras' ? 'flex' : 'none';
+    atualizarEstadoMenuFerramentas();
+    overlay.style.display = 'block';
+    const margem = 10;
+    const largura = Math.min(310, window.innerWidth - margem * 2);
+    menu.style.width = `${largura}px`;
+    const origem = origemEl.getBoundingClientRect();
+    const altura = menu.offsetHeight;
+    let esquerda = Math.max(margem, Math.min(origem.left, window.innerWidth - largura - margem));
+    let topo = origem.bottom + 6;
+    if(topo + altura > window.innerHeight - margem) topo = origem.top - altura - 6;
+    menu.style.left = `${Math.round(esquerda)}px`;
+    menu.style.top = `${Math.max(margem, Math.round(topo))}px`;
+    origemEl.setAttribute('aria-expanded', 'true');
+}
+
+function fecharMenuFerramentas() {
+    const overlay = document.getElementById('overlayMenuFerramentas');
+    const botao = document.getElementById('btnMenuFerramentas');
+    if(overlay) overlay.style.display = 'none';
+    if(botao) botao.setAttribute('aria-expanded', 'false');
+}
+
+function acionarMenuFerramentas(acao) {
+    fecharMenuFerramentas();
+    if(acao === 'fornecedor') abrirModalFiltroFornCompras();
+    else if(acao === 'agrupar') alternarAgrupamentoCompras();
+    else if(acao === 'limpar') limparComprasAntigas();
+}
+
+function atualizarEstadoMenuFerramentas() {
+    const btn = document.getElementById('btnMenuFerramentas');
+    const estado = document.getElementById('estadoAgruparStatus');
+    if(estado) estado.textContent = agrupamentoCompradoAtivo ? '✓' : '';
+    if(!btn) return;
+    const ativo = Boolean(filtroFornecedorComprasId || (db.configs.modo === 'compras' && agrupamentoCompradoAtivo));
+    btn.style.backgroundColor = ativo ? (db.configs.modo === 'pedido' ? '#1565C0' : '#5e1675') : 'rgba(255,255,255,0.15)';
+}
+
+function alternarAgrupamentoCompras() {
+    if(db.configs.modo !== 'compras') return;
+    agrupamentoCompradoAtivo = !agrupamentoCompradoAtivo;
+    atualizarEstadoMenuFerramentas();
+    renderizarLista();
+}
+
+function limparComprasAntigas() {
+    const concluidos = db.pedidosAtivos.filter(pa => !pa.excluido && !pa.ocultoCompras && (pa.status === 'comprado' || pa.status === 'entregue'));
+    if(concluidos.length === 0) return alert('Não há itens comprados ou entregues para limpar.');
+    if(!confirm(`Deseja limpar visualmente ${concluidos.length} item(ns) concluído(s) da lista? Eles continuarão no histórico.`)) return;
+    const backupEstados = concluidos.map(pa => JSON.parse(JSON.stringify(pa)));
+    concluidos.forEach(pa => { pa.ocultoCompras = true; });
+    pilhaDesfazer.push(backupEstados);
+    atualizarBotaoDesfazer();
+    salvarBanco();
+    renderizarLista();
+    sincronizarFundo(false, true);
+}
+
+function atualizarControlesSelecao() {
+    const pedido = db.configs.modo === 'pedido';
+    const btnBusca = document.getElementById('btnBuscaPedido');
+    const boxBusca = document.getElementById('boxBuscaPedido');
+    const btnMenu = document.getElementById('btnMenuFerramentas');
+    const btnRelatorio = document.getElementById('btnRelatorioBar');
+    const btnComprado = document.getElementById('btnMassaComprado');
+    const btnPedidoFornecedor = document.getElementById('btnMassaPedForn');
+    const btnVincular = document.getElementById('btnMassaVincular');
+
+    btnComprado.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
+    btnPedidoFornecedor.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
+    btnVincular.style.display = modoSelecaoAtivo ? 'flex' : 'none';
+    btnBusca.style.display = pedido && !modoSelecaoAtivo ? 'flex' : 'none';
+    boxBusca.style.display = pedido && !modoSelecaoAtivo && buscaPedidoTexto ? 'flex' : 'none';
+    btnMenu.style.display = !modoSelecaoAtivo ? 'flex' : 'none';
+    btnRelatorio.style.display = !pedido && !modoSelecaoAtivo ? 'flex' : 'none';
+    if(modoSelecaoAtivo) {
+        fecharMenuFerramentas();
+        document.getElementById('btnDesfazerBar').style.display = 'none';
+    } else {
         atualizarBotaoDesfazer();
+    }
+    btnBusca.style.backgroundColor = buscaPedidoTexto ? '#1565C0' : 'rgba(255,255,255,0.15)';
+}
+
+function toggleModoSelecao() {
+    modoSelecaoAtivo = !modoSelecaoAtivo;
+    if(!modoSelecaoAtivo) itensSelecionadosRelatorio.clear();
+    atualizarControlesSelecao();
+    renderizarLista();
+}
+
+function alternarSelecaoDireta(id) {
+    if(itensSelecionadosRelatorio.has(id)) itensSelecionadosRelatorio.delete(id);
+    else itensSelecionadosRelatorio.add(id);
+    modoSelecaoAtivo = itensSelecionadosRelatorio.size > 0;
+    atualizarControlesSelecao();
+    renderizarLista();
+}
+
+function selecionarItemCompraDireto(event, idUnico) {
+    if(event) { event.preventDefault(); event.stopPropagation(); }
+    if(db.configs.modo !== 'compras') return;
+    alternarSelecaoDireta(idUnico);
+}
+
+function selecionarItemPedidoDireto(event, produtoId) {
+    if(event) { event.preventDefault(); event.stopPropagation(); }
+    if(db.configs.modo !== 'pedido') return;
+    if(!temAcessoAdmin()) return mostrarToast('Apenas administradores podem vincular fornecedores.', 'info');
+    alternarSelecaoDireta(produtoId);
+}
+
+function alternarSelecaoGrupo(seletor) {
+    const ids = Array.from(document.querySelectorAll(seletor)).map(el => el.getAttribute('data-id')).filter(Boolean);
+    if(ids.length === 0) return;
+    const todosSelecionados = ids.every(id => itensSelecionadosRelatorio.has(id));
+    ids.forEach(id => todosSelecionados ? itensSelecionadosRelatorio.delete(id) : itensSelecionadosRelatorio.add(id));
+    modoSelecaoAtivo = itensSelecionadosRelatorio.size > 0;
+    atualizarControlesSelecao();
+    renderizarLista();
+}
+
+function selecionarGrupoCompras(grupoId, tipo = 'cat') {
+    const seletor = tipo === 'cat' ? `.item[data-grp-cat="${grupoId}"]` : `.item[data-grp-sub="${grupoId}"]`;
+    alternarSelecaoGrupo(seletor);
+}
+
+function selecionarGrupoPedido(grupoId, tipo = 'cat') {
+    if(!modoSelecaoAtivo) return;
+    const seletor = tipo === 'cat' ? `.item[data-cat-id="${grupoId}"]` : `.item[data-sub-id="${grupoId}"]`;
+    alternarSelecaoGrupo(seletor);
+}
+
+function acaoEmMassa(acao) {
+    if(itensSelecionadosRelatorio.size === 0) return alert('Selecione os itens primeiro.');
+    const nomeAcao = acao === 'pedido_forn' ? 'marcar como pedido ao fornecedor' : 'concluir compra ou recebimento';
+    if(!confirm(`Deseja ${nomeAcao} para os itens selecionados?`)) return;
+    const backupEstados = [];
+    let alterados = 0;
+    let ignorados = 0;
+    const apenasReceber = getPermissaoColab();
+    const agora = Date.now();
+    itensSelecionadosRelatorio.forEach(idUnico => {
+        const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico);
+        if(!pa) return;
+        const acaoItem = acao === 'concluir' ? (pa.status === 'pedido_forn' ? 'entregue' : 'comprado') : 'pedido_forn';
+        const backup = JSON.parse(JSON.stringify(pa));
+        const resultado = AloFeiraDomain.aplicarTransicao(pa, acaoItem, agora, apenasReceber);
+        if(resultado.ok) { backupEstados.push(backup); alterados++; }
+        else ignorados++;
+    });
+    if(alterados) {
+        pilhaDesfazer.push(backupEstados);
+        db.configs.syncPendente = true;
         salvarBanco();
-        renderizarLista();
+        toggleModoSelecao();
         sincronizarFundo(false, true);
+        mostrarToast(`${alterados} item(ns) atualizados.`, 'sucesso');
     }
+    if(ignorados) mostrarToast(`${ignorados} item(ns) não permitiam essa mudança.`, 'info', 4500);
+}
 
-    function atualizarControlesSelecao() { document.getElementById('btnModoSelecaoBar').style.backgroundColor = modoSelecaoAtivo ? (db.configs.modo === 'pedido' ? '#1565C0' : '#6a1b9a') : 'rgba(255,255,255,0.15)'; if (db.configs.modo === 'compras') { document.getElementById('btnMassaComprado').style.display = modoSelecaoAtivo ? 'flex' : 'none'; document.getElementById('btnMassaPedForn').style.display = modoSelecaoAtivo ? 'flex' : 'none'; document.getElementById('btnMassaVincular').style.display = modoSelecaoAtivo ? 'flex' : 'none'; } else { document.getElementById('btnMassaVincular').style.display = modoSelecaoAtivo ? 'flex' : 'none'; } if (modoSelecaoAtivo) document.getElementById('btnDesfazerBar').style.display = 'none'; else atualizarBotaoDesfazer(); }
-    function toggleModoSelecao() { modoSelecaoAtivo = !modoSelecaoAtivo; if(!modoSelecaoAtivo) itensSelecionadosRelatorio.clear(); atualizarControlesSelecao(); renderizarLista(); }
-    function selecionarItemCompraDireto(event, idUnico) { if(event) { event.preventDefault(); event.stopPropagation(); } if(db.configs.modo !== 'compras') return; if(itensSelecionadosRelatorio.has(idUnico)) itensSelecionadosRelatorio.delete(idUnico); else itensSelecionadosRelatorio.add(idUnico); modoSelecaoAtivo = itensSelecionadosRelatorio.size > 0; atualizarControlesSelecao(); renderizarLista(); }
-    function selecionarGrupoCompras(grupoId, tipo = 'cat') { if(!modoSelecaoAtivo) return; let seletor = tipo === 'cat' ? `.item[data-grp-cat="${grupoId}"]` : `.item[data-grp-sub="${grupoId}"]`; let itensNode = document.querySelectorAll(seletor); let allIds = Array.from(itensNode).map(el => el.getAttribute('data-id')); if(allIds.length === 0) return; let allSelected = allIds.every(id => itensSelecionadosRelatorio.has(id)); if(allSelected) { allIds.forEach(id => { itensSelecionadosRelatorio.delete(id); let el = document.querySelector(`.item[data-id="${id}"]`); if(el) el.classList.remove('selecionado'); }); } else { allIds.forEach(id => { itensSelecionadosRelatorio.add(id); let el = document.querySelector(`.item[data-id="${id}"]`); if(el) el.classList.add('selecionado'); }); } }
-    function selecionarGrupoPedido(grupoId, tipo = 'cat') { if(!modoSelecaoAtivo) return; let seletor = tipo === 'cat' ? `.item[data-cat-id="${grupoId}"]` : `.item[data-sub-id="${grupoId}"]`; let itensNode = document.querySelectorAll(seletor); let allIds = Array.from(itensNode).map(el => el.getAttribute('data-id')); if(allIds.length === 0) return; let allSelected = allIds.every(id => itensSelecionadosRelatorio.has(id)); if(allSelected) { allIds.forEach(id => { itensSelecionadosRelatorio.delete(id); let el = document.querySelector(`.item[data-id="${id}"]`); if(el) el.classList.remove('selecionado'); }); } else { allIds.forEach(id => { itensSelecionadosRelatorio.add(id); let el = document.querySelector(`.item[data-id="${id}"]`); if(el) el.classList.add('selecionado'); }); } }
+function abrirModalMassaVincular() {
+    if(itensSelecionadosRelatorio.size === 0) return alert('Selecione itens primeiro.');
+    const selForn = document.getElementById('massaVincularForn');
+    selForn.innerHTML = '<option value="">-- Escolha o Fornecedor --</option>';
+    db.fornecedores.filter(f => f.ativo !== false).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(f => {
+        const option = document.createElement('option');
+        option.value = f.id;
+        option.textContent = f.nome;
+        selForn.appendChild(option);
+    });
+    document.getElementById('modalMassaVincular').style.display = 'flex';
+}
 
-    function acaoEmMassa(acao) { if(itensSelecionadosRelatorio.size === 0) return alert('Selecione os itens primeiro.'); const nomeAcao = acao === 'pedido_forn' ? 'marcar como pedido ao fornecedor' : 'concluir compra ou recebimento'; if(!confirm(`Deseja ${nomeAcao} para os itens selecionados?`)) return; const backupEstados = []; let alterados = 0; let ignorados = 0; const apenasReceber = getPermissaoColab(); const agora = Date.now(); itensSelecionadosRelatorio.forEach(idUnico => { const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(!pa) return; const acaoItem = acao === 'concluir' ? (pa.status === 'pedido_forn' ? 'entregue' : 'comprado') : 'pedido_forn'; const backup = JSON.parse(JSON.stringify(pa)); const resultado = AloFeiraDomain.aplicarTransicao(pa, acaoItem, agora, apenasReceber); if(resultado.ok) { backupEstados.push(backup); alterados++; } else ignorados++; }); if(alterados) { pilhaDesfazer.push(backupEstados); db.configs.syncPendente = true; salvarBanco(); toggleModoSelecao(); renderizarLista(); sincronizarFundo(false, true); mostrarToast(`${alterados} item(ns) atualizados.`, 'sucesso'); } if(ignorados) mostrarToast(`${ignorados} item(ns) não permitiam essa mudança.`, 'info', 4500); }
-    function abrirModalMassaVincular() {
-        if(itensSelecionadosRelatorio.size === 0) return alert('Selecione itens primeiro.');
-        const selForn = document.getElementById('massaVincularForn');
-        selForn.innerHTML = '<option value="">-- Escolha o Fornecedor --</option>';
-        db.fornecedores.filter(f => f.ativo !== false).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(f => {
-            const option = document.createElement('option');
-            option.value = f.id;
-            option.textContent = f.nome;
-            selForn.appendChild(option);
-        });
-        document.getElementById('modalMassaVincular').style.display = 'flex';
-    }
-    function confirmarMassaVincular() { if(getPermissaoColab()) return alert('Seu perfil não permite alterar fornecedores.'); const fornId = document.getElementById('massaVincularForn').value; if(!fornId) return alert('Selecione um fornecedor.'); itensSelecionadosRelatorio.forEach(idSelecionado => { let p; if (db.configs.modo === 'compras') { let pa = db.pedidosAtivos.find(x => x.idUnico === idSelecionado); if (pa) p = db.produtos.find(prod => prod.id === pa.produtoId); } else { p = db.produtos.find(prod => prod.id === idSelecionado); } if (p) { if (!p.fornecedores) p.fornecedores = []; if (!p.fornecedores.includes(fornId)) p.fornecedores.push(fornId); p.atualizadoEm = Date.now(); } }); marcarMudancaEstrutural(); fecharModal('modalMassaVincular'); toggleModoSelecao(); renderizarLista(); sincronizarFundo(false, true); mostrarToast('Fornecedor vinculado.', 'sucesso'); }
-    function abrirModalFiltroFornCompras() {
-        const selForn = document.getElementById('filtroComprasForn');
-        selForn.innerHTML = '<option value="">-- Mostrar Todos os Itens --</option>';
-        db.fornecedores.filter(f => f.ativo !== false).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(f => {
-            const option = document.createElement('option');
-            option.value = f.id;
-            option.textContent = f.nome;
-            selForn.appendChild(option);
-        });
-        selForn.value = filtroFornecedorComprasId || '';
-        document.getElementById('modalFiltroFornCompras').style.display = 'flex';
-    }
-    function aplicarFiltroFornCompras() { filtroFornecedorComprasId = document.getElementById('filtroComprasForn').value; fecharModal('modalFiltroFornCompras'); const btn = document.getElementById('btnFiltroForn'); if (filtroFornecedorComprasId) { btn.style.backgroundColor = db.configs.modo === 'pedido' ? '#1565C0' : '#6a1b9a'; } else { btn.style.backgroundColor = 'rgba(255,255,255,0.15)'; } renderizarLista(); }
-    function zerarFiltroForn() { filtroFornecedorComprasId = null; document.getElementById('filtroComprasForn').value = ""; fecharModal('modalFiltroFornCompras'); document.getElementById('btnFiltroForn').style.backgroundColor = 'rgba(255,255,255,0.15)'; renderizarLista(); }
+function confirmarMassaVincular() {
+    if(getPermissaoColab()) return alert('Seu perfil não permite alterar fornecedores.');
+    const fornId = document.getElementById('massaVincularForn').value;
+    if(!fornId) return alert('Selecione um fornecedor.');
+    itensSelecionadosRelatorio.forEach(idSelecionado => {
+        let p;
+        if(db.configs.modo === 'compras') {
+            const pa = db.pedidosAtivos.find(x => x.idUnico === idSelecionado);
+            if(pa) p = db.produtos.find(prod => prod.id === pa.produtoId);
+        } else {
+            p = db.produtos.find(prod => prod.id === idSelecionado);
+        }
+        if(p) {
+            if(!p.fornecedores) p.fornecedores = [];
+            if(!p.fornecedores.includes(fornId)) p.fornecedores.push(fornId);
+            p.atualizadoEm = Date.now();
+        }
+    });
+    marcarMudancaEstrutural();
+    fecharModal('modalMassaVincular');
+    toggleModoSelecao();
+    sincronizarFundo(false, true);
+    mostrarToast('Fornecedor vinculado.', 'sucesso');
+}
 
-    function normalizarTextoBusca(str) { return removerAcentos(String(str || '').toLowerCase()); }
-    function abrirBuscaPedido() { const box = document.getElementById('boxBuscaPedido'); const input = document.getElementById('inputBuscaPedidoInline'); const aberto = box.style.display === 'flex'; if(aberto || buscaPedidoTexto) { limparBuscaPedido(); return; } box.style.display = 'flex'; input.value = buscaPedidoTexto; setTimeout(() => input.focus(), 80); }
-    function aplicarBuscaPedido() { buscaPedidoTexto = document.getElementById('inputBuscaPedidoInline').value.trim(); const btn = document.getElementById('btnBuscaPedido'); if(btn) btn.style.backgroundColor = buscaPedidoTexto ? '#1565C0' : 'rgba(255,255,255,0.15)'; renderizarLista(); }
-    function limparBuscaPedido() { buscaPedidoTexto = ""; const input = document.getElementById('inputBuscaPedidoInline'); const box = document.getElementById('boxBuscaPedido'); if(input) input.value = ""; if(box) box.style.display = 'none'; const btn = document.getElementById('btnBuscaPedido'); if(btn) btn.style.backgroundColor = 'rgba(255,255,255,0.15)'; renderizarLista(); }
+function abrirModalFiltroFornCompras() {
+    const selForn = document.getElementById('filtroComprasForn');
+    selForn.innerHTML = '<option value="">-- Mostrar Todos os Itens --</option>';
+    db.fornecedores.filter(f => f.ativo !== false).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(f => {
+        const option = document.createElement('option');
+        option.value = f.id;
+        option.textContent = f.nome;
+        selForn.appendChild(option);
+    });
+    selForn.value = filtroFornecedorComprasId || '';
+    document.getElementById('modalFiltroFornCompras').style.display = 'flex';
+}
 
-    function ordernarPorCategoriaESub(a, b) { let pA = a.p || a; let pB = b.p || b; let idxA = pA ? db.categorias.findIndex(c => c.id === pA.categoria) : 999; if(idxA === -1) idxA = 999; let idxB = pB ? db.categorias.findIndex(c => c.id === pB.categoria) : 999; if(idxB === -1) idxB = 999; if (idxA !== idxB) return idxA - idxB; let subA = pA && pA.subcategoria ? pA.subcategoria : ""; let subB = pB && pB.subcategoria ? pB.subcategoria : ""; let cObjA = db.categorias.find(c => c.id === (pA ? pA.categoria : null)); let idxSubA = (cObjA && cObjA.subcategorias && subA) ? cObjA.subcategorias.indexOf(subA) : 999; if(idxSubA === -1) idxSubA = 999; let cObjB = db.categorias.find(c => c.id === (pB ? pB.categoria : null)); let idxSubB = (cObjB && cObjB.subcategorias && subB) ? cObjB.subcategorias.indexOf(subB) : 999; if(idxSubB === -1) idxSubB = 999; if (idxSubA !== idxSubB) return idxSubA - idxSubB; if (subA !== subB) return subA.localeCompare(subB); let nomeA = pA.descFornecedor ? pA.descFornecedor : (pA.nome || ""); let nomeB = pB.descFornecedor ? pB.descFornecedor : (pB.nome || ""); return nomeA.localeCompare(nomeB); }
+function aplicarFiltroFornCompras() {
+    filtroFornecedorComprasId = document.getElementById('filtroComprasForn').value;
+    fecharModal('modalFiltroFornCompras');
+    atualizarEstadoMenuFerramentas();
+    renderizarLista();
+}
 
-    function abrirModalAvulso(catId) { document.getElementById('avulsoCatId').value = catId; document.getElementById('avulsoNome').value = ''; document.getElementById('avulsoQtd').value = ''; document.getElementById('avulsoUn').value = ''; document.getElementById('modalFormAvulso').style.display = 'flex'; setTimeout(() => document.getElementById('avulsoNome').focus(), 100); }
-    function salvarAvulso() { const catId = document.getElementById('avulsoCatId').value; const nome = document.getElementById('avulsoNome').value.trim(); if(!nome) return alert("Por favor, digite o nome do item avulso."); const qtdStr = document.getElementById('avulsoQtd').value.trim(); const qtd = qtdStr !== '' ? parseFloatBr(qtdStr) : ''; const un = document.getElementById('avulsoUn').value.trim(); const newProdId = 'p_av_' + Date.now(); const novoProd = { id: newProdId, nome: nome + " (Avulso)", descFornecedor: "", obsPadrao: "", categoria: catId, subcategoria: "", qtdPadrao: "", unidades: un ? [un] : [''], marcasAprovadas: "", marcasReprovadas: "", historicoPrecos: [], fornecedores: [], avulso: true }; db.produtos.push(novoProd); const novoPedId = 'pa_' + Date.now(); db.pedidosAtivos.push({ idUnico: novoPedId, produtoId: newProdId, qtd: qtd, unidade: un, obs: "Item Avulso", status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId }); salvarBanco(); fecharModal('modalFormAvulso'); renderizarLista(); }
+function zerarFiltroForn() {
+    filtroFornecedorComprasId = null;
+    document.getElementById('filtroComprasForn').value = '';
+    fecharModal('modalFiltroFornCompras');
+    atualizarEstadoMenuFerramentas();
+    renderizarLista();
+}
+
+function normalizarTextoBusca(str) { return removerAcentos(String(str || '').toLowerCase()); }
+
+function abrirBuscaPedido() {
+    const box = document.getElementById('boxBuscaPedido');
+    const input = document.getElementById('inputBuscaPedidoInline');
+    const aberto = box.style.display === 'flex';
+    if(aberto || buscaPedidoTexto) { limparBuscaPedido(); return; }
+    box.style.display = 'flex';
+    input.value = buscaPedidoTexto;
+    setTimeout(() => input.focus(), 80);
+}
+
+function aplicarBuscaPedido() {
+    buscaPedidoTexto = document.getElementById('inputBuscaPedidoInline').value.trim();
+    const btn = document.getElementById('btnBuscaPedido');
+    if(btn) btn.style.backgroundColor = buscaPedidoTexto ? '#1565C0' : 'rgba(255,255,255,0.15)';
+    renderizarLista();
+}
+
+function limparBuscaPedido() {
+    buscaPedidoTexto = '';
+    const input = document.getElementById('inputBuscaPedidoInline');
+    const box = document.getElementById('boxBuscaPedido');
+    if(input) input.value = '';
+    if(box) box.style.display = 'none';
+    const btn = document.getElementById('btnBuscaPedido');
+    if(btn) btn.style.backgroundColor = 'rgba(255,255,255,0.15)';
+    renderizarLista();
+}
+
+function ordernarPorCategoriaESub(a, b) {
+    const pA = a.p || a;
+    const pB = b.p || b;
+    let idxA = pA ? db.categorias.findIndex(c => c.id === pA.categoria) : 999;
+    let idxB = pB ? db.categorias.findIndex(c => c.id === pB.categoria) : 999;
+    if(idxA === -1) idxA = 999;
+    if(idxB === -1) idxB = 999;
+    if(idxA !== idxB) return idxA - idxB;
+    const subA = pA && pA.subcategoria ? pA.subcategoria : '';
+    const subB = pB && pB.subcategoria ? pB.subcategoria : '';
+    const cObjA = db.categorias.find(c => c.id === (pA ? pA.categoria : null));
+    const cObjB = db.categorias.find(c => c.id === (pB ? pB.categoria : null));
+    let idxSubA = cObjA && cObjA.subcategorias && subA ? cObjA.subcategorias.indexOf(subA) : 999;
+    let idxSubB = cObjB && cObjB.subcategorias && subB ? cObjB.subcategorias.indexOf(subB) : 999;
+    if(idxSubA === -1) idxSubA = 999;
+    if(idxSubB === -1) idxSubB = 999;
+    if(idxSubA !== idxSubB) return idxSubA - idxSubB;
+    if(subA !== subB) return subA.localeCompare(subB);
+    const nomeA = pA.descFornecedor ? pA.descFornecedor : (pA.nome || '');
+    const nomeB = pB.descFornecedor ? pB.descFornecedor : (pB.nome || '');
+    return nomeA.localeCompare(nomeB);
+}
+
+function abrirModalAvulso(catId) {
+    document.getElementById('avulsoCatId').value = catId;
+    document.getElementById('avulsoNome').value = '';
+    document.getElementById('avulsoQtd').value = '';
+    document.getElementById('avulsoUn').value = '';
+    document.getElementById('modalFormAvulso').style.display = 'flex';
+    setTimeout(() => document.getElementById('avulsoNome').focus(), 100);
+}
+
+function salvarAvulso() {
+    const catId = document.getElementById('avulsoCatId').value;
+    const nome = document.getElementById('avulsoNome').value.trim();
+    if(!nome) return alert('Por favor, digite o nome do item avulso.');
+    const qtdStr = document.getElementById('avulsoQtd').value.trim();
+    const qtd = qtdStr !== '' ? parseFloatBr(qtdStr) : '';
+    const un = document.getElementById('avulsoUn').value.trim();
+    const newProdId = 'p_av_' + Date.now();
+    const novoProd = { id: newProdId, nome: nome + ' (Avulso)', descFornecedor: '', obsPadrao: '', categoria: catId, subcategoria: '', qtdPadrao: '', unidades: un ? [un] : [''], marcasAprovadas: '', marcasReprovadas: '', historicoPrecos: [], fornecedores: [], avulso: true };
+    db.produtos.push(novoProd);
+    db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: newProdId, qtd, unidade: un, obs: 'Item Avulso', status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId });
+    salvarBanco();
+    fecharModal('modalFormAvulso');
+    renderizarLista();
+}
