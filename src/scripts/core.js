@@ -19,6 +19,8 @@ function criarBancoBase() {
                 ultimaMudancaLocal: 0,
                 historicoApagadoEm: 0,
                 ultimoSyncConfirmado: 0,
+                relogioServidorOffset: 0,
+                relogioServidorSincronizadoEm: 0,
                 syncPendente: false
             }
         };
@@ -29,6 +31,7 @@ function criarBancoBase() {
         const entrada = dados && typeof dados === 'object' ? dados : {};
         const banco = Object.assign({}, base, entrada);
         banco.app_id = "alofeira";
+        delete banco.serverNow;
         banco.schemaVersion = 2;
         banco.syncRevision = AloFeiraDomain.numeroSeguro(entrada.syncRevision);
         banco.restaurante = Object.assign({}, base.restaurante, entrada.restaurante || {});
@@ -48,6 +51,8 @@ function criarBancoBase() {
         banco.colaboradores.forEach(c => { if(c.ativo === undefined) c.ativo = true; if(!c.emoji) c.emoji = '👤'; });
         if(banco.configs.ultimaMudancaLocal === undefined) banco.configs.ultimaMudancaLocal = 0;
         if(banco.configs.historicoApagadoEm === undefined) banco.configs.historicoApagadoEm = 0;
+        if(banco.configs.relogioServidorOffset === undefined) banco.configs.relogioServidorOffset = 0;
+        if(banco.configs.relogioServidorSincronizadoEm === undefined) banco.configs.relogioServidorSincronizadoEm = 0;
         if(banco.configs.syncPendente === undefined) banco.configs.syncPendente = false;
         return banco;
     }
@@ -63,8 +68,10 @@ function criarBancoBase() {
 
     function salvarBanco() { localStorage.setItem('alofeira_v1', JSON.stringify(db)); }
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-    function marcarMudancaEstrutural(registro = null) { const agora = Date.now(); db.configs.ultimaMudancaLocal = agora; db.configs.syncPendente = true; if(registro) registro.atualizadoEm = agora; salvarBanco(); }
-    function marcarMudancaPedido(pedido) { if(!pedido) return; pedido.dataStatus = Date.now(); db.configs.syncPendente = true; salvarBanco(); }
+    function agoraServidor() { return Math.round(Date.now() + Number(db.configs.relogioServidorOffset || 0)); }
+    function registrarRelogioServidor(serverNow, inicioRequisicao = Date.now(), fimRequisicao = Date.now()) { const servidor = Number(serverNow); if(!Number.isFinite(servidor) || servidor <= 0) return; const meioRequisicao = Number(inicioRequisicao) + Math.max(0, Number(fimRequisicao) - Number(inicioRequisicao)) / 2; db.configs.relogioServidorOffset = Math.round(servidor - meioRequisicao); db.configs.relogioServidorSincronizadoEm = Date.now(); }
+    function marcarMudancaEstrutural(registro = null) { const agora = agoraServidor(); db.configs.ultimaMudancaLocal = agora; db.configs.syncPendente = true; if(registro) registro.atualizadoEm = agora; salvarBanco(); }
+    function marcarMudancaPedido(pedido) { if(!pedido) return; pedido.dataStatus = agoraServidor(); db.configs.syncPendente = true; salvarBanco(); }
     function getCatsPermitidas(colabLogado) { if(!colabLogado) return null; if(colabLogado.isAdmin) return null; let cats = db.configs.modo === 'pedido' ? colabLogado.catsPermitidasPedido : colabLogado.catsPermitidasCompras; return cats !== undefined ? cats : colabLogado.catsPermitidas; }
     function temAcessoAdmin() { const ativos = db.colaboradores.filter(c => c.ativo !== false); if(ativos.length === 0) return true; const atual = ativos.find(c => c.id === db.configs.colabAtivoId); return Boolean(atual && atual.isAdmin); }
     function formatarDataHora(ts) { if(!ts) return ""; let d = new Date(ts); return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} às ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
@@ -113,4 +120,4 @@ function criarBancoBase() {
         mostrarToast.timer = setTimeout(() => toast.classList.remove('visivel'), duracao);
     }
 
-let db = carregarBanco(); let categoriaAtual = null; let modoSelecaoAtivo = false; let itensSelecionadosRelatorio = new Set(); let agrupamentoCompradoAtivo = false; let pilhaDesfazer = []; let tempPrecosProduto = []; let tempFornecedoresProduto = []; let tempSubcats = []; let tempRenames = []; let isSyncingFundo = false; let isModalFechando = false; let filtroFornecedorComprasId = null; let buscaPedidoTexto = ""; let envioPedidoEmAndamento = false; let currentGerenciarFiltro = 'todos'; let currentGerenciarBusca = ''; let origemFormProduto = null; let modalAcaoCompraId = null; let acaoConfirmacaoApp = null;
+let db = carregarBanco(); let categoriaAtual = null; let modoSelecaoAtivo = false; let itensSelecionadosRelatorio = new Set(); let agrupamentoCompradoAtivo = false; let pilhaDesfazer = []; let tempPrecosProduto = []; let tempFornecedoresProduto = []; let tempSubcats = []; let tempRenames = []; let isSyncingFundo = false; let syncRepetir = false; let syncRepetirApenasEmpurrar = false; let isModalFechando = false; let filtroFornecedorComprasId = null; let buscaPedidoTexto = ""; let envioPedidoEmAndamento = false; let currentGerenciarFiltro = 'todos'; let currentGerenciarBusca = ''; let origemFormProduto = null; let modalAcaoCompraId = null; let acaoConfirmacaoApp = null;

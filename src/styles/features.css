@@ -42,8 +42,10 @@
         .menu-ferramentas-item > span:first-child { width:28px; text-align:center; font-size:18px; }
         .menu-ferramentas-item:active { background:#f0f2f4; }
         .menu-estado { margin-left:auto; color:#521565; font-size:17px; font-weight:900; }
-        .menu-ferramentas-separador { height:1px; margin:6px 8px; background:#cfd5da; }
-        .menu-categoria-item { text-transform:none; }
+        .menu-ferramentas-separador { height:1px; margin:6px 0; background:#cfd5da; }
+        .menu-ferramentas-item.ultimo-grupo { border-bottom:0; }
+        .menu-categorias-titulo { padding:5px 10px 3px; color:#59656d; font-size:11px; font-weight:800; text-transform:uppercase; }
+        .menu-categoria-item { padding-left:34px; text-transform:none; }
         .menu-categoria-cor { width:18px !important; height:18px; border:1px solid rgba(0,0,0,.16); border-radius:4px; flex-shrink:0; }
         .menu-ferramentas-vazio { padding:12px 10px; color:#687078; font-size:13px; text-align:center; }
         .icone-send { width:18px; height:18px; display:block; flex-shrink:0; }

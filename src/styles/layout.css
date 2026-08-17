@@ -1,5 +1,6 @@
 .header { padding: 4px 8px; display: flex; justify-content: flex-start; align-items: center; gap:2px; color: white; transition: background-color 0.3s; flex-shrink: 0; }
         .header-select { background: transparent; color: white; border: none; font-size: 17px; font-weight: bold; outline: none; -webkit-appearance: none; appearance: none; flex-shrink:0; }
+        .header-select:focus, .header-select:focus-visible { outline:2px solid transparent !important; box-shadow:none; }
         .header-select option { color: black; font-size: 15px; }
         .dicas-cabecalho { display:none; }
         .dicas-cabecalho div { margin-bottom: 2px; }
@@ -19,6 +20,8 @@
         .filters { padding: 6px 10px; display:flex; align-items:center; gap:8px; white-space:nowrap; border-bottom:1px solid #eee; background:white; flex-shrink:0; }
         .filtros-principais { display:flex; align-items:center; gap:8px; min-width:0; flex:1; overflow-x:auto; scrollbar-width:none; }
         .filtros-principais::-webkit-scrollbar { display:none; }
+        .filtros-acoes-selecao { display:flex; align-items:center; gap:2px; flex-shrink:0; }
+        .filtros-acoes-selecao button { width:38px; height:38px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:0; border-radius:5px; color:#fff; font-size:18px; font-weight:900; cursor:pointer; }
         .filtros-acoes { display:flex; align-items:center; gap:2px; margin-left:auto; flex-shrink:0; }
         .filtros-acoes button { width:40px; height:40px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:0; border-radius:5px; background:transparent; color:#263238; font-size:20px; cursor:pointer; }
         body.theme-pedido .filtros-acoes button { color:#0d4f9a; }

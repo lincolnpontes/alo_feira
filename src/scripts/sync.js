@@ -26,10 +26,33 @@ async function lerRespostaJson(response) {
 function prepararBancoParaNuvem() {
     const copia = JSON.parse(JSON.stringify(db));
     copia.pedidosAtivos = copia.pedidosAtivos.filter(p => p.status !== 'rascunho');
-    const configsLocais = ['url', 'colabAtivoId', 'modo', 'dadosBaixados', 'ultimoSyncConfirmado', 'syncPendente'];
+    const configsLocais = ['url', 'colabAtivoId', 'modo', 'dadosBaixados', 'ultimoSyncConfirmado', 'syncPendente', 'relogioServidorOffset', 'relogioServidorSincronizadoEm'];
     configsLocais.forEach(campo => delete copia.configs[campo]);
     delete copia.configs.senhaAdmin;
+    delete copia.serverNow;
     return copia;
+}
+
+function aplicarConfirmacaoServidor(resposta, inicioRequisicao, fimRequisicao) {
+    registrarRelogioServidor(resposta && resposta.serverNow, inicioRequisicao, fimRequisicao);
+    (resposta && resposta.pedidosAtualizados || []).forEach(atualizacao => {
+        const pedido = db.pedidosAtivos.find(pa => pa.idUnico === atualizacao.idUnico);
+        if(!pedido) return;
+        ['dataStatus', 'dataEnvio', 'dataPedidoFornecedor', 'dataConclusao', 'dataExclusao'].forEach(campo => {
+            if(Object.prototype.hasOwnProperty.call(atualizacao, campo)) {
+                if(atualizacao[campo] === null) delete pedido[campo];
+                else pedido[campo] = atualizacao[campo];
+            }
+        });
+    });
+    const tempos = resposta && resposta.temposEstruturais || {};
+    ['produtos', 'categorias', 'fornecedores', 'colaboradores'].forEach(nome => {
+        (tempos[nome] || []).forEach(atualizacao => {
+            const registro = (db[nome] || []).find(item => item.id === atualizacao.id);
+            if(registro) registro.atualizadoEm = atualizacao.atualizadoEm;
+        });
+    });
+    if(resposta && resposta.restauranteAtualizadoEm) db.restaurante.atualizadoEm = resposta.restauranteAtualizadoEm;
 }
 
 function mesclarColecao(locais, remotos) {
@@ -79,6 +102,8 @@ function mesclarBancos(local, remotoBruto) {
         modo: locais.modo,
         dadosBaixados: true,
         ultimoSyncConfirmado: locais.ultimoSyncConfirmado || 0,
+        relogioServidorOffset: Number(locais.relogioServidorOffset || 0),
+        relogioServidorSincronizadoEm: Number(locais.relogioServidorSincronizadoEm || 0),
         historicoApagadoEm: corteHistorico,
         syncPendente: Boolean(locais.syncPendente || precisaEnviarPedidos)
     });
@@ -98,12 +123,15 @@ function mesclarBancos(local, remotoBruto) {
 }
 
 async function postarBanco({ forcar = false, permitirRetry = true } = {}) {
+    const dadosEnviados = prepararBancoParaNuvem();
+    const assinaturaEnviada = JSON.stringify(dadosEnviados);
     const payload = {
         action: 'salvar_banco',
-        dados: prepararBancoParaNuvem(),
+        dados: dadosEnviados,
         baseRevision: Number(db.syncRevision || 0),
         force: Boolean(forcar)
     };
+    const inicioRequisicao = Date.now();
     const response = await fetchComTimeout(db.configs.url, {
         method: 'POST',
         redirect: 'follow',
@@ -111,9 +139,11 @@ async function postarBanco({ forcar = false, permitirRetry = true } = {}) {
         body: JSON.stringify(payload)
     });
     const resposta = await lerRespostaJson(response);
+    const fimRequisicao = Date.now();
     const validacao = AloFeiraDomain.validarRespostaServidor(resposta);
 
     if(validacao.conflito && permitirRetry && resposta.dados) {
+        registrarRelogioServidor(resposta.serverNow, inicioRequisicao, fimRequisicao);
         const resultado = mesclarBancos(db, resposta.dados);
         db = resultado.banco;
         db.syncRevision = Number(resposta.revision || db.syncRevision || 0);
@@ -123,21 +153,91 @@ async function postarBanco({ forcar = false, permitirRetry = true } = {}) {
     }
     if(!validacao.ok) throw new Error(validacao.mensagem || 'O servidor não confirmou a gravação.');
 
+    const mudouDuranteEnvio = JSON.stringify(prepararBancoParaNuvem()) !== assinaturaEnviada;
+    aplicarConfirmacaoServidor(resposta, inicioRequisicao, fimRequisicao);
     if(validacao.revision) db.syncRevision = validacao.revision;
-    db.configs.syncPendente = false;
-    db.configs.ultimoSyncConfirmado = Date.now();
+    db.configs.syncPendente = mudouDuranteEnvio;
+    db.configs.ultimoSyncConfirmado = agoraServidor();
     salvarBanco();
+    if(mudouDuranteEnvio) { syncRepetir = true; syncRepetirApenasEmpurrar = true; }
     return true;
+}
+
+async function postarPedidosNovos(pedidos, permitirRetry = true) {
+    const idsProdutos = new Set(pedidos.map(pa => pa.produtoId));
+    const payload = {
+        action: 'enviar_pedidos',
+        pedidos: pedidos.map(pa => JSON.parse(JSON.stringify(pa))),
+        produtos: db.produtos.filter(produto => idsProdutos.has(produto.id)).map(produto => JSON.parse(JSON.stringify(produto))),
+        baseRevision: Number(db.syncRevision || 0)
+    };
+    const inicioRequisicao = Date.now();
+    const response = await fetchComTimeout(db.configs.url, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+    });
+    const resposta = await lerRespostaJson(response);
+    const fimRequisicao = Date.now();
+    const validacao = AloFeiraDomain.validarRespostaServidor(resposta);
+
+    if(resposta && resposta.status === 'erro') return { suportado: false, conflito: false };
+    if(validacao.conflito && permitirRetry && resposta.dados) {
+        registrarRelogioServidor(resposta.serverNow, inicioRequisicao, fimRequisicao);
+        const idsPedidos = new Set(pedidos.map(pa => pa.idUnico));
+        const resultado = mesclarBancos(db, resposta.dados);
+        db = resultado.banco;
+        db.syncRevision = Number(resposta.revision || db.syncRevision || 0);
+        salvarBanco();
+        const pedidosMesclados = db.pedidosAtivos.filter(pa => idsPedidos.has(pa.idUnico));
+        const retry = await postarPedidosNovos(pedidosMesclados, false);
+        retry.conflito = true;
+        return retry;
+    }
+    if(!validacao.ok) throw new Error(validacao.mensagem || 'O servidor não confirmou o pedido.');
+
+    aplicarConfirmacaoServidor(resposta, inicioRequisicao, fimRequisicao);
+    if(validacao.revision) db.syncRevision = validacao.revision;
+    db.configs.ultimoSyncConfirmado = agoraServidor();
+    salvarBanco();
+    return { suportado: true, conflito: false };
 }
 
 function isUsuarioGerenciando() {
     return Array.from(document.querySelectorAll('.modal-overlay')).some(el => el.style.display === 'flex');
 }
 
+async function consultarMetaNuvem() {
+    const separador = db.configs.url.includes('?') ? '&' : '?';
+    const fetchUrl = db.configs.url + separador + 'meta=1&nocache=' + Date.now();
+    const inicioRequisicao = Date.now();
+    const response = await fetchComTimeout(fetchUrl, { redirect: 'follow', cache: 'no-store' }, 10000);
+    const resposta = await lerRespostaJson(response);
+    const fimRequisicao = Date.now();
+    registrarRelogioServidor(resposta && resposta.serverNow, inicioRequisicao, fimRequisicao);
+    if(resposta && resposta.status === 'sucesso' && resposta.app_id === 'alofeira' && resposta.revision !== undefined) {
+        return { revision: Number(resposta.revision || 0), banco: null };
+    }
+    if(resposta && resposta.app_id === 'alofeira') return { revision: Number(resposta.syncRevision || 0), banco: resposta };
+    throw new Error('Banco da nuvem inválido.');
+}
+
+async function baixarBancoNuvem() {
+    const fetchUrl = db.configs.url + (db.configs.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
+    const inicioRequisicao = Date.now();
+    const response = await fetchComTimeout(fetchUrl, { redirect: 'follow', cache: 'no-store' });
+    const nuvem = await lerRespostaJson(response);
+    const fimRequisicao = Date.now();
+    registrarRelogioServidor(nuvem && nuvem.serverNow, inicioRequisicao, fimRequisicao);
+    if(!nuvem || nuvem.app_id !== 'alofeira') throw new Error('Banco da nuvem inválido.');
+    return nuvem;
+}
+
 async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
     if(!db.configs.url) { atualizarEstadoSync('local', 'Dados somente neste aparelho'); return false; }
     if(isUsuarioGerenciando() && !forcado && !apenasEmpurrar) return false;
-    if(isSyncingFundo) return false;
+    if(isSyncingFundo) { syncRepetir = true; syncRepetirApenasEmpurrar = syncRepetirApenasEmpurrar || apenasEmpurrar; return false; }
     if(document.hidden && !forcado && !apenasEmpurrar) return false;
     const temRascunho = db.pedidosAtivos.some(pa => pa.status === 'rascunho' && !pa.excluido);
     if(temRascunho && db.configs.modo === 'pedido' && !forcado && !apenasEmpurrar) return false;
@@ -146,22 +246,25 @@ async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
     atualizarEstadoSync('sincronizando', 'Sincronizando com a nuvem');
     try {
         let precisaEnviar = Boolean(apenasEmpurrar || db.configs.syncPendente);
-        if(!apenasEmpurrar) {
-            const fetchUrl = db.configs.url + (db.configs.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
-            const response = await fetchComTimeout(fetchUrl, { redirect: 'follow', cache: 'no-store' });
-            const nuvem = await lerRespostaJson(response);
-            if(!nuvem || nuvem.app_id !== 'alofeira') throw new Error('Banco da nuvem inválido.');
-            const resultado = mesclarBancos(db, nuvem);
-            db = resultado.banco;
-            precisaEnviar = precisaEnviar || resultado.precisaEnviar;
-            salvarBanco();
-            if(!isUsuarioGerenciando()) {
-                renderizarFiltros();
-                renderizarLista();
+        if(precisaEnviar) {
+            await postarBanco();
+        } else if(!apenasEmpurrar) {
+            const meta = await consultarMetaNuvem();
+            let nuvem = meta.banco;
+            if(!nuvem && meta.revision !== Number(db.syncRevision || 0)) nuvem = await baixarBancoNuvem();
+            if(nuvem) {
+                const resultado = mesclarBancos(db, nuvem);
+                db = resultado.banco;
+                precisaEnviar = precisaEnviar || resultado.precisaEnviar;
+                salvarBanco();
+                if(!isUsuarioGerenciando()) {
+                    renderizarFiltros();
+                    renderizarLista();
+                }
             }
+            if(precisaEnviar) await postarBanco();
         }
-        if(precisaEnviar) await postarBanco();
-        db.configs.ultimoSyncConfirmado = Date.now();
+        db.configs.ultimoSyncConfirmado = agoraServidor();
         salvarBanco();
         atualizarEstadoSync('sincronizado', 'Dados confirmados na nuvem');
         setTimeout(() => atualizarEstadoSync('oculto', 'Dados confirmados na nuvem'), 1800);
@@ -175,6 +278,12 @@ async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
         return false;
     } finally {
         isSyncingFundo = false;
+        if(syncRepetir) {
+            const somenteEnvio = syncRepetirApenasEmpurrar;
+            syncRepetir = false;
+            syncRepetirApenasEmpurrar = false;
+            setTimeout(() => sincronizarFundo(false, somenteEnvio), 180);
+        }
     }
 }
 
@@ -185,8 +294,10 @@ async function salvarURL() {
     document.getElementById('loadingText').textContent = 'Conectando e conferindo os dados...';
     try {
         const fetchUrl = inputUrl + (inputUrl.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
+        const inicioRequisicao = Date.now();
         const response = await fetchComTimeout(fetchUrl, { redirect: 'follow', cache: 'no-store' });
         const nuvem = await lerRespostaJson(response);
+        registrarRelogioServidor(nuvem && nuvem.serverNow, inicioRequisicao, Date.now());
         if(!nuvem || nuvem.app_id !== 'alofeira') throw new Error('Não encontrei um banco válido nesse endereço.');
         db.configs.url = inputUrl;
         const resultado = mesclarBancos(db, nuvem);
@@ -239,7 +350,7 @@ function aplicarBackupImportado(importado) {
     const urlSalva = db.configs.url;
     db = normalizarBanco(importado);
     db.configs.url = urlSalva || '';
-    db.configs.ultimaMudancaLocal = Date.now();
+    db.configs.ultimaMudancaLocal = agoraServidor();
     db.configs.syncPendente = true;
     salvarBanco();
     alert('Backup importado neste aparelho. Confira os dados e use “Forçar envio” para substituir a nuvem.');
@@ -268,7 +379,7 @@ async function excluirTodoHistorico(confirmado = false) {
     if(frase !== 'quero excluir todo o histórico') return alert('Frase incorreta.');
     if(!confirmado) return abrirConfirmacaoApp({ titulo:'Apagar todo o histórico?', mensagem:'Todos os pedidos serão apagados em todos os aparelhos. Os cadastros serão mantidos.', rotulo:'Apagar histórico', cor:'#c62828', acao:() => excluirTodoHistorico(true) });
     const backup = JSON.parse(JSON.stringify(db));
-    db.configs.historicoApagadoEm = Date.now();
+    db.configs.historicoApagadoEm = agoraServidor();
     db.pedidosAtivos = [];
     db.produtos = db.produtos.filter(p => !p.avulso);
     marcarMudancaEstrutural();
@@ -302,6 +413,7 @@ async function forcarAtualizacao(confirmado = false) {
     window.location.href = window.location.pathname + '?nocache=' + Date.now();
 }
 
-setInterval(() => sincronizarFundo(false, false), 20000);
+setInterval(() => sincronizarFundo(false, false), 12000);
 window.addEventListener('online', () => sincronizarFundo(false, false));
 window.addEventListener('offline', () => atualizarEstadoSync('offline', 'Sem internet; alterações guardadas no aparelho'));
+document.addEventListener('visibilitychange', () => { if(!document.hidden) sincronizarFundo(false, false); });

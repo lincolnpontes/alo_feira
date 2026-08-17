@@ -47,12 +47,13 @@ function renderizarMenuFerramentas() {
     const catsPermitidas = getCatsPermitidas(colabLogado);
     const categorias = db.categorias.filter(cat => cat.ativo !== false && (!catsPermitidas || catsPermitidas.includes(cat.id)));
     const todosAtivo = categoriaAtual === null && (!compras || (!filtroFornecedorComprasId && !agrupamentoCompradoAtivo));
-    let html = `<button type="button" class="menu-ferramentas-item" role="menuitem" onclick="acionarMenuFerramentas('todos')"><span aria-hidden="true">≡</span><span>Mostrar todos os itens</span><span class="menu-estado" id="estadoMostrarTodos">${todosAtivo ? '✓' : ''}</span></button>`;
+    let html = `<button type="button" class="menu-ferramentas-item ${compras ? '' : 'ultimo-grupo'}" role="menuitem" onclick="acionarMenuFerramentas('todos')"><span aria-hidden="true">≡</span><span>Mostrar todos os itens</span><span class="menu-estado" id="estadoMostrarTodos">${todosAtivo ? '✓' : ''}</span></button>`;
     if(compras) {
         html += `<button type="button" class="menu-ferramentas-item" role="menuitem" onclick="acionarMenuFerramentas('fornecedor')"><span aria-hidden="true">🚚</span><span>Filtrar por fornecedor</span><span class="menu-estado" id="estadoFiltroFornecedor">${filtroFornecedorComprasId ? '✓' : ''}</span></button>`;
-        html += `<button type="button" class="menu-ferramentas-item" id="opcaoAgruparStatus" role="menuitem" onclick="acionarMenuFerramentas('agrupar')"><span aria-hidden="true">🗂️</span><span>Agrupar por status</span><span class="menu-estado" id="estadoAgruparStatus">${agrupamentoCompradoAtivo ? '✓' : ''}</span></button>`;
+        html += `<button type="button" class="menu-ferramentas-item ultimo-grupo" id="opcaoAgruparStatus" role="menuitem" onclick="acionarMenuFerramentas('agrupar')"><span aria-hidden="true">🗂️</span><span>Agrupar por status</span><span class="menu-estado" id="estadoAgruparStatus">${agrupamentoCompradoAtivo ? '✓' : ''}</span></button>`;
     }
     html += '<div class="menu-ferramentas-separador" role="separator"></div>';
+    html += '<div class="menu-categorias-titulo">Agrupar por categoria:</div>';
     categorias.forEach(cat => {
         const ativa = categoriaAtual === cat.id;
         html += `<button type="button" class="menu-ferramentas-item menu-categoria-item" role="menuitem" onclick="selecionarCategoriaMenu('${cat.id}')"><span class="menu-categoria-cor" style="background:${cat.cor};" aria-hidden="true"></span><span>${escaparHtml(cat.nome)}</span><span class="menu-estado">${ativa ? '✓' : ''}</span></button>`;
@@ -134,8 +135,8 @@ function ativarAgrupamentoCompras() {
 }
 
 function limparComprasAntigas() {
-    const concluidos = db.pedidosAtivos.filter(pa => !pa.excluido && !pa.ocultoCompras && (pa.status === 'comprado' || pa.status === 'entregue'));
-    if(concluidos.length === 0) return alert('Não há itens comprados ou entregues para limpar.');
+    const concluidos = db.pedidosAtivos.filter(pa => !pa.excluido && !pa.ocultoCompras && ['comprado', 'entregue', 'cancelado'].includes(pa.status));
+    if(concluidos.length === 0) return alert('Não há itens concluídos ou cancelados para limpar.');
     abrirConfirmacaoApp({
         titulo: 'Limpar itens concluídos?',
         mensagem: `${concluidos.length} item(ns) sairão da lista, mas continuarão no histórico.`,
@@ -146,11 +147,16 @@ function limparComprasAntigas() {
 }
 
 function executarLimpezaComprasAntigas() {
-    const concluidos = db.pedidosAtivos.filter(pa => !pa.excluido && !pa.ocultoCompras && (pa.status === 'comprado' || pa.status === 'entregue'));
+    const concluidos = db.pedidosAtivos.filter(pa => !pa.excluido && !pa.ocultoCompras && ['comprado', 'entregue', 'cancelado'].includes(pa.status));
     if(concluidos.length === 0) return;
     const backupEstados = concluidos.map(pa => JSON.parse(JSON.stringify(pa)));
+    const idsAvulsosCancelados = new Set(concluidos.filter(pa => pa.status === 'cancelado').map(pa => pa.produtoId));
+    const produtosAvulsos = db.produtos.filter(p => p.avulso && p.ativo !== false && idsAvulsosCancelados.has(p.id));
+    const backupProdutos = produtosAvulsos.map(p => JSON.parse(JSON.stringify(p)));
     concluidos.forEach(pa => { pa.ocultoCompras = true; });
-    pilhaDesfazer.push(backupEstados);
+    produtosAvulsos.forEach(p => { p.ativo = false; p.atualizadoEm = agoraServidor(); });
+    pilhaDesfazer.push({ pedidos: backupEstados, produtos: backupProdutos });
+    db.configs.syncPendente = true;
     atualizarBotaoDesfazer();
     salvarBanco();
     renderizarLista();
@@ -163,12 +169,14 @@ function atualizarControlesSelecao() {
     const btnComprado = document.getElementById('btnMassaComprado');
     const btnPedidoFornecedor = document.getElementById('btnMassaPedForn');
     const btnVincular = document.getElementById('btnMassaVincular');
+    const acoesSelecao = document.getElementById('acoesSelecaoCompras');
     const btnLimpar = document.getElementById('btnLimparComprasBar');
 
-    btnComprado.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
-    btnPedidoFornecedor.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
-    btnVincular.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
-    btnLimpar.style.display = 'inline-flex';
+    btnComprado.style.display = 'inline-flex';
+    btnPedidoFornecedor.style.display = 'inline-flex';
+    btnVincular.style.display = 'inline-flex';
+    acoesSelecao.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
+    btnLimpar.style.display = modoSelecaoAtivo ? 'none' : 'inline-flex';
     btnRelatorio.style.display = !pedido ? 'inline-flex' : 'none';
     if(modoSelecaoAtivo) {
         fecharMenuFerramentas();
@@ -182,7 +190,7 @@ function atualizarControlesSelecao() {
 function atualizarVisibilidadeBarraCompras() {
     const compras = db.configs.modo === 'compras';
     const temDesfazer = pilhaDesfazer.length > 0 && !modoSelecaoAtivo;
-    document.getElementById('actionBarCompras').style.display = compras && (modoSelecaoAtivo || temDesfazer) ? 'flex' : 'none';
+    document.getElementById('actionBarCompras').style.display = compras && temDesfazer ? 'flex' : 'none';
 }
 
 function toggleModoSelecao() {
@@ -238,7 +246,7 @@ function executarAcaoEmMassa(acao) {
     let alterados = 0;
     let ignorados = 0;
     const apenasReceber = getPermissaoColab();
-    const agora = Date.now();
+    const agora = agoraServidor();
     itensSelecionadosRelatorio.forEach(idUnico => {
         const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico);
         if(!pa) return;
@@ -285,7 +293,7 @@ function confirmarMassaVincular() {
         if(p) {
             if(!p.fornecedores) p.fornecedores = [];
             if(!p.fornecedores.includes(fornId)) p.fornecedores.push(fornId);
-            p.atualizadoEm = Date.now();
+            p.atualizadoEm = agoraServidor();
         }
     });
     marcarMudancaEstrutural();
@@ -397,7 +405,7 @@ function salvarAvulso() {
     const newProdId = 'p_av_' + Date.now();
     const novoProd = { id: newProdId, nome: nome + ' (Avulso)', descFornecedor: '', obsPadrao: '', categoria: catId, subcategoria: '', qtdPadrao: '', unidades: un ? [un] : [''], marcasAprovadas: '', marcasReprovadas: '', historicoPrecos: [], fornecedores: [], avulso: true };
     db.produtos.push(novoProd);
-    db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: newProdId, qtd, unidade: un, obs: 'Item Avulso', status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId });
+    db.pedidosAtivos.push({ idUnico: 'pa_' + Date.now(), produtoId: newProdId, qtd, unidade: un, obs: 'Item Avulso', status: 'rascunho', dataStatus: agoraServidor(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId });
     salvarBanco();
     fecharModal('modalFormAvulso');
     renderizarLista();

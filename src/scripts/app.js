@@ -23,5 +23,5 @@ function iniciarApp() {
     document.getElementById('configExigirColab').checked = db.configs.exigirColaborador;
     alterarModo(db.configs.modo);
     atualizarEstadoSync(db.configs.url ? 'oculto' : 'local', db.configs.url ? 'Sincronização configurada' : 'Dados somente neste aparelho');
-    setTimeout(() => sincronizarFundo(), 800);
+    setTimeout(() => sincronizarFundo(), 300);
 }
