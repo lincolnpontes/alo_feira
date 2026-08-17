@@ -38,10 +38,15 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   const purchases = fs.readFileSync(path.join(root, 'src', 'scripts', 'purchases.js'), 'utf8');
   const catalog = fs.readFileSync(path.join(root, 'src', 'scripts', 'catalog.js'), 'utf8');
   const orders = fs.readFileSync(path.join(root, 'src', 'scripts', 'orders.js'), 'utf8');
+  const scripts = fs.readdirSync(path.join(root, 'src', 'scripts')).filter(name => name.endsWith('.js')).map(name => fs.readFileSync(path.join(root, 'src', 'scripts', name), 'utf8')).join('\n');
   assert.match(html, /class="menu-compra"/);
+  assert.match(html, /id="modalAcaoPedido"/);
+  assert.match(html, /Alterar quantidade \/ unidade/);
   assert.match(html, /id="btnMenuFerramentas"/);
   assert.match(html, /id="btnLimparComprasBar"/);
   assert.match(html, /id="modalConfirmarRemoverRascunho"/);
+  assert.match(html, /id="modalConfirmacaoApp"/);
+  assert.doesNotMatch(scripts, /\bconfirm\s*\(/);
   assert.doesNotMatch(html, /id="btnModoSelecaoBar"|id="btnFiltroForn"|id="btnAgruparStatus"/);
   assert.doesNotMatch(html + purchases, /Escolha conscientemente|Registra o momento|Para compras feitas|Pede confirmação|Toque novamente/);
   assert.match(purchases, /botaoAcaoCompra\('comprado',[\s\S]*botaoAcaoCompra\('pedido_forn',[\s\S]*botaoAcaoCompra\('detalhes',[\s\S]*botaoAcaoCompra\('cancelar'/);
@@ -51,7 +56,12 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(catalog, /class="seletor-item-compra"[\s\S]*selecionarItemCompraDireto/);
   assert.match(html + catalog + purchases, /m22 2-7 20-4-9-9-4 20-7Z/);
   assert.doesNotMatch(catalog + orders, /seletor-item-pedido|selecionarItemPedidoDireto|selecionarGrupoPedido/);
+  assert.doesNotMatch(catalog, /class="item-avatar"/);
+  assert.match(catalog, /item-status-pedido[\s\S]*status-glyph/);
   assert.match(orders, /function selecionarGrupoCompras[\s\S]*alternarSelecaoGrupo/);
   assert.match(orders, /btnMenu\.style\.display = !pedido[\s\S]*btnLimpar\.style\.display = pedido/);
+  assert.match(orders, /actionBarCompras'\)\.style\.display = modo === 'compras'/);
+  assert.match(orders, /btn-busca-filtros[\s\S]*boxBuscaPedido/);
+  assert.match(purchases, /function abrirAcoesPedido[\s\S]*function executarAcaoPedido/);
   assert.match(purchases, /function abrirConfirmarRemoverRascunho[\s\S]*function confirmarRemocaoRascunho/);
 });

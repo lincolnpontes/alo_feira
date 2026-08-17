@@ -16,14 +16,17 @@
         .status-glyph.pendente { color:#9a5200; background:#fff4df; border-color:#e8bd72; }
         .status-glyph.pedido_forn { color:#521565; background:#ddc8e3; border-color:#b98fc5; }
         .status-glyph.comprado, .status-glyph.entregue { color:#145218; background:#c8e4cf; border-color:#8fbe9a; }
+        .status-glyph.rascunho { color:#1565c0; background:#dcecff; border-color:#82b1e6; }
         .status-glyph.cancelado { color:#555; background:#e5e8ea; border-color:#c4c9cd; }
         .seletor-item-compra:active .status-glyph { transform:scale(.93); }
         .item.selecionado .status-glyph { color:#fff; background:#521565; border-color:#521565; }
         .item-main-action { min-width:0; min-height:44px; flex:1; display:flex; align-items:center; justify-content:space-between; gap:6px; border:0; background:transparent; color:inherit; padding:0; text-align:left; cursor:pointer; font:inherit; }
+        .item-status-pedido { width:44px; height:44px; margin-right:5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .status-pill { display:inline-flex; align-items:center; border-radius:999px; padding:5px 9px; font-size:10px; font-weight:800; background:#eceff1; color:#455a64; white-space:nowrap; }
 
         .menu-compra-overlay { display:none; position:fixed; inset:0; z-index:1050; background:transparent; }
         .menu-compra { position:fixed; width:270px; padding:6px; background:#fff; border:1px solid #d9dde1; border-radius:8px; box-shadow:0 10px 28px rgba(25,31,36,.2); }
+        .menu-pedido { width:290px; }
         .menu-compra-acoes { display:grid; gap:4px; }
         .menu-compra-acao { width:100%; min-height:46px; display:flex; align-items:center; gap:10px; border:0; border-radius:6px; padding:7px 10px; text-align:left; font-size:14px; font-weight:750; cursor:pointer; transition:filter .15s, transform .15s; }
         .menu-compra-acao:active { transform:scale(.985); }
@@ -46,6 +49,8 @@
         .icone-send-menu { width:17px; height:17px; }
         .icone-send-grupo { width:16px; height:16px; }
         .modal-confirmacao-pedido { border-top:5px solid #1565c0; }
+        .modal-confirmacao-global { z-index:12000; }
+        .modal-confirmacao-app { max-width:390px; border-top:5px solid #1565c0; }
         .texto-confirmacao-item { margin:0; min-height:44px; display:flex; align-items:center; color:#263238; font-size:16px; }
         .pedido-hoje-item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--borda); }
         .pedido-hoje-info { display:flex; flex:1; min-width:0; flex-wrap:wrap; align-items:baseline; gap:4px 8px; }

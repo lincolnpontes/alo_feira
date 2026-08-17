@@ -1,11 +1,19 @@
-function cancelarRascunhos() { if(confirm("Deseja realmente cancelar a seleção e remover os rascunhos?")) { db.pedidosAtivos = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho'); salvarBanco(); renderizarLista(); isModalFechando = true; setTimeout(() => { isModalFechando = false; }, 400); } }
+function cancelarRascunhos() {
+    const total = db.pedidosAtivos.filter(pa => pa.status === 'rascunho').length;
+    if(!total) return;
+    abrirConfirmacaoApp({ titulo:'Cancelar pedido?', mensagem:`Os ${total} item(ns) preparados serão removidos.`, rotulo:'Cancelar pedido', cor:'#c62828', acao:executarCancelamentoRascunhos });
+}
+function executarCancelamentoRascunhos() { db.pedidosAtivos = db.pedidosAtivos.filter(pa => pa.status !== 'rascunho'); salvarBanco(); renderizarLista(); isModalFechando = true; setTimeout(() => { isModalFechando = false; }, 400); }
     function esperar(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
     async function aguardarSyncLivre(timeoutMs = 12000) { const inicio = Date.now(); while(isSyncingFundo && Date.now() - inicio < timeoutMs) { await esperar(250); } return !isSyncingFundo; }
-    async function enviarPedidosParaCompras() {
+    async function enviarPedidosParaCompras(confirmado = false) {
         if(envioPedidoEmAndamento) return;
         if(!db.configs.url) return alert('Configure primeiro a URL do sistema nas Configurações Avançadas.');
         if(!db.pedidosAtivos.some(pa => pa.status === 'rascunho' && !pa.excluido)) return;
-        if(!confirm('Enviar os itens preparados para a lista de compras?')) return;
+        if(!confirmado) {
+            const total = db.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido).length;
+            return abrirConfirmacaoApp({ titulo:'Enviar pedido?', mensagem:`Enviar ${total} item(ns) preparados para a lista de compras?`, rotulo:'Enviar pedido', cor:'#1565C0', acao:() => enviarPedidosParaCompras(true) });
+        }
         envioPedidoEmAndamento = true;
         document.getElementById('loadingOverlay').style.display = 'flex';
         document.getElementById('loadingText').textContent = 'Conferindo a versão mais recente da nuvem...';
@@ -87,5 +95,5 @@ function cancelarRascunhos() { if(confirm("Deseja realmente cancelar a seleção
         lista.innerHTML = htmlLista;
         modal.style.display = 'flex';
     }
-    function excluirPedidoHoje(idUnico) { if(confirm("Deseja apagar definitivamente este pedido feito hoje?")) { let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(pa) { pa.excluido = true; pa.status = 'excluido'; pa.excluidoPorPedidos = true; pa.dataExclusao = Date.now(); pa.dataStatus = pa.dataExclusao; db.configs.syncPendente = true; salvarBanco(); abrirPedidosHoje(); renderizarLista(); sincronizarFundo(false, true); } } }
+    function excluirPedidoHoje(idUnico) { abrirConfirmacaoApp({ titulo:'Excluir pedido?', mensagem:'Este pedido feito hoje será removido definitivamente.', rotulo:'Excluir', cor:'#c62828', acao:() => { let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(pa) { pa.excluido = true; pa.status = 'excluido'; pa.excluidoPorPedidos = true; pa.dataExclusao = Date.now(); pa.dataStatus = pa.dataExclusao; db.configs.syncPendente = true; salvarBanco(); abrirPedidosHoje(); renderizarLista(); sincronizarFundo(false, true); } } }); }
     async function compartilharTxtNativo() { let hoje = new Date().setHours(0,0,0,0); let itensHoje = db.pedidosAtivos.filter(pa => { if(pa.status === 'rascunho' || pa.excluido) return false; let dataPa = pa.dataEnvio ? new Date(pa.dataEnvio).setHours(0,0,0,0) : 0; return dataPa === hoje; }); if (itensHoje.length === 0) return alert("Nenhum pedido foi enviado hoje para ser exportado."); let itensHojeDetalhado = itensHoje.map(pa => ({ pa: pa, p: db.produtos.find(x => x.id === pa.produtoId) })).filter(item => item.p); itensHojeDetalhado.sort(ordernarPorCategoriaESub); let gruposArr = []; itensHojeDetalhado.forEach(item => { let nomeGrupo = item.p.subcategoria && item.p.subcategoria.trim() !== "" ? item.p.subcategoria.trim() : (db.categorias.find(c => c.id === item.p.categoria)?.nome || "Outros"); let g = gruposArr.find(x => x.nome === nomeGrupo); if(!g) { g = { nome: nomeGrupo, itens: [] }; gruposArr.push(g); } g.itens.push(item); }); let blocosTexto = []; gruposArr.forEach(grupo => { let txt = `> *${grupo.nome}*\n`; let linhas = grupo.itens.map(item => { let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = ""; if(qtyVal !== null && unVal !== null) qtdStr = ` - Qtd: ${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStr = ` - Qtd: ${qtyVal}`; else if(unVal !== null) qtdStr = ` - Qtd: ${unVal}`; let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; return `▪ ${item.p.nome}${qtdStr}${obsStr}`; }); blocosTexto.push(txt + linhas.join('\n')); }); const textoFinal = blocosTexto.join('\n\n'); const d = new Date(); const dataBrFormatada = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; const nomeRes = db.restaurante.nome || "Restaurante"; const nomeArquivo = `Pedido - ${nomeRes} - ${dataBrFormatada}.txt`; const file = new File([textoFinal], nomeArquivo, { type: 'text/plain' }); if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: 'Relatório de Pedidos', text: 'Segue a lista de pedidos gerada hoje.' }); } catch (error) { console.log('Compartilhamento falhou', error); } } else { const url = URL.createObjectURL(file); const a = document.createElement('a'); a.href = url; a.download = nomeArquivo; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); alert("O arquivo foi baixado."); } }

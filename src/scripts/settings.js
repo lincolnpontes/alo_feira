@@ -13,12 +13,7 @@ function abrirAdmin() { document.getElementById('modalPainelUnificado').style.di
             if(item.isAdmin && db.colaboradores.filter(c => c.ativo !== false && c.isAdmin && c.id !== id).length === 0) return alert('O sistema precisa manter pelo menos um administrador.');
         }
         const nome = item.nome || 'este cadastro';
-        if(!confirm(`Arquivar “${nome}”? O cadastro saira das listas, mas continuara preservado no historico.`)) return;
-        item.ativo = false;
-        marcarMudancaEstrutural(item);
-        abrirGerenciar(tipo, true);
-        renderizarLista();
-        sincronizarFundo(false, true);
+        abrirConfirmacaoApp({ titulo:'Arquivar cadastro?', mensagem:`${nome} sairá das listas, mas continuará preservado no histórico.`, rotulo:'Arquivar', cor:'#c62828', acao:() => { item.ativo = false; marcarMudancaEstrutural(item); abrirGerenciar(tipo, true); renderizarLista(); sincronizarFundo(false, true); } });
     }
-    function duplicarProduto(id) { if(confirm("Deseja duplicar este produto com os exatos mesmos dados e nome?")) { let p = db.produtos.find(x => x.id === id); if(!p) return; let copia = JSON.parse(JSON.stringify(p)); copia.id = 'p_' + Date.now(); copia.atualizadoEm = Date.now(); db.produtos.push(copia); marcarMudancaEstrutural(copia); abrirGerenciar('produtos', true); sincronizarFundo(false, true); } }
+    function duplicarProduto(id) { const p = db.produtos.find(x => x.id === id); if(!p) return; abrirConfirmacaoApp({ titulo:'Duplicar produto?', mensagem:`Será criada uma cópia de ${p.nome} com os mesmos dados.`, rotulo:'Duplicar', cor:'#1565C0', acao:() => { let copia = JSON.parse(JSON.stringify(p)); copia.id = 'p_' + Date.now(); copia.atualizadoEm = Date.now(); db.produtos.push(copia); marcarMudancaEstrutural(copia); abrirGerenciar('produtos', true); sincronizarFundo(false, true); } }); }
     function salvarRestaurante() { const nome = document.getElementById('restNome').value.trim(); if(!nome) return alert('Informe o nome do restaurante.'); db.restaurante.nome = nome; db.restaurante.cnpj = document.getElementById('restCNPJ').value; db.restaurante.rua = document.getElementById('restRua').value.trim(); db.restaurante.numero = document.getElementById('restNum').value.trim(); db.restaurante.bairro = document.getElementById('restBairro').value.trim(); db.restaurante.cidade = document.getElementById('restCidade').value.trim(); db.restaurante.uf = document.getElementById('restUF').value; db.restaurante.ponto = document.getElementById('restPonto').value.trim(); db.restaurante.atualizadoEm = Date.now(); marcarMudancaEstrutural(); fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display = 'flex'; sincronizarFundo(false, true); }

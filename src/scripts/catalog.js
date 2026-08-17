@@ -31,12 +31,11 @@ function renderizarLista() {
                     htmlPrincipal += `<li class="subcat-header" style="cursor:default;"><span>▪ ${escaparHtml(subcat)}</span></li>`;
                     lastSubcat = subcat;
                 }
-                const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
                 const pedidosDeste = db.pedidosAtivos.filter(pa => { if (pa.produtoId !== p.id) return false; if (pa.excluido && pa.excluidoPorPedidos) return false; if (!pa.excluido && ['rascunho', 'pendente', 'pedido_forn'].includes(pa.status)) return true; let ts = pa.dataConclusao || pa.dataExclusao || pa.dataStatus || parseInt(pa.idUnico.split('_')[1]); if (ts) { let diffDias = (Date.now() - ts) / (1000 * 60 * 60 * 24); return diffDias <= 7; } return false; });
                 const concluidos = pedidosDeste.filter(pa => pa.excluido || ['comprado', 'entregue', 'cancelado'].includes(pa.status)); const ultimoConcluido = concluidos.length > 0 ? concluidos[concluidos.length - 1] : null; const pedidoEditavel = pedidosDeste.find(pa => !pa.excluido && ['rascunho', 'pendente', 'pedido_forn'].includes(pa.status));
                 if (p.avulso && !ultimoConcluido && !pedidoEditavel) { return; }
 
-                let classesExtra = ""; let infoDireita = "";
+                let classesExtra = ""; let infoDireita = ""; let iconeListaPedido = '○'; let classeIconePedido = 'pendente';
                 let defaultUn = p.unidades && p.unidades.length > 0 ? p.unidades[0] : '';
                 let padraoTexto = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? `(Padrão: ${p.qtdPadrao} ${defaultUn})` : '';
                 if(p.obsPadrao) { let quebra = padraoTexto ? '<br>' : ''; padraoTexto += `${quebra}<span style="color:#000; font-size:11px;">Obs Padrão: ${escaparHtml(p.obsPadrao)}</span>`; }
@@ -51,6 +50,8 @@ function renderizarLista() {
                     let exibicaoQtd = qtdStrDisplay ? `<div style="font-weight: bold; font-size: 14px; color: #1565C0;">${escaparHtml(qtdStrDisplay)}</div>` : "";
                     infoDireita += `<div style="text-align: right;"><div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div>${exibicaoQtd}${obsVisual}</div>`;
                     classesExtra += (pedidoEditavel.status === 'rascunho') ? "item-pedido-rascunho " : "item-pedido-ativo ";
+                    if(pedidoEditavel.status === 'rascunho') { iconeListaPedido = '✓'; classeIconePedido = 'rascunho'; }
+                    else if(pedidoEditavel.status === 'pedido_forn') { iconeListaPedido = iconePedidoFornecedorSvg('icone-send icone-send-status'); classeIconePedido = 'pedido_forn'; }
                     if(pedidoEditavel.status === 'rascunho') temRascunho = true;
                 } else if (ultimoConcluido) {
                     let statusName = "Excluído"; let statusClass = "bg-excluido";
@@ -67,10 +68,13 @@ function renderizarLista() {
                     let qtdStrDisplay = (qtyVal !== null && unVal !== null) ? `${qtyVal} ${unVal}` : (qtyVal !== null ? `${qtyVal}` : (unVal !== null ? `${unVal}` : ""));
                     let exibicaoQtd = qtdStrDisplay && !ultimoConcluido.excluido ? `<div style="font-size: 11px; color: #777;">${escaparHtml(qtdStrDisplay)}</div>` : "";
                     infoDireita += `<div style="text-align: right;"><div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div>${exibicaoQtd}${obsVisual}</div>`;
+                    if(ultimoConcluido.excluido || ultimoConcluido.status === 'cancelado') { iconeListaPedido = '×'; classeIconePedido = 'cancelado'; }
+                    else { iconeListaPedido = '✓'; classeIconePedido = ultimoConcluido.status === 'entregue' ? 'entregue' : 'comprado'; }
                 }
 
                 let pedIdAtributo = pedidoEditavel ? pedidoEditavel.idUnico : '';
-                htmlPrincipal += `<li class="item item-pedido ${classesExtra}" data-id="${p.id}" data-pedid="${pedIdAtributo}" data-cat-id="${catId}" data-sub-id="${subcatGroupId}"><button type="button" class="item-main-action" aria-label="${pedidoEditavel && pedidoEditavel.status === 'rascunho' ? 'Remover' : 'Adicionar'} ${escaparHtml(p.nome)}" onclick="cliqueItemPedido('${p.id}', this.closest('.item'))"><div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};" aria-hidden="true">${escaparHtml(p.nome.charAt(0))}</div><div class="item-info"><div class="item-title">${escaparHtml(p.nome)}</div><div class="item-subtitle">${padraoTexto}</div></div><div class="info-direita" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">${infoDireita}</div></button></li>`;
+                const rotuloAcao = pedidoEditavel ? (pedidoEditavel.status === 'rascunho' ? 'Opções de' : 'Item no fluxo de compra:') : 'Adicionar';
+                htmlPrincipal += `<li class="item item-pedido ${classesExtra}" data-id="${p.id}" data-pedid="${pedIdAtributo}" data-cat-id="${catId}" data-sub-id="${subcatGroupId}"><button type="button" class="item-main-action" aria-label="${rotuloAcao} ${escaparHtml(p.nome)}" onclick="cliqueItemPedido('${p.id}', this.closest('.item'))"><span class="item-status-pedido" aria-hidden="true"><span class="status-glyph ${classeIconePedido}">${iconeListaPedido}</span></span><div class="item-info"><div class="item-title">${escaparHtml(p.nome)}</div><div class="item-subtitle">${padraoTexto}</div></div><div class="info-direita" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">${infoDireita}</div></button></li>`;
                 itensMostrados++;
             });
             document.getElementById('containerBotoesEnvio').style.display = temRascunho ? 'flex' : 'none';

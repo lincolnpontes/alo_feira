@@ -80,8 +80,26 @@ function criarBancoBase() {
     function parseFloatBr(str) { if(str === '' || str === null || str === undefined) return ''; const valor = Number(String(str).replace(',','.')); return Number.isFinite(valor) ? valor : ''; }
     function removerAcentos(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
     function atualizarVisibilidadeAdmin() { const btnAdmin = document.getElementById('btnAdmin'); if(!btnAdmin) return; let colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId && c.ativo !== false); let ativos = db.colaboradores.filter(c => c.ativo !== false); btnAdmin.style.display = (ativos.length === 0 || (colab && colab.isAdmin)) ? 'inline-flex' : 'none'; }
-    function atualizarBotaoPerfil() { const btn = document.getElementById('btnTrocarPerfil'); if(!btn) return; const colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId && c.ativo !== false); const nome = colab ? colab.nome : 'Perfil'; const emoji = colab && colab.emoji ? colab.emoji : '👤'; btn.textContent = `${emoji} ${nome}`; btn.title = `Perfil: ${nome}`; btn.setAttribute('aria-label', `Trocar perfil. Atual: ${nome}`); }
+    function atualizarBotaoPerfil() { const btn = document.getElementById('btnTrocarPerfil'); if(!btn) return; const colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId && c.ativo !== false); const nome = colab ? colab.nome : 'Perfil'; const emoji = colab && colab.emoji ? colab.emoji : '👤'; btn.innerHTML = `<span class="perfil-emoji" aria-hidden="true">${escaparHtml(emoji)}</span><span class="perfil-nome">${escaparHtml(nome)}</span>`; btn.title = `Perfil: ${nome}`; btn.setAttribute('aria-label', `Trocar perfil. Atual: ${nome}`); }
     function iconePedidoFornecedorSvg(classe = 'icone-send') { return `<svg class="${classe}" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4 20-7Z"></path><path d="M22 2 11 13"></path></svg>`; }
+
+    function abrirConfirmacaoApp({ titulo = 'Confirmar ação', mensagem = '', rotulo = 'Confirmar', cor = '#1565C0', acao }) {
+        const modal = document.getElementById('modalConfirmacaoApp');
+        const caixa = modal.querySelector('.modal-confirmacao-app');
+        const tituloEl = document.getElementById('tituloConfirmacaoApp');
+        const botao = document.getElementById('btnConfirmacaoApp');
+        tituloEl.textContent = titulo;
+        tituloEl.style.borderColor = cor;
+        document.getElementById('mensagemConfirmacaoApp').textContent = mensagem;
+        botao.textContent = rotulo;
+        botao.style.backgroundColor = cor;
+        caixa.style.borderColor = cor;
+        acaoConfirmacaoApp = typeof acao === 'function' ? acao : null;
+        modal.style.display = 'flex';
+        setTimeout(() => botao.focus(), 40);
+    }
+    function cancelarConfirmacaoApp() { acaoConfirmacaoApp = null; fecharModal('modalConfirmacaoApp'); }
+    function executarConfirmacaoApp() { const acao = acaoConfirmacaoApp; acaoConfirmacaoApp = null; fecharModal('modalConfirmacaoApp'); if(acao) acao(); }
 
     function escaparHtml(valor) { return AloFeiraDomain.escaparHtml(valor); }
     function idDomSeguro(valor) { return AloFeiraDomain.idDomSeguro(valor); }
@@ -95,4 +113,4 @@ function criarBancoBase() {
         mostrarToast.timer = setTimeout(() => toast.classList.remove('visivel'), duracao);
     }
 
-let db = carregarBanco(); let categoriaAtual = null; let modoSelecaoAtivo = false; let itensSelecionadosRelatorio = new Set(); let agrupamentoCompradoAtivo = false; let pilhaDesfazer = []; let tempPrecosProduto = []; let tempFornecedoresProduto = []; let tempSubcats = []; let tempRenames = []; let isSyncingFundo = false; let isModalFechando = false; let filtroFornecedorComprasId = null; let buscaPedidoTexto = ""; let envioPedidoEmAndamento = false; let currentGerenciarFiltro = 'todos'; let currentGerenciarBusca = ''; let origemFormProduto = null; let modalAcaoCompraId = null;
+let db = carregarBanco(); let categoriaAtual = null; let modoSelecaoAtivo = false; let itensSelecionadosRelatorio = new Set(); let agrupamentoCompradoAtivo = false; let pilhaDesfazer = []; let tempPrecosProduto = []; let tempFornecedoresProduto = []; let tempSubcats = []; let tempRenames = []; let isSyncingFundo = false; let isModalFechando = false; let filtroFornecedorComprasId = null; let buscaPedidoTexto = ""; let envioPedidoEmAndamento = false; let currentGerenciarFiltro = 'todos'; let currentGerenciarBusca = ''; let origemFormProduto = null; let modalAcaoCompraId = null; let modalAcaoPedidoId = null; let acaoConfirmacaoApp = null;

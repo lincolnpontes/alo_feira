@@ -226,15 +226,7 @@ function importarDados(event) {
         try {
             const importado = JSON.parse(e.target.result);
             if(!importado || importado.app_id !== 'alofeira') throw new Error('Arquivo de backup inválido.');
-            if(!confirm('Importar este backup e substituir os dados deste aparelho? A cópia atual continuará na nuvem até você sincronizar.')) return;
-            const urlSalva = db.configs.url;
-            db = normalizarBanco(importado);
-            db.configs.url = urlSalva || '';
-            db.configs.ultimaMudancaLocal = Date.now();
-            db.configs.syncPendente = true;
-            salvarBanco();
-            alert('Backup importado neste aparelho. Confira os dados e use “Forçar envio” para substituir a nuvem.');
-            location.reload();
+            abrirConfirmacaoApp({ titulo:'Importar backup?', mensagem:'Os dados deste aparelho serão substituídos. A cópia atual continuará na nuvem até a próxima sincronização.', rotulo:'Importar', cor:'#c62828', acao:() => aplicarBackupImportado(importado) });
         } catch(err) {
             alert(err.message || 'Erro ao ler o arquivo.');
         }
@@ -243,9 +235,20 @@ function importarDados(event) {
     event.target.value = '';
 }
 
-async function forcarEnvioNuvemCompleto() {
+function aplicarBackupImportado(importado) {
+    const urlSalva = db.configs.url;
+    db = normalizarBanco(importado);
+    db.configs.url = urlSalva || '';
+    db.configs.ultimaMudancaLocal = Date.now();
+    db.configs.syncPendente = true;
+    salvarBanco();
+    alert('Backup importado neste aparelho. Confira os dados e use “Forçar envio” para substituir a nuvem.');
+    location.reload();
+}
+
+async function forcarEnvioNuvemCompleto(confirmado = false) {
     if(!db.configs.url) return alert('Configure primeiro a URL do Google Script.');
-    if(!confirm('Forçar o envio substitui a versão atual da nuvem por este aparelho. Deseja continuar?')) return;
+    if(!confirmado) return abrirConfirmacaoApp({ titulo:'Substituir dados da nuvem?', mensagem:'A versão deste aparelho substituirá a cópia atual da nuvem.', rotulo:'Forçar envio', cor:'#c62828', acao:() => forcarEnvioNuvemCompleto(true) });
     document.getElementById('loadingOverlay').style.display = 'flex';
     document.getElementById('loadingText').textContent = 'Gravando a cópia completa na nuvem...';
     try {
@@ -260,10 +263,10 @@ async function forcarEnvioNuvemCompleto() {
     }
 }
 
-async function excluirTodoHistorico() {
+async function excluirTodoHistorico(confirmado = false) {
     const frase = document.getElementById('inputExcluirTudo').value.trim().toLowerCase();
     if(frase !== 'quero excluir todo o histórico') return alert('Frase incorreta.');
-    if(!confirm('Apagar todos os pedidos em todos os aparelhos? Produtos, categorias, fornecedores e perfis serão mantidos.')) return;
+    if(!confirmado) return abrirConfirmacaoApp({ titulo:'Apagar todo o histórico?', mensagem:'Todos os pedidos serão apagados em todos os aparelhos. Os cadastros serão mantidos.', rotulo:'Apagar histórico', cor:'#c62828', acao:() => excluirTodoHistorico(true) });
     const backup = JSON.parse(JSON.stringify(db));
     db.configs.historicoApagadoEm = Date.now();
     db.pedidosAtivos = [];
@@ -290,8 +293,8 @@ async function excluirTodoHistorico() {
     }
 }
 
-async function forcarAtualizacao() {
-    if(!confirm('Buscar a versão mais recente do aplicativo sem apagar seus dados?')) return;
+async function forcarAtualizacao(confirmado = false) {
+    if(!confirmado) return abrirConfirmacaoApp({ titulo:'Atualizar aplicativo?', mensagem:'A versão mais recente será buscada sem apagar seus dados.', rotulo:'Atualizar', cor:'#1565C0', acao:() => forcarAtualizacao(true) });
     if('serviceWorker' in navigator) {
         const registros = await navigator.serviceWorker.getRegistrations();
         await Promise.all(registros.map(registro => registro.update()));

@@ -4,13 +4,66 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
 
     function getPermissaoColab() { let c = db.colaboradores.find(col => col.id === db.configs.colabAtivoId); return c ? (c.apenasReceber || false) : false; }
 
-    function acaoToqueSimples(el) { if(db.configs.modo === 'compras') return abrirAcoesCompra(el.getAttribute('data-id'), el); const pId = el.getAttribute('data-id'); const pedId = el.getAttribute('data-pedid'); if(!pedId) { const p = db.produtos.find(x => x.id === pId); if(!p) return; let qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : ''; let un = p.unidades[0] || ''; let obsPad = p.obsPadrao || ''; let novoPedId = 'pa_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); db.pedidosAtivos.push({ idUnico: novoPedId, produtoId: pId, qtd: qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId }); salvarBanco(); renderizarLista(); return; } const pedido = db.pedidosAtivos.find(pa => pa.idUnico === pedId); if(pedido && pedido.status === 'rascunho') abrirConfirmarRemoverRascunho(pedId); else mostrarToast('Este item já está no fluxo de compra.', 'info'); }
+    function acaoToqueSimples(el) {
+        if(db.configs.modo === 'compras') return abrirAcoesCompra(el.getAttribute('data-id'), el);
+        const pId = el.getAttribute('data-id');
+        const pedId = el.getAttribute('data-pedid');
+        if(!pedId) {
+            const p = db.produtos.find(x => x.id === pId);
+            if(!p) return;
+            const qtd = (p.qtdPadrao !== null && p.qtdPadrao !== '') ? p.qtdPadrao : '';
+            const un = p.unidades[0] || '';
+            const obsPad = p.obsPadrao || '';
+            const novoPedId = 'pa_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+            db.pedidosAtivos.push({ idUnico: novoPedId, produtoId: pId, qtd, unidade: un, obs: obsPad, status: 'rascunho', dataStatus: Date.now(), excluido: false, historico: [], colaboradorId: db.configs.colabAtivoId });
+            salvarBanco();
+            renderizarLista();
+            return;
+        }
+        const pedido = db.pedidosAtivos.find(pa => pa.idUnico === pedId);
+        if(pedido && pedido.status === 'rascunho') abrirAcoesPedido(pedId, el);
+        else mostrarToast('Este item já está no fluxo de compra.', 'info');
+    }
     function acaoDuploToque(el) { if(db.configs.modo === 'pedido') { const pId = el.getAttribute('data-id'); const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === pId && !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn')); const pedidoEditavel = pedidosDeste[pedidosDeste.length-1]; if(pedidoEditavel && pedidoEditavel.status !== 'rascunho') { let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let isAdmin = temAcessoAdmin(); if(!isAdmin && pedidoEditavel.colaboradorId !== db.configs.colabAtivoId) { return alert("🔒 Acesso Negado: Você só pode visualizar e editar pedidos que foram enviados pelo seu próprio perfil."); } } abrirModalEditarPedido(pedidoEditavel ? pedidoEditavel.idUnico : null, pId); } else { if (getPermissaoColab()) return alert("Seu perfil não permite editar os detalhes das compras."); const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && !pa.excluido) { abrirHistoricoCompra(paId); } } }
     function abrirConfirmarCancelamento(paId) { const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return; const p = db.produtos.find(prod => prod.id === pa.produtoId); document.getElementById('cancelamentoCompraId').value = paId; document.getElementById('textoConfirmarCancelamento').innerHTML = `<b>${escaparHtml(p ? p.nome : 'Este item')}</b>`; document.getElementById('modalConfirmarCancelamento').style.display = 'flex'; }
     function confirmarCancelamentoCompra() { const paId = document.getElementById('cancelamentoCompraId').value; const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(!pa) return fecharModal('modalConfirmarCancelamento'); registrarDesfazer(pa); delete pa.transicaoProgresso; delete pa.statusAnterior; pa.status = 'cancelado'; pa.dataStatus = Date.now(); delete pa.dataConclusao; delete pa.dataPedidoFornecedor; db.configs.syncPendente = true; salvarBanco(); fecharModal('modalConfirmarCancelamento'); fecharMenuAcaoCompra(); renderizarLista(); sincronizarFundo(false, true); mostrarToast('Item cancelado. Você pode desfazer.', 'sucesso'); }
 
     function abrirConfirmarRemoverRascunho(pedId) { const pa = db.pedidosAtivos.find(x => x.idUnico === pedId && x.status === 'rascunho'); if(!pa) return; const p = db.produtos.find(prod => prod.id === pa.produtoId); document.getElementById('rascunhoRemoverId').value = pedId; document.getElementById('textoConfirmarRemoverRascunho').innerHTML = `<strong>${escaparHtml(p ? p.nome : 'Este item')}</strong>`; document.getElementById('modalConfirmarRemoverRascunho').style.display = 'flex'; }
     function confirmarRemocaoRascunho() { const pedId = document.getElementById('rascunhoRemoverId').value; const pa = db.pedidosAtivos.find(x => x.idUnico === pedId); if(!pa || pa.status !== 'rascunho') return fecharModal('modalConfirmarRemoverRascunho'); db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== pedId); salvarBanco(); fecharModal('modalConfirmarRemoverRascunho'); renderizarLista(); mostrarToast('Item removido do pedido.', 'sucesso'); }
+
+    function fecharMenuAcaoPedido() {
+        const overlay = document.getElementById('modalAcaoPedido');
+        if(overlay) overlay.style.display = 'none';
+        modalAcaoPedidoId = null;
+    }
+
+    function abrirAcoesPedido(pedId, origemEl) {
+        const pa = db.pedidosAtivos.find(x => x.idUnico === pedId && x.status === 'rascunho' && !x.excluido);
+        if(!pa) return;
+        modalAcaoPedidoId = pedId;
+        const overlay = document.getElementById('modalAcaoPedido');
+        const menu = document.getElementById('menuAcaoPedido');
+        overlay.style.display = 'block';
+        const margem = 10;
+        const largura = Math.min(290, window.innerWidth - margem * 2);
+        menu.style.width = `${largura}px`;
+        const origem = origemEl.getBoundingClientRect();
+        const altura = menu.offsetHeight;
+        let esquerda = Math.max(margem, Math.min(origem.right - largura - 10, window.innerWidth - largura - margem));
+        let topo = origem.bottom + 6;
+        if(topo + altura > window.innerHeight - margem) topo = origem.top - altura - 6;
+        menu.style.left = `${Math.round(esquerda)}px`;
+        menu.style.top = `${Math.max(margem, Math.round(topo))}px`;
+    }
+
+    function executarAcaoPedido(acao) {
+        const pedId = modalAcaoPedidoId;
+        const pa = db.pedidosAtivos.find(x => x.idUnico === pedId && x.status === 'rascunho');
+        fecharMenuAcaoPedido();
+        if(!pa) return;
+        if(acao === 'editar') abrirModalEditarPedido(pa.idUnico, pa.produtoId);
+        else if(acao === 'remover') abrirConfirmarRemoverRascunho(pa.idUnico);
+    }
 
     function rotuloStatusCompra(status) {
         return { pendente:'Pendente', pedido_forn:'Pedido ao fornecedor', comprado:'Comprado', entregue:'Recebido', cancelado:'Cancelado' }[status] || status;
@@ -119,5 +172,5 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
         mostrarToast(`Item marcado como ${rotuloStatusCompra(pa.status).toLowerCase()}.`, 'sucesso');
     }
 
-    function deletarPrecoDireto(pId, idx, paId) { if(confirm("Excluir este preço do histórico?")) { let p = db.produtos.find(x => x.id === pId); if(p && p.historicoPrecos) { p.historicoPrecos.splice(idx, 1); marcarMudancaEstrutural(p); sincronizarFundo(false, true); if (document.getElementById('modalHistoricoCompra').style.display === 'flex') { abrirHistoricoCompra(paId); } else if(document.getElementById('modalEditarPedido').style.display === 'flex') { abrirModalEditarPedido(paId, pId); } else { abrirFormProduto(pId); } } } }
-    function deletarPedidoDireto(idUnico, pId, paId) { if(confirm("Excluir este pedido do histórico geral?")) { let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(pa) { pa.excluido = true; pa.excluidoCompras = true; pa.dataExclusao = Date.now(); pa.dataStatus = pa.dataExclusao; db.configs.syncPendente = true; salvarBanco(); sincronizarFundo(false, true); if(paId && paId !== idUnico) abrirModalEditarPedido(paId, pId); else abrirFormProduto(pId); } } }
+    function deletarPrecoDireto(pId, idx, paId) { abrirConfirmacaoApp({ titulo:'Excluir preço?', mensagem:'Este registro será removido do histórico de preços.', rotulo:'Excluir', cor:'#c62828', acao:() => { let p = db.produtos.find(x => x.id === pId); if(p && p.historicoPrecos) { p.historicoPrecos.splice(idx, 1); marcarMudancaEstrutural(p); sincronizarFundo(false, true); if (document.getElementById('modalHistoricoCompra').style.display === 'flex') { abrirHistoricoCompra(paId); } else if(document.getElementById('modalEditarPedido').style.display === 'flex') { abrirModalEditarPedido(paId, pId); } else { abrirFormProduto(pId); } } } }); }
+    function deletarPedidoDireto(idUnico, pId, paId) { abrirConfirmacaoApp({ titulo:'Excluir pedido?', mensagem:'Este pedido será removido do histórico geral.', rotulo:'Excluir', cor:'#c62828', acao:() => { let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(pa) { pa.excluido = true; pa.excluidoCompras = true; pa.dataExclusao = Date.now(); pa.dataStatus = pa.dataExclusao; db.configs.syncPendente = true; salvarBanco(); sincronizarFundo(false, true); if(paId && paId !== idUnico) abrirModalEditarPedido(paId, pId); else abrirFormProduto(pId); } } }); }

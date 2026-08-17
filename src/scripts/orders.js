@@ -6,19 +6,21 @@ function alterarModo(modo) {
     if(modo === 'pedido') filtroFornecedorComprasId = null;
     fecharMenuFerramentas();
     fecharMenuAcaoCompra();
+    fecharMenuAcaoPedido();
     document.body.className = `theme-${modo}`;
     document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#521565';
     document.getElementById('dicasCabecalho').innerHTML = '';
-    document.getElementById('actionBarCompras').style.display = 'flex';
+    document.getElementById('actionBarCompras').style.display = modo === 'compras' ? 'flex' : 'none';
     document.getElementById('btnHistHoje').style.display = modo === 'pedido' ? 'inline-flex' : 'none';
+    document.getElementById('btnLimparComprasBar').style.display = modo === 'pedido' ? 'inline-flex' : 'none';
     if(modo === 'compras') document.getElementById('containerBotoesEnvio').style.display = 'none';
+    renderizarFiltros();
     atualizarControlesSelecao();
     atualizarEstadoMenuFerramentas();
     atualizarVisibilidadeAdmin();
     atualizarBotaoPerfil();
     salvarBanco();
     atualizarBotaoDesfazer();
-    renderizarFiltros();
     renderizarLista();
 }
 
@@ -26,6 +28,10 @@ function renderizarFiltros() {
     const colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
     const catsPermitidas = getCatsPermitidas(colabLogado);
     let html = `<button class="chip ${categoriaAtual === null ? 'active' : ''}" onclick="filtrarCat(null)">TODOS</button>`;
+    if(db.configs.modo === 'pedido') {
+        html += `<button class="btn-busca-filtros ${buscaPedidoTexto ? 'ativo' : ''}" onclick="abrirBuscaPedido()" id="btnBuscaPedido" title="Buscar item" aria-label="Buscar item">🔎</button>`;
+        html += `<div id="boxBuscaPedido" class="busca-filtros-inline" style="display:${buscaPedidoTexto ? 'flex' : 'none'}"><input type="text" id="inputBuscaPedidoInline" value="${escaparHtml(buscaPedidoTexto)}" placeholder="Buscar item..." oninput="aplicarBuscaPedido()" onkeydown="if(event.key === 'Escape') limparBuscaPedido()"></div>`;
+    }
     db.categorias.filter(cat => cat.ativo !== false).forEach(cat => {
         if(catsPermitidas && !catsPermitidas.includes(cat.id)) return;
         const isActive = categoriaAtual === cat.id;
@@ -93,7 +99,18 @@ function alternarAgrupamentoCompras() {
 function limparComprasAntigas() {
     const concluidos = db.pedidosAtivos.filter(pa => !pa.excluido && !pa.ocultoCompras && (pa.status === 'comprado' || pa.status === 'entregue'));
     if(concluidos.length === 0) return alert('Não há itens comprados ou entregues para limpar.');
-    if(!confirm(`Deseja limpar visualmente ${concluidos.length} item(ns) concluído(s) da lista? Eles continuarão no histórico.`)) return;
+    abrirConfirmacaoApp({
+        titulo: 'Limpar itens concluídos?',
+        mensagem: `${concluidos.length} item(ns) sairão da lista, mas continuarão no histórico.`,
+        rotulo: 'Limpar',
+        cor: '#c62828',
+        acao: executarLimpezaComprasAntigas
+    });
+}
+
+function executarLimpezaComprasAntigas() {
+    const concluidos = db.pedidosAtivos.filter(pa => !pa.excluido && !pa.ocultoCompras && (pa.status === 'comprado' || pa.status === 'entregue'));
+    if(concluidos.length === 0) return;
     const backupEstados = concluidos.map(pa => JSON.parse(JSON.stringify(pa)));
     concluidos.forEach(pa => { pa.ocultoCompras = true; });
     pilhaDesfazer.push(backupEstados);
@@ -105,8 +122,6 @@ function limparComprasAntigas() {
 
 function atualizarControlesSelecao() {
     const pedido = db.configs.modo === 'pedido';
-    const btnBusca = document.getElementById('btnBuscaPedido');
-    const boxBusca = document.getElementById('boxBuscaPedido');
     const btnMenu = document.getElementById('btnMenuFerramentas');
     const btnRelatorio = document.getElementById('btnRelatorioBar');
     const btnComprado = document.getElementById('btnMassaComprado');
@@ -117,10 +132,8 @@ function atualizarControlesSelecao() {
     btnComprado.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
     btnPedidoFornecedor.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
     btnVincular.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
-    btnBusca.style.display = pedido ? 'flex' : 'none';
-    boxBusca.style.display = pedido && buscaPedidoTexto ? 'flex' : 'none';
     btnMenu.style.display = !pedido && !modoSelecaoAtivo ? 'flex' : 'none';
-    btnLimpar.style.display = pedido ? 'flex' : 'none';
+    btnLimpar.style.display = pedido ? 'inline-flex' : 'none';
     btnRelatorio.style.display = !pedido && !modoSelecaoAtivo ? 'flex' : 'none';
     if(modoSelecaoAtivo) {
         fecharMenuFerramentas();
@@ -128,7 +141,6 @@ function atualizarControlesSelecao() {
     } else {
         atualizarBotaoDesfazer();
     }
-    btnBusca.style.backgroundColor = buscaPedidoTexto ? '#1565C0' : 'rgba(255,255,255,0.15)';
 }
 
 function toggleModoSelecao() {
@@ -169,8 +181,17 @@ function selecionarGrupoCompras(grupoId, tipo = 'cat') {
 
 function acaoEmMassa(acao) {
     if(itensSelecionadosRelatorio.size === 0) return alert('Selecione os itens primeiro.');
-    const nomeAcao = acao === 'pedido_forn' ? 'marcar como pedido ao fornecedor' : 'concluir compra ou recebimento';
-    if(!confirm(`Deseja ${nomeAcao} para os itens selecionados?`)) return;
+    const pedidoFornecedor = acao === 'pedido_forn';
+    abrirConfirmacaoApp({
+        titulo: pedidoFornecedor ? 'Pedido ao fornecedor?' : 'Marcar como comprado?',
+        mensagem: `${itensSelecionadosRelatorio.size} item(ns) selecionado(s) serão atualizados.`,
+        rotulo: pedidoFornecedor ? 'Confirmar pedido' : 'Confirmar compra',
+        cor: pedidoFornecedor ? '#521565' : '#145218',
+        acao: () => executarAcaoEmMassa(acao)
+    });
+}
+
+function executarAcaoEmMassa(acao) {
     const backupEstados = [];
     let alterados = 0;
     let ignorados = 0;
@@ -276,7 +297,7 @@ function abrirBuscaPedido() {
 function aplicarBuscaPedido() {
     buscaPedidoTexto = document.getElementById('inputBuscaPedidoInline').value.trim();
     const btn = document.getElementById('btnBuscaPedido');
-    if(btn) btn.style.backgroundColor = buscaPedidoTexto ? '#1565C0' : 'rgba(255,255,255,0.15)';
+    if(btn) btn.classList.toggle('ativo', Boolean(buscaPedidoTexto));
     renderizarLista();
 }
 
@@ -287,7 +308,7 @@ function limparBuscaPedido() {
     if(input) input.value = '';
     if(box) box.style.display = 'none';
     const btn = document.getElementById('btnBuscaPedido');
-    if(btn) btn.style.backgroundColor = 'rgba(255,255,255,0.15)';
+    if(btn) btn.classList.remove('ativo');
     renderizarLista();
 }
 

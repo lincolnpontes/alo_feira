@@ -6,10 +6,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
             .action-bar-compras > div { flex-wrap:nowrap !important; }
         }
         @media (max-width: 350px) {
-            .header { padding-left:8px; padding-right:8px; }
-            .header-actions { margin-left:auto; }
+            .header { padding-left:6px; padding-right:6px; }
             .header-select { font-size:15px; }
-            .header-actions .btn-perfil { max-width:105px; padding:0 4px; font-size:14px; }
+            .header-actions button { width:40px; font-size:22px; }
+            .header-actions .btn-perfil { width:auto; max-width:108px; padding:0 3px; }
+            .perfil-emoji { font-size:21px; }
+            .perfil-nome { font-size:15px; }
         }
         @media (min-width: 760px) {
             .app-container { max-width:760px; left:50%; transform:translateX(-50%); border-left:1px solid #ddd; border-right:1px solid #ddd; }
