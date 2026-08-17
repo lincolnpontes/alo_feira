@@ -20,9 +20,7 @@ function renderizarLista() {
                     let catName = cObj ? escaparHtml(cObj.nome) : "Sem Categoria";
                     let btnAvulso = (cObj && cObj.permiteAvulso) ? `<button onclick="abrirModalAvulso('${cObj.id}'); event.stopPropagation();" style="background:#fff; border:1px solid #ccc; border-radius:4px; color:#1565C0; font-size:12px; padding:2px 8px; cursor:pointer; font-weight:bold;">+ Avulso</button>` : '';
                     if (categoriaAtual === null || categoriaAtual === catId) {
-                        let headerStyle = modoSelecaoAtivo ? 'cursor:pointer;' : 'cursor:default;';
-                        let onclickAction = modoSelecaoAtivo ? `onclick="selecionarGrupoPedido('${catId}', 'cat')"` : '';
-                        htmlPrincipal += `<li class="cat-header" style="${headerStyle}" ${onclickAction}><span>🏷️ ${catName}</span> ${btnAvulso}</li>`;
+                        htmlPrincipal += `<li class="cat-header" style="cursor:default;"><span>🏷️ ${catName}</span> ${btnAvulso}</li>`;
                         itensMostrados++;
                     }
                     lastCatId = catId; lastSubcat = null;
@@ -30,9 +28,7 @@ function renderizarLista() {
                 if (p.isDummy) return;
                 let subcatGroupId = "sub_" + idDomSeguro(catId) + "_" + idDomSeguro(subcat);
                 if (subcat !== lastSubcat && subcat !== "") {
-                    let headerStyle = modoSelecaoAtivo ? 'cursor:pointer;' : 'cursor:default;';
-                    let subcatOnclick = modoSelecaoAtivo ? `onclick="selecionarGrupoPedido('${subcatGroupId}', 'sub')"` : '';
-                    htmlPrincipal += `<li class="subcat-header" style="${headerStyle}" ${subcatOnclick}><span>▪ ${escaparHtml(subcat)}</span></li>`;
+                    htmlPrincipal += `<li class="subcat-header" style="cursor:default;"><span>▪ ${escaparHtml(subcat)}</span></li>`;
                     lastSubcat = subcat;
                 }
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' };
@@ -73,8 +69,8 @@ function renderizarLista() {
                     infoDireita += `<div style="text-align: right;"><div class="status-badge ${statusClass}" style="margin-bottom: 2px;">${statusName}</div>${exibicaoQtd}${obsVisual}</div>`;
                 }
 
-                let isSelected = itensSelecionadosRelatorio.has(p.id); let pedIdAtributo = pedidoEditavel ? pedidoEditavel.idUnico : '';
-                htmlPrincipal += `<li class="item item-pedido ${classesExtra} ${isSelected ? 'selecionado' : ''}" data-id="${p.id}" data-pedid="${pedIdAtributo}" data-cat-id="${catId}" data-sub-id="${subcatGroupId}"><button type="button" class="item-avatar seletor-item-pedido" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};" aria-label="Selecionar ${escaparHtml(p.nome)}" aria-pressed="${isSelected}" onclick="selecionarItemPedidoDireto(event, '${p.id}')">${isSelected ? '✓' : escaparHtml(p.nome.charAt(0))}</button><button type="button" class="item-main-action" aria-label="${pedidoEditavel && pedidoEditavel.status === 'rascunho' ? 'Remover' : 'Adicionar'} ${escaparHtml(p.nome)}" onclick="cliqueItemPedido('${p.id}', this.closest('.item'))"><div class="item-info"><div class="item-title">${escaparHtml(p.nome)}</div><div class="item-subtitle">${padraoTexto}</div></div><div class="info-direita" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">${infoDireita}</div></button></li>`;
+                let pedIdAtributo = pedidoEditavel ? pedidoEditavel.idUnico : '';
+                htmlPrincipal += `<li class="item item-pedido ${classesExtra}" data-id="${p.id}" data-pedid="${pedIdAtributo}" data-cat-id="${catId}" data-sub-id="${subcatGroupId}"><button type="button" class="item-main-action" aria-label="${pedidoEditavel && pedidoEditavel.status === 'rascunho' ? 'Remover' : 'Adicionar'} ${escaparHtml(p.nome)}" onclick="cliqueItemPedido('${p.id}', this.closest('.item'))"><div class="item-avatar" style="background-color: ${catObj.cor}; color: ${catObj.corTexto};" aria-hidden="true">${escaparHtml(p.nome.charAt(0))}</div><div class="item-info"><div class="item-title">${escaparHtml(p.nome)}</div><div class="item-subtitle">${padraoTexto}</div></div><div class="info-direita" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">${infoDireita}</div></button></li>`;
                 itensMostrados++;
             });
             document.getElementById('containerBotoesEnvio').style.display = temRascunho ? 'flex' : 'none';
@@ -100,13 +96,13 @@ function renderizarLista() {
                 let cObj = db.categorias.find(c => c.id === p.categoria); let catId = cObj ? cObj.id : "sem_cat"; let subcat = p.subcategoria || ""; let stGroupId = "st_" + pa.status; let catGroupId = "cat_" + idDomSeguro(catId); let subcatGroupId = "cat_" + idDomSeguro(catId) + "_sub_" + idDomSeguro(subcat);
                 if (agrupamentoCompradoAtivo) {
                     let statusEfetivo = (pa.transicaoProgresso && (Date.now() - pa.transicaoProgresso < 10000)) ? pa.statusAnterior : pa.status;
-                    let currentGroup = statusEfetivo === 'pendente' ? '⏳ PENDENTES' : (statusEfetivo === 'pedido_forn' ? '✈️ PEDIDOS AO FORNECEDOR' : (statusEfetivo === 'cancelado' ? '🚫 CANCELADOS' : '✓ COMPRADOS / ENTREGUES'));
+                    let currentGroup = statusEfetivo === 'pendente' ? '⏳ PENDENTES' : (statusEfetivo === 'pedido_forn' ? `${iconePedidoFornecedorSvg('icone-send icone-send-grupo')} PEDIDOS AO FORNECEDOR` : (statusEfetivo === 'cancelado' ? '🚫 CANCELADOS' : '✓ COMPRADOS / ENTREGUES'));
                     if (currentGroup !== lastGroup) { htmlPrincipal += `<li class="cat-header" style="background:#546e7a; color:#fff;"><span>${currentGroup}</span></li>`; lastGroup = currentGroup; lastCatId = ""; lastSubcat = null; }
                     catGroupId = stGroupId + "_" + catGroupId; subcatGroupId = stGroupId + "_" + subcatGroupId;
                 }
                 if (categoriaAtual === null || agrupamentoCompradoAtivo) { if (catId !== lastCatId) { let catName = cObj ? escaparHtml(cObj.nome) : "Sem Categoria"; htmlPrincipal += `<li class="cat-header" onclick="selecionarGrupoCompras('${catGroupId}', 'cat')"><span>🏷️ ${catName}</span></li>`; lastCatId = catId; lastSubcat = null; } }
                 if (subcat !== lastSubcat && subcat !== "") { htmlPrincipal += `<li class="subcat-header" onclick="selecionarGrupoCompras('${subcatGroupId}', 'sub')"><span>▪ ${escaparHtml(subcat)}</span></li>`; lastSubcat = subcat; }
-                const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' }; let emojiStatus = pa.status === 'pendente' ? '○' : (pa.status === 'pedido_forn' ? '✈️' : (pa.status === 'cancelado' ? '×' : '✓')); let isSelected = itensSelecionadosRelatorio.has(pa.idUnico); let qtyVal = pa.qtd !== '' ? pa.qtd : null; let unVal = pa.unidade ? pa.unidade : null; let qtdStrDisplay = ""; if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`; else if(unVal !== null) qtdStrDisplay = `${unVal}`; let tituloItem = escaparHtml(p.nome);
+                const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' }; let emojiStatus = pa.status === 'pendente' ? '○' : (pa.status === 'pedido_forn' ? iconePedidoFornecedorSvg('icone-send icone-send-status') : (pa.status === 'cancelado' ? '×' : '✓')); let isSelected = itensSelecionadosRelatorio.has(pa.idUnico); let qtyVal = pa.qtd !== '' ? pa.qtd : null; let unVal = pa.unidade ? pa.unidade : null; let qtdStrDisplay = ""; if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`; else if(unVal !== null) qtdStrDisplay = `${unVal}`; let tituloItem = escaparHtml(p.nome);
 
                 let tsReferencia; if (pa.status === 'pendente') { tsReferencia = pa.dataEnvio || parseInt(pa.idUnico.split('_')[1]); } else if (pa.status === 'pedido_forn') { tsReferencia = pa.dataPedidoFornecedor || pa.dataStatus || pa.dataEnvio || parseInt(pa.idUnico.split('_')[1]); } else { tsReferencia = pa.dataConclusao || pa.dataExclusao || pa.dataStatus || parseInt(pa.idUnico.split('_')[1]); } let tempoTxt = tsReferencia ? ` ${tempoRelativo(tsReferencia)}` : "";
 

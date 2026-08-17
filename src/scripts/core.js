@@ -81,6 +81,7 @@ function criarBancoBase() {
     function removerAcentos(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
     function atualizarVisibilidadeAdmin() { const btnAdmin = document.getElementById('btnAdmin'); if(!btnAdmin) return; let colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId && c.ativo !== false); let ativos = db.colaboradores.filter(c => c.ativo !== false); btnAdmin.style.display = (ativos.length === 0 || (colab && colab.isAdmin)) ? 'inline-flex' : 'none'; }
     function atualizarBotaoPerfil() { const btn = document.getElementById('btnTrocarPerfil'); if(!btn) return; const colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId && c.ativo !== false); const nome = colab ? colab.nome : 'Perfil'; const emoji = colab && colab.emoji ? colab.emoji : '👤'; btn.textContent = `${emoji} ${nome}`; btn.title = `Perfil: ${nome}`; btn.setAttribute('aria-label', `Trocar perfil. Atual: ${nome}`); }
+    function iconePedidoFornecedorSvg(classe = 'icone-send') { return `<svg class="${classe}" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4 20-7Z"></path><path d="M22 2 11 13"></path></svg>`; }
 
     function escaparHtml(valor) { return AloFeiraDomain.escaparHtml(valor); }
     function idDomSeguro(valor) { return AloFeiraDomain.idDomSeguro(valor); }

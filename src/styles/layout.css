@@ -1,17 +1,17 @@
-.header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; color: white; transition: background-color 0.3s; flex-shrink: 0; }
-        .header-select { background: transparent; color: white; border: none; font-size: 18px; font-weight: bold; outline: none; -webkit-appearance: none; appearance: none; }
-        .header-select option { color: black; font-size: 16px; }
+.header { padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; color: white; transition: background-color 0.3s; flex-shrink: 0; }
+        .header-select { background: transparent; color: white; border: none; font-size: 16px; font-weight: bold; outline: none; -webkit-appearance: none; appearance: none; }
+        .header-select option { color: black; font-size: 15px; }
         .dicas-cabecalho { display:none; }
         .dicas-cabecalho div { margin-bottom: 2px; }
         .header-actions { display:flex; align-items:center; gap:2px; flex-shrink:0; }
-        .header-actions button { background: none; border: none; color: white; font-size: 22px; cursor: pointer; padding: 0; width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; }
-        .header-actions .btn-perfil { width:auto; max-width:132px; padding:0 8px; gap:5px; font-size:13px; font-weight:750; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .header-actions button { background: none; border: none; color: white; font-size: 19px; cursor: pointer; padding: 0; width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; }
+        .header-actions .btn-perfil { width:auto; max-width:150px; padding:0 8px; gap:5px; font-size:15px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         body.theme-pedido .header { background-color: #1565C0 !important; }
-        body.theme-compras .header { background-color: #5e1675 !important; }
-        .action-bar-compras { display: flex; justify-content: space-between; padding: 8px 10px; background: #424242; align-items: center; flex-shrink: 0; gap: 4px; }
-        .btn-action-bar { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 6px; min-width:44px; height:44px; padding: 6px 10px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; outline: none; transition: background 0.2s; flex-shrink: 0; }
+        body.theme-compras .header { background-color: #521565 !important; }
+        .action-bar-compras { display: flex; justify-content: space-between; padding: 5px 8px; background: #424242; align-items: center; flex-shrink: 0; gap: 4px; }
+        .btn-action-bar { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 6px; min-width:44px; height:44px; padding: 5px 9px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; outline: none; transition: background 0.2s; flex-shrink: 0; }
         .btn-action-bar:active { background: rgba(255,255,255,0.3); }
-        .btn-menu-ferramentas { font-size:23px; font-weight:900; line-height:1; }
+        .btn-menu-ferramentas { font-size:20px; font-weight:900; line-height:1; }
         .area-conteudo { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .scroll-area { overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 90px; -webkit-overflow-scrolling: touch; }
         .filters { padding: 10px 15px; display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; border-bottom: 1px solid #eee; background: white; flex-shrink: 0; }

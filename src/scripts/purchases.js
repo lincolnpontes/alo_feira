@@ -52,7 +52,7 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
         let html = '';
         if(pa.status === 'pendente' && !apenasReceber) {
             html += botaoAcaoCompra('comprado', '✓', 'Comprado', 'comprado');
-            html += botaoAcaoCompra('pedido_forn', '✈️', 'Pedido ao fornecedor', 'fornecedor');
+            html += botaoAcaoCompra('pedido_forn', iconePedidoFornecedorSvg('icone-send icone-send-menu'), 'Pedido ao fornecedor', 'fornecedor');
         } else if(pa.status === 'pedido_forn') {
             html += botaoAcaoCompra('entregue', '✓', 'Comprado', 'comprado');
             if(!apenasReceber) html += botaoAcaoCompra('voltar_pendente', '←', 'Voltar a pendente', 'secundaria');

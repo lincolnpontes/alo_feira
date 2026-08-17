@@ -14,11 +14,11 @@
         .seletor-item-compra { width:44px; height:44px; padding:0; margin-right:5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:0; background:transparent; font-family:inherit; font-weight:800; cursor:pointer; }
         .status-glyph { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-sizing:border-box; font-size:15px; border:1px solid transparent; transition:background-color .16s, color .16s, border-color .16s, transform .16s; }
         .status-glyph.pendente { color:#9a5200; background:#fff4df; border-color:#e8bd72; }
-        .status-glyph.pedido_forn { color:#5e1675; background:#ead9ef; border-color:#c5a1d0; font-size:14px; }
-        .status-glyph.comprado, .status-glyph.entregue { color:#1b5e20; background:#d8eddd; border-color:#9fcca9; }
+        .status-glyph.pedido_forn { color:#521565; background:#ddc8e3; border-color:#b98fc5; }
+        .status-glyph.comprado, .status-glyph.entregue { color:#145218; background:#c8e4cf; border-color:#8fbe9a; }
         .status-glyph.cancelado { color:#555; background:#e5e8ea; border-color:#c4c9cd; }
         .seletor-item-compra:active .status-glyph { transform:scale(.93); }
-        .item.selecionado .status-glyph { color:#fff; background:#5e1675; border-color:#5e1675; }
+        .item.selecionado .status-glyph { color:#fff; background:#521565; border-color:#521565; }
         .item-main-action { min-width:0; min-height:44px; flex:1; display:flex; align-items:center; justify-content:space-between; gap:6px; border:0; background:transparent; color:inherit; padding:0; text-align:left; cursor:pointer; font:inherit; }
         .status-pill { display:inline-flex; align-items:center; border-radius:999px; padding:5px 9px; font-size:10px; font-weight:800; background:#eceff1; color:#455a64; white-space:nowrap; }
 
@@ -29,8 +29,8 @@
         .menu-compra-acao:active { transform:scale(.985); }
         .menu-compra-acao:hover { filter:brightness(.94); }
         .menu-compra-icone { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:5px; color:inherit; background:rgba(255,255,255,.16); flex-shrink:0; font-size:16px; font-weight:900; }
-        .menu-compra-acao.comprado { color:#fff; background:#1b5e20; }
-        .menu-compra-acao.fornecedor { color:#fff; background:#5e1675; }
+        .menu-compra-acao.comprado { color:#fff; background:#145218; }
+        .menu-compra-acao.fornecedor { color:#fff; background:#521565; }
         .menu-compra-acao.detalhes { color:#fff; background:#1565c0; }
         .menu-compra-acao.cancelar { color:#fff; background:#c62828; }
         .menu-compra-acao.secundaria { color:#46515a; background:#eef1f3; }
@@ -39,7 +39,12 @@
         .menu-ferramentas-item:last-child { border-bottom:0; }
         .menu-ferramentas-item > span:first-child { width:28px; text-align:center; font-size:18px; }
         .menu-ferramentas-item:active { background:#f0f2f4; }
-        .menu-estado { margin-left:auto; color:#5e1675; font-size:17px; font-weight:900; }
+        .menu-estado { margin-left:auto; color:#521565; font-size:17px; font-weight:900; }
+        .icone-send { width:18px; height:18px; display:block; flex-shrink:0; }
+        .icone-send-barra { width:19px; height:19px; }
+        .icone-send-status { width:16px; height:16px; }
+        .icone-send-menu { width:17px; height:17px; }
+        .icone-send-grupo { width:16px; height:16px; }
         .modal-confirmacao-pedido { border-top:5px solid #1565c0; }
         .texto-confirmacao-item { margin:0; min-height:44px; display:flex; align-items:center; color:#263238; font-size:16px; }
         .pedido-hoje-item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--borda); }

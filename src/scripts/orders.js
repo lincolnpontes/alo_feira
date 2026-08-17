@@ -3,10 +3,11 @@ function alterarModo(modo) {
     modoSelecaoAtivo = false;
     itensSelecionadosRelatorio.clear();
     agrupamentoCompradoAtivo = false;
+    if(modo === 'pedido') filtroFornecedorComprasId = null;
     fecharMenuFerramentas();
     fecharMenuAcaoCompra();
     document.body.className = `theme-${modo}`;
-    document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#5e1675';
+    document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#521565';
     document.getElementById('dicasCabecalho').innerHTML = '';
     document.getElementById('actionBarCompras').style.display = 'flex';
     document.getElementById('btnHistHoje').style.display = modo === 'pedido' ? 'inline-flex' : 'none';
@@ -40,7 +41,7 @@ function filtrarCat(catId) {
 }
 
 function abrirMenuFerramentas(origemEl) {
-    if(modoSelecaoAtivo) return;
+    if(modoSelecaoAtivo || db.configs.modo !== 'compras') return;
     const overlay = document.getElementById('overlayMenuFerramentas');
     const menu = document.getElementById('menuFerramentas');
     document.getElementById('opcaoAgruparStatus').style.display = db.configs.modo === 'compras' ? 'flex' : 'none';
@@ -78,8 +79,8 @@ function atualizarEstadoMenuFerramentas() {
     const estado = document.getElementById('estadoAgruparStatus');
     if(estado) estado.textContent = agrupamentoCompradoAtivo ? '✓' : '';
     if(!btn) return;
-    const ativo = Boolean(filtroFornecedorComprasId || (db.configs.modo === 'compras' && agrupamentoCompradoAtivo));
-    btn.style.backgroundColor = ativo ? (db.configs.modo === 'pedido' ? '#1565C0' : '#5e1675') : 'rgba(255,255,255,0.15)';
+    const ativo = Boolean(filtroFornecedorComprasId || agrupamentoCompradoAtivo);
+    btn.style.backgroundColor = ativo ? '#521565' : 'rgba(255,255,255,0.15)';
 }
 
 function alternarAgrupamentoCompras() {
@@ -111,13 +112,15 @@ function atualizarControlesSelecao() {
     const btnComprado = document.getElementById('btnMassaComprado');
     const btnPedidoFornecedor = document.getElementById('btnMassaPedForn');
     const btnVincular = document.getElementById('btnMassaVincular');
+    const btnLimpar = document.getElementById('btnLimparComprasBar');
 
     btnComprado.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
     btnPedidoFornecedor.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
-    btnVincular.style.display = modoSelecaoAtivo ? 'flex' : 'none';
-    btnBusca.style.display = pedido && !modoSelecaoAtivo ? 'flex' : 'none';
-    boxBusca.style.display = pedido && !modoSelecaoAtivo && buscaPedidoTexto ? 'flex' : 'none';
-    btnMenu.style.display = !modoSelecaoAtivo ? 'flex' : 'none';
+    btnVincular.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
+    btnBusca.style.display = pedido ? 'flex' : 'none';
+    boxBusca.style.display = pedido && buscaPedidoTexto ? 'flex' : 'none';
+    btnMenu.style.display = !pedido && !modoSelecaoAtivo ? 'flex' : 'none';
+    btnLimpar.style.display = pedido ? 'flex' : 'none';
     btnRelatorio.style.display = !pedido && !modoSelecaoAtivo ? 'flex' : 'none';
     if(modoSelecaoAtivo) {
         fecharMenuFerramentas();
@@ -149,13 +152,6 @@ function selecionarItemCompraDireto(event, idUnico) {
     alternarSelecaoDireta(idUnico);
 }
 
-function selecionarItemPedidoDireto(event, produtoId) {
-    if(event) { event.preventDefault(); event.stopPropagation(); }
-    if(db.configs.modo !== 'pedido') return;
-    if(!temAcessoAdmin()) return mostrarToast('Apenas administradores podem vincular fornecedores.', 'info');
-    alternarSelecaoDireta(produtoId);
-}
-
 function alternarSelecaoGrupo(seletor) {
     const ids = Array.from(document.querySelectorAll(seletor)).map(el => el.getAttribute('data-id')).filter(Boolean);
     if(ids.length === 0) return;
@@ -168,12 +164,6 @@ function alternarSelecaoGrupo(seletor) {
 
 function selecionarGrupoCompras(grupoId, tipo = 'cat') {
     const seletor = tipo === 'cat' ? `.item[data-grp-cat="${grupoId}"]` : `.item[data-grp-sub="${grupoId}"]`;
-    alternarSelecaoGrupo(seletor);
-}
-
-function selecionarGrupoPedido(grupoId, tipo = 'cat') {
-    if(!modoSelecaoAtivo) return;
-    const seletor = tipo === 'cat' ? `.item[data-cat-id="${grupoId}"]` : `.item[data-sub-id="${grupoId}"]`;
     alternarSelecaoGrupo(seletor);
 }
 
@@ -207,6 +197,7 @@ function acaoEmMassa(acao) {
 }
 
 function abrirModalMassaVincular() {
+    if(db.configs.modo !== 'compras') return;
     if(itensSelecionadosRelatorio.size === 0) return alert('Selecione itens primeiro.');
     const selForn = document.getElementById('massaVincularForn');
     selForn.innerHTML = '<option value="">-- Escolha o Fornecedor --</option>';
@@ -220,17 +211,14 @@ function abrirModalMassaVincular() {
 }
 
 function confirmarMassaVincular() {
+    if(db.configs.modo !== 'compras') return;
     if(getPermissaoColab()) return alert('Seu perfil não permite alterar fornecedores.');
     const fornId = document.getElementById('massaVincularForn').value;
     if(!fornId) return alert('Selecione um fornecedor.');
     itensSelecionadosRelatorio.forEach(idSelecionado => {
         let p;
-        if(db.configs.modo === 'compras') {
-            const pa = db.pedidosAtivos.find(x => x.idUnico === idSelecionado);
-            if(pa) p = db.produtos.find(prod => prod.id === pa.produtoId);
-        } else {
-            p = db.produtos.find(prod => prod.id === idSelecionado);
-        }
+        const pa = db.pedidosAtivos.find(x => x.idUnico === idSelecionado);
+        if(pa) p = db.produtos.find(prod => prod.id === pa.produtoId);
         if(p) {
             if(!p.fornecedores) p.fornecedores = [];
             if(!p.fornecedores.includes(fornId)) p.fornecedores.push(fornId);
@@ -245,6 +233,7 @@ function confirmarMassaVincular() {
 }
 
 function abrirModalFiltroFornCompras() {
+    if(db.configs.modo !== 'compras') return;
     const selForn = document.getElementById('filtroComprasForn');
     selForn.innerHTML = '<option value="">-- Mostrar Todos os Itens --</option>';
     db.fornecedores.filter(f => f.ativo !== false).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(f => {

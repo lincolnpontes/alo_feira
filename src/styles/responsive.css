@@ -8,8 +8,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         @media (max-width: 350px) {
             .header { padding-left:8px; padding-right:8px; }
             .header-actions { margin-left:auto; }
-            .header-select { font-size:16px; }
-            .header-actions .btn-perfil { max-width:90px; padding:0 4px; }
+            .header-select { font-size:15px; }
+            .header-actions .btn-perfil { max-width:105px; padding:0 4px; font-size:14px; }
         }
         @media (min-width: 760px) {
             .app-container { max-width:760px; left:50%; transform:translateX(-50%); border-left:1px solid #ddd; border-right:1px solid #ddd; }
