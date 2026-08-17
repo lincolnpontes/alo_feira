@@ -8,11 +8,11 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
     <title>Alô Feira v1.3.1</title>
-    <link rel="stylesheet" href="src/styles/base.css?v=1.3.1-r5">
-    <link rel="stylesheet" href="src/styles/layout.css?v=1.3.1-r5">
-    <link rel="stylesheet" href="src/styles/components.css?v=1.3.1-r5">
-    <link rel="stylesheet" href="src/styles/features.css?v=1.3.1-r5">
-    <link rel="stylesheet" href="src/styles/responsive.css?v=1.3.1-r5">
+    <link rel="stylesheet" href="src/styles/base.css?v=1.3.1-r6">
+    <link rel="stylesheet" href="src/styles/layout.css?v=1.3.1-r6">
+    <link rel="stylesheet" href="src/styles/components.css?v=1.3.1-r6">
+    <link rel="stylesheet" href="src/styles/features.css?v=1.3.1-r6">
+    <link rel="stylesheet" href="src/styles/responsive.css?v=1.3.1-r6">
 </head>
 <body class="theme-pedido">
 <div id="splashScreen">
@@ -36,10 +36,7 @@
         <div id="dicasCabecalho" class="dicas-cabecalho"></div>
         <div class="header-actions">
             <button id="btnTrocarPerfil" class="btn-perfil" aria-label="Trocar perfil" title="Trocar perfil" onclick="abrirSelecaoColaboradorInicial(true)">👤 Perfil</button>
-            <button id="btnHistHoje" aria-label="Pedidos de hoje" title="Pedidos de hoje" onclick="abrirPedidosHoje()">📋</button>
-            <button id="btnLimparComprasBar" style="display:none;" aria-label="Limpar itens comprados e recebidos" title="Limpar comprados e recebidos" onclick="limparComprasAntigas()">🧹</button>
             <button id="btnAdmin" aria-label="Configurações" title="Configurações" onclick="document.getElementById('modalPainelUnificado').style.display='flex'">⚙️</button>
-            <button id="btnRelatorioBar" style="display:none;" aria-label="Criar relatório para fornecedor" title="Relatório para fornecedor" onclick="abrirModalRelatorio()">📄</button>
         </div>
     </div>
     <div class="area-conteudo">
@@ -51,7 +48,14 @@
             </div>
             <button class="btn-action-bar" onclick="desfazerAcao()" id="btnDesfazerBar" style="display:none; color:#ffb74d;" title="Desfazer" aria-label="Desfazer última ação">↩️</button>
         </div>
-        <div class="filters" id="containerFiltros"></div>
+        <div class="filters">
+            <div class="filtros-principais" id="containerFiltros"></div>
+            <div class="filtros-acoes">
+                <button id="btnHistHoje" style="display:none;" aria-label="Pedidos enviados hoje" title="Pedidos enviados hoje" onclick="abrirPedidosHoje()">📋</button>
+                <button id="btnRelatorioBar" style="display:none;" aria-label="Criar relatório para fornecedor" title="Relatório para fornecedor" onclick="abrirModalRelatorio()">📄</button>
+                <button id="btnLimparComprasBar" style="display:none;" aria-label="Limpar itens comprados e recebidos" title="Limpar comprados e recebidos" onclick="limparComprasAntigas()">🧹</button>
+            </div>
+        </div>
         <div class="scroll-area">
             <ul class="list" id="listaPrincipal"></ul>
         </div>
@@ -105,11 +109,7 @@
     </div>
 </div>
 <div class="menu-compra-overlay" id="overlayMenuFerramentas" onclick="fecharMenuFerramentas()">
-    <div class="menu-ferramentas" id="menuFerramentas" role="menu" aria-label="Visualização da lista" onclick="event.stopPropagation()">
-        <button type="button" class="menu-ferramentas-item" role="menuitem" onclick="acionarMenuFerramentas('todos')"><span aria-hidden="true">≡</span><span>Mostrar todos os itens</span><span class="menu-estado" id="estadoMostrarTodos"></span></button>
-        <button type="button" class="menu-ferramentas-item" role="menuitem" onclick="acionarMenuFerramentas('fornecedor')"><span aria-hidden="true">🚚</span><span>Filtrar por fornecedor</span><span class="menu-estado" id="estadoFiltroFornecedor"></span></button>
-        <button type="button" class="menu-ferramentas-item" id="opcaoAgruparStatus" role="menuitem" onclick="acionarMenuFerramentas('agrupar')"><span aria-hidden="true">🗂️</span><span>Agrupar por status</span><span class="menu-estado" id="estadoAgruparStatus"></span></button>
-    </div>
+    <div class="menu-ferramentas" id="menuFerramentas" role="menu" aria-label="Visualização e categorias da lista" onclick="event.stopPropagation()"></div>
 </div>
 <div class="modal-overlay" id="modalConfirmarRemoverRascunho">
     <div class="modal modal-confirmacao-pedido">
@@ -200,14 +200,22 @@
         </div>
         <div class="historico-pedido-resumo">
             <div id="resumoHistPedidosEdit"></div>
-            <button id="btnHistoricoCompletoPedido" class="btn-historico-pedido" onclick="toggleDiv('completoHistPedidosEdit')" aria-label="Abrir histórico completo" title="Histórico completo">🕘</button>
-            <div id="completoHistPedidosEdit" class="historico-pedido-completo"></div>
+            <button id="btnHistoricoCompletoPedido" class="btn-historico-pedido" onclick="abrirHistoricoCompletoPedido()" aria-label="Abrir histórico completo" title="Histórico completo">🕘</button>
         </div>
         <div class="modal-actions">
             <button class="btn-cancel" id="btnCancelarEdicaoPedido" onclick="cancelarEdicaoPedido()">Cancelar</button>
             <button class="btn-action" id="btnSalvarEdicaoPedido" onclick="salvarEdicaoPedido()">Salvar Pedido</button>
         </div>
         <button class="btn-remover-pedido-edicao" id="btnRemoverPedidoEdicao" onclick="removerPedidoPelaEdicao()">Remover do pedido</button>
+    </div>
+</div>
+<div class="modal-overlay modal-historico-pedidos" id="modalHistoricoPedidosProduto" role="dialog" aria-modal="true" aria-labelledby="tituloHistoricoPedidosProduto">
+    <div class="modal modal-historico-pedido">
+        <div class="modal-title" id="tituloHistoricoPedidosProduto">Histórico de pedidos</div>
+        <div id="completoHistPedidosEdit" class="historico-pedido-completo"></div>
+        <div class="modal-actions">
+            <button class="btn-action" onclick="fecharModal('modalHistoricoPedidosProduto')">Fechar</button>
+        </div>
     </div>
 </div>
 <div class="modal-overlay" id="modalHistoricoCompra">
@@ -497,20 +505,20 @@
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores', true);">Cancelar</button><button class="btn-action" onclick="salvarFornecedor()">Salvar</button></div>
     </div>
 </div>
-<script src="src/scripts/domain.js?v=1.3.1-r5"></script>
-<script src="src/scripts/core.js?v=1.3.1-r5"></script>
-<script src="src/scripts/security.js?v=1.3.1-r5"></script>
-<script src="src/scripts/sync.js?v=1.3.1-r5"></script>
-<script src="src/scripts/auth.js?v=1.3.1-r5"></script>
-<script src="src/scripts/orders.js?v=1.3.1-r5"></script>
-<script src="src/scripts/catalog.js?v=1.3.1-r5"></script>
-<script src="src/scripts/drafts.js?v=1.3.1-r5"></script>
-<script src="src/scripts/purchases.js?v=1.3.1-r5"></script>
-<script src="src/scripts/purchase-details.js?v=1.3.1-r5"></script>
-<script src="src/scripts/reports.js?v=1.3.1-r5"></script>
-<script src="src/scripts/settings.js?v=1.3.1-r5"></script>
-<script src="src/scripts/catalog-settings.js?v=1.3.1-r5"></script>
-<script src="src/scripts/people-settings.js?v=1.3.1-r5"></script>
-<script src="src/scripts/app.js?v=1.3.1-r5"></script>
+<script src="src/scripts/domain.js?v=1.3.1-r6"></script>
+<script src="src/scripts/core.js?v=1.3.1-r6"></script>
+<script src="src/scripts/security.js?v=1.3.1-r6"></script>
+<script src="src/scripts/sync.js?v=1.3.1-r6"></script>
+<script src="src/scripts/auth.js?v=1.3.1-r6"></script>
+<script src="src/scripts/orders.js?v=1.3.1-r6"></script>
+<script src="src/scripts/catalog.js?v=1.3.1-r6"></script>
+<script src="src/scripts/drafts.js?v=1.3.1-r6"></script>
+<script src="src/scripts/purchases.js?v=1.3.1-r6"></script>
+<script src="src/scripts/purchase-details.js?v=1.3.1-r6"></script>
+<script src="src/scripts/reports.js?v=1.3.1-r6"></script>
+<script src="src/scripts/settings.js?v=1.3.1-r6"></script>
+<script src="src/scripts/catalog-settings.js?v=1.3.1-r6"></script>
+<script src="src/scripts/people-settings.js?v=1.3.1-r6"></script>
+<script src="src/scripts/app.js?v=1.3.1-r6"></script>
 </body>
 </html>

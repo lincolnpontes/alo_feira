@@ -25,31 +25,47 @@ function alterarModo(modo) {
 }
 
 function renderizarFiltros() {
-    const colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
-    const catsPermitidas = getCatsPermitidas(colabLogado);
     const compras = db.configs.modo === 'compras';
-    let html = `<button id="btnTodosFiltros" class="chip ${categoriaAtual === null ? 'active' : ''}" onclick="${compras ? 'abrirMenuFerramentas(this)' : 'filtrarCat(null)'}" ${compras ? 'aria-haspopup="menu" aria-expanded="false"' : ''}>TODOS</button>`;
+    const todosAtivo = categoriaAtual === null && (!compras || (!filtroFornecedorComprasId && !agrupamentoCompradoAtivo));
+    let html = `<button id="btnTodosFiltros" class="chip ${todosAtivo ? 'active' : ''}" onclick="abrirMenuFerramentas(this)" aria-haspopup="menu" aria-expanded="false">TODOS</button>`;
     html += `<button class="btn-busca-filtros ${buscaPedidoTexto ? 'ativo' : ''}" onclick="abrirBuscaPedido()" id="btnBuscaPedido" title="Buscar item" aria-label="Buscar item">🔎</button>`;
     html += `<div id="boxBuscaPedido" class="busca-filtros-inline" style="display:${buscaPedidoTexto ? 'flex' : 'none'}"><input type="text" id="inputBuscaPedidoInline" value="${escaparHtml(buscaPedidoTexto)}" placeholder="Buscar item..." oninput="aplicarBuscaPedido()" onkeydown="if(event.key === 'Escape') limparBuscaPedido()"></div>`;
-    db.categorias.filter(cat => cat.ativo !== false).forEach(cat => {
-        if(catsPermitidas && !catsPermitidas.includes(cat.id)) return;
-        const isActive = categoriaAtual === cat.id;
-        html += `<button class="chip ${isActive ? 'active' : ''}" style="background-color: ${cat.cor}; color: ${cat.corTexto};" onclick="filtrarCat('${cat.id}')">${escaparHtml(cat.nome)}</button>`;
-    });
     document.getElementById('containerFiltros').innerHTML = html;
 }
 
 function filtrarCat(catId) {
+    fecharMenuFerramentas();
     categoriaAtual = catId;
     renderizarFiltros();
     renderizarLista();
 }
 
+function renderizarMenuFerramentas() {
+    const menu = document.getElementById('menuFerramentas');
+    const compras = db.configs.modo === 'compras';
+    const colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
+    const catsPermitidas = getCatsPermitidas(colabLogado);
+    const categorias = db.categorias.filter(cat => cat.ativo !== false && (!catsPermitidas || catsPermitidas.includes(cat.id)));
+    const todosAtivo = categoriaAtual === null && (!compras || (!filtroFornecedorComprasId && !agrupamentoCompradoAtivo));
+    let html = `<button type="button" class="menu-ferramentas-item" role="menuitem" onclick="acionarMenuFerramentas('todos')"><span aria-hidden="true">≡</span><span>Mostrar todos os itens</span><span class="menu-estado" id="estadoMostrarTodos">${todosAtivo ? '✓' : ''}</span></button>`;
+    if(compras) {
+        html += `<button type="button" class="menu-ferramentas-item" role="menuitem" onclick="acionarMenuFerramentas('fornecedor')"><span aria-hidden="true">🚚</span><span>Filtrar por fornecedor</span><span class="menu-estado" id="estadoFiltroFornecedor">${filtroFornecedorComprasId ? '✓' : ''}</span></button>`;
+        html += `<button type="button" class="menu-ferramentas-item" id="opcaoAgruparStatus" role="menuitem" onclick="acionarMenuFerramentas('agrupar')"><span aria-hidden="true">🗂️</span><span>Agrupar por status</span><span class="menu-estado" id="estadoAgruparStatus">${agrupamentoCompradoAtivo ? '✓' : ''}</span></button>`;
+    }
+    html += '<div class="menu-ferramentas-separador" role="separator"></div>';
+    categorias.forEach(cat => {
+        const ativa = categoriaAtual === cat.id;
+        html += `<button type="button" class="menu-ferramentas-item menu-categoria-item" role="menuitem" onclick="selecionarCategoriaMenu('${cat.id}')"><span class="menu-categoria-cor" style="background:${cat.cor};" aria-hidden="true"></span><span>${escaparHtml(cat.nome)}</span><span class="menu-estado">${ativa ? '✓' : ''}</span></button>`;
+    });
+    if(categorias.length === 0) html += '<div class="menu-ferramentas-vazio">Nenhuma categoria disponível</div>';
+    menu.innerHTML = html;
+}
+
 function abrirMenuFerramentas(origemEl) {
-    if(modoSelecaoAtivo || db.configs.modo !== 'compras') return;
+    if(modoSelecaoAtivo) return;
     const overlay = document.getElementById('overlayMenuFerramentas');
     const menu = document.getElementById('menuFerramentas');
-    atualizarEstadoMenuFerramentas();
+    renderizarMenuFerramentas();
     overlay.style.display = 'block';
     const margem = 10;
     const largura = Math.min(310, window.innerWidth - margem * 2);
@@ -73,27 +89,39 @@ function fecharMenuFerramentas() {
 
 function acionarMenuFerramentas(acao) {
     fecharMenuFerramentas();
-    if(acao === 'todos') mostrarTodosCompras();
+    if(acao === 'todos') mostrarTodosItens();
     else if(acao === 'fornecedor') abrirModalFiltroFornCompras();
     else if(acao === 'agrupar') ativarAgrupamentoCompras();
+}
+
+function selecionarCategoriaMenu(catId) {
+    if(db.configs.modo === 'compras') {
+        filtroFornecedorComprasId = null;
+        agrupamentoCompradoAtivo = false;
+    }
+    filtrarCat(catId);
 }
 
 function atualizarEstadoMenuFerramentas() {
     const todos = document.getElementById('estadoMostrarTodos');
     const fornecedor = document.getElementById('estadoFiltroFornecedor');
     const agrupado = document.getElementById('estadoAgruparStatus');
-    if(todos) todos.textContent = !filtroFornecedorComprasId && !agrupamentoCompradoAtivo ? '✓' : '';
+    if(todos) todos.textContent = categoriaAtual === null && !filtroFornecedorComprasId && !agrupamentoCompradoAtivo ? '✓' : '';
     if(fornecedor) fornecedor.textContent = filtroFornecedorComprasId ? '✓' : '';
     if(agrupado) agrupado.textContent = agrupamentoCompradoAtivo ? '✓' : '';
 }
 
-function mostrarTodosCompras() {
-    filtroFornecedorComprasId = null;
-    agrupamentoCompradoAtivo = false;
+function mostrarTodosItens() {
+    if(db.configs.modo === 'compras') {
+        filtroFornecedorComprasId = null;
+        agrupamentoCompradoAtivo = false;
+    }
     categoriaAtual = null;
     renderizarFiltros();
     renderizarLista();
 }
+
+function mostrarTodosCompras() { mostrarTodosItens(); }
 
 function ativarAgrupamentoCompras() {
     if(db.configs.modo !== 'compras') return;

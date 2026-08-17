@@ -43,9 +43,11 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   const scripts = fs.readdirSync(path.join(root, 'src', 'scripts')).filter(name => name.endsWith('.js')).map(name => fs.readFileSync(path.join(root, 'src', 'scripts', name), 'utf8')).join('\n');
   assert.match(html, /class="menu-compra"/);
   assert.doesNotMatch(html, /id="modalAcaoPedido"|id="btnMenuFerramentas"/);
-  assert.match(html, /Mostrar todos os itens/);
-  assert.match(html, /Filtrar por fornecedor/);
-  assert.match(html, /Agrupar por status/);
+  assert.match(orders, /Mostrar todos os itens/);
+  assert.match(orders, /Filtrar por fornecedor/);
+  assert.match(orders, /Agrupar por status/);
+  assert.match(orders, /menu-ferramentas-separador[\s\S]*menu-categoria-item/);
+  assert.match(html, /class="filtros-acoes"[\s\S]*id="btnHistHoje"[\s\S]*id="btnRelatorioBar"[\s\S]*id="btnLimparComprasBar"/);
   assert.match(html, /id="btnLimparComprasBar"/);
   assert.match(html, /id="btnRelatorioBar"[\s\S]*Relatório para fornecedor/);
   assert.match(html, /id="modalConfirmarRemoverRascunho"/);
@@ -68,6 +70,8 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(orders, /btn-busca-filtros[\s\S]*boxBuscaPedido/);
   assert.match(purchases, /pedido\.status === 'rascunho'\) abrirModalEditarPedido/);
   assert.match(details + html, /ultimo-pedido-label[\s\S]*btnRemoverPedidoEdicao/);
+  assert.match(details + html, /abrirHistoricoCompletoPedido[\s\S]*modalHistoricoPedidosProduto/);
+  assert.doesNotMatch(html, /btnHistoricoCompletoPedido[^>]+toggleDiv/);
   assert.match(catalog, /cat-header[\s\S]*background-color:\$\{corCategoria\}/);
   assert.match(layout, /\.cat-header \{[\s\S]*min-height:38px/);
   assert.match(purchases, /function abrirConfirmarRemoverRascunho[\s\S]*function confirmarRemocaoRascunho/);

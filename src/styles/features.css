@@ -36,12 +36,16 @@
         .menu-compra-acao.detalhes { color:#fff; background:#1565c0; }
         .menu-compra-acao.cancelar { color:#fff; background:#c62828; }
         .menu-compra-acao.secundaria { color:#46515a; background:#eef1f3; }
-        .menu-ferramentas { position:fixed; width:310px; padding:6px; background:#fff; border:1px solid #d9dde1; border-radius:7px; box-shadow:0 10px 28px rgba(25,31,36,.2); }
+        .menu-ferramentas { position:fixed; width:310px; max-height:min(70vh, 520px); overflow-y:auto; padding:6px; background:#fff; border:1px solid #d9dde1; border-radius:7px; box-shadow:0 10px 28px rgba(25,31,36,.2); }
         .menu-ferramentas-item { width:100%; min-height:46px; display:flex; align-items:center; gap:11px; border:0; border-bottom:1px solid #edf0f2; background:#fff; color:#263238; padding:7px 10px; text-align:left; font-size:14px; font-weight:700; cursor:pointer; }
         .menu-ferramentas-item:last-child { border-bottom:0; }
         .menu-ferramentas-item > span:first-child { width:28px; text-align:center; font-size:18px; }
         .menu-ferramentas-item:active { background:#f0f2f4; }
         .menu-estado { margin-left:auto; color:#521565; font-size:17px; font-weight:900; }
+        .menu-ferramentas-separador { height:1px; margin:6px 8px; background:#cfd5da; }
+        .menu-categoria-item { text-transform:none; }
+        .menu-categoria-cor { width:18px !important; height:18px; border:1px solid rgba(0,0,0,.16); border-radius:4px; flex-shrink:0; }
+        .menu-ferramentas-vazio { padding:12px 10px; color:#687078; font-size:13px; text-align:center; }
         .icone-send { width:18px; height:18px; display:block; flex-shrink:0; }
         .icone-send-barra { width:19px; height:19px; }
         .icone-send-status { width:16px; height:16px; }
@@ -67,7 +71,9 @@
         .ultimo-pedido-valor b { color:#1565c0; }
         .sem-historico-pedido { color:#66747d; font-size:13px; }
         .btn-historico-pedido { width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; border:0; border-radius:5px; background:rgba(21,101,192,.1); color:#1565c0; font-size:20px; cursor:pointer; }
-        .historico-pedido-completo { display:none; grid-column:1 / -1; margin-top:4px; padding-top:5px; border-top:1px solid #b9d7f2; max-height:120px; overflow-y:auto; }
+        .historico-pedido-completo { max-height:55vh; overflow-y:auto; }
         .historico-pedido-linha { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid rgba(21,101,192,.12); font-size:12px; }
         .historico-pedido-linha button { width:36px; height:36px; border:0; background:transparent; color:#c62828; font-size:16px; cursor:pointer; flex-shrink:0; }
         .btn-remover-pedido-edicao { display:none; width:100%; min-height:44px; margin-top:8px; border:0; border-radius:5px; background:#c62828; color:#fff; font-size:14px; font-weight:800; cursor:pointer; }
+        .modal-historico-pedidos { z-index:1100; background:rgba(0,0,0,.48); }
+        .modal-historico-pedido { max-width:390px; border-top:5px solid #1565c0; }
