@@ -1,4 +1,49 @@
-function abrirModalEditarPedido(paId, pId) { const p = db.produtos.find(x => x.id === pId); if(!p) return; document.getElementById('tituloModalEditarPedido').innerText = p.nome; let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let isAdmin = temAcessoAdmin(); let btnEditPed = document.getElementById('btnEditProdPedido'); if(isAdmin) { btnEditPed.style.display = 'block'; btnEditPed.onclick = () => { fecharModal('modalEditarPedido'); abrirFormProduto(p.id, 'modalEditarPedido'); }; } else { btnEditPed.style.display = 'none'; } if (paId) { const pa = db.pedidosAtivos.find(x => x.idUnico === paId); document.getElementById('editPedidoArea').style.display = 'block'; document.getElementById('btnSalvarEdicaoPedido').style.display = 'block'; document.getElementById('editPedidoId').value = paId; document.getElementById('editPedidoQtd').value = pa.qtd; document.getElementById('editPedidoObs').value = pa.obs || ''; const selUn = document.getElementById('editPedidoUnidade'); selUn.innerHTML = ''; p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pa.unidade===u?'selected':''}>${u}</option>`); } else { document.getElementById('editPedidoArea').style.display = 'none'; document.getElementById('btnSalvarEdicaoPedido').style.display = 'none'; document.getElementById('editPedidoId').value = ''; } let peds = db.pedidosAtivos.filter(x => x.produtoId === pId && x.status !== 'rascunho' && !x.excluido).sort((a,b) => (b.dataEnvio||b.dataStatus||0) - (a.dataEnvio||a.dataStatus||0)); let htmlPedResumo = ""; let htmlPedCompleto = ""; if(peds.length > 0) { let lastP = peds[0]; htmlPedResumo = `<div style="font-size:13px; color:#333;">Último Pedido: ${formatarDataHora(lastP.dataEnvio || lastP.dataStatus)} - <b style="color:#1565C0;">${escaparHtml(lastP.qtd)} ${escaparHtml(lastP.unidade)}</b></div>`; peds.slice(0, 15).forEach(paInfo => { htmlPedCompleto += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0; font-size:12px;"><span>${formatarDataHora(paInfo.dataEnvio || paInfo.dataStatus)} - <b>${escaparHtml(paInfo.qtd)} ${escaparHtml(paInfo.unidade)}</b> (${paInfo.status})</span> <button onclick="deletarPedidoDireto('${paInfo.idUnico}', '${pId}', '${paId || ''}')" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:16px;">🗑️</button></div>`; }); } else { htmlPedResumo = "<div style='font-size:13px; color:#666;'>Sem histórico de pedidos</div>"; htmlPedCompleto = "<div style='font-size:13px; color:#666;'>Sem histórico de pedidos</div>"; } document.getElementById('resumoHistPedidosEdit').innerHTML = htmlPedResumo; document.getElementById('completoHistPedidosEdit').innerHTML = htmlPedCompleto; document.getElementById('completoHistPedidosEdit').style.display = 'none'; document.getElementById('modalEditarPedido').style.display = 'flex'; }
+function abrirModalEditarPedido(paId, pId) {
+    const p = db.produtos.find(x => x.id === pId);
+    if(!p) return;
+    document.getElementById('tituloModalEditarPedido').innerText = p.nome;
+    const isAdmin = temAcessoAdmin();
+    const btnEditPed = document.getElementById('btnEditProdPedido');
+    if(isAdmin) {
+        btnEditPed.style.display = 'block';
+        btnEditPed.onclick = () => { fecharModal('modalEditarPedido'); abrirFormProduto(p.id, 'modalEditarPedido'); };
+    } else {
+        btnEditPed.style.display = 'none';
+    }
+
+    const pedidoAtual = paId ? db.pedidosAtivos.find(x => x.idUnico === paId) : null;
+    if(pedidoAtual) {
+        document.getElementById('editPedidoArea').style.display = 'block';
+        document.getElementById('btnSalvarEdicaoPedido').style.display = 'block';
+        document.getElementById('editPedidoId').value = paId;
+        document.getElementById('editPedidoQtd').value = pedidoAtual.qtd;
+        document.getElementById('editPedidoObs').value = pedidoAtual.obs || '';
+        const selUn = document.getElementById('editPedidoUnidade');
+        selUn.innerHTML = '';
+        p.unidades.forEach(u => selUn.innerHTML += `<option value="${u}" ${pedidoAtual.unidade===u?'selected':''}>${u}</option>`);
+    } else {
+        document.getElementById('editPedidoArea').style.display = 'none';
+        document.getElementById('btnSalvarEdicaoPedido').style.display = 'none';
+        document.getElementById('editPedidoId').value = '';
+    }
+
+    const peds = db.pedidosAtivos.filter(x => x.produtoId === pId && x.status !== 'rascunho' && !x.excluido).sort((a,b) => (b.dataEnvio||b.dataStatus||0) - (a.dataEnvio||a.dataStatus||0));
+    let htmlPedResumo = "<div class='sem-historico-pedido'>Sem pedido anterior</div>";
+    let htmlPedCompleto = '';
+    if(peds.length > 0) {
+        const lastP = peds[0];
+        htmlPedResumo = `<div class="ultimo-pedido-label">Último pedido</div><div class="ultimo-pedido-valor">${formatarDataHora(lastP.dataEnvio || lastP.dataStatus)} · <b>${escaparHtml(lastP.qtd)} ${escaparHtml(lastP.unidade)}</b></div>`;
+        peds.slice(0, 15).forEach(paInfo => {
+            htmlPedCompleto += `<div class="historico-pedido-linha"><span>${formatarDataHora(paInfo.dataEnvio || paInfo.dataStatus)} · <b>${escaparHtml(paInfo.qtd)} ${escaparHtml(paInfo.unidade)}</b> (${escaparHtml(paInfo.status)})</span><button onclick="deletarPedidoDireto('${paInfo.idUnico}', '${pId}', '${paId || ''}')" aria-label="Excluir pedido do histórico">🗑️</button></div>`;
+        });
+    }
+    document.getElementById('resumoHistPedidosEdit').innerHTML = htmlPedResumo;
+    document.getElementById('completoHistPedidosEdit').innerHTML = htmlPedCompleto;
+    document.getElementById('completoHistPedidosEdit').style.display = 'none';
+    document.getElementById('btnHistoricoCompletoPedido').style.display = peds.length ? 'inline-flex' : 'none';
+    document.getElementById('btnRemoverPedidoEdicao').style.display = pedidoAtual && pedidoAtual.status === 'rascunho' ? 'block' : 'none';
+    document.getElementById('modalEditarPedido').style.display = 'flex';
+}
     function cancelarEdicaoPedido() { fecharModal('modalEditarPedido'); }
     function salvarEdicaoPedido() { const paId = document.getElementById('editPedidoId').value; if(!paId) return fecharModal('modalEditarPedido'); const qtd = parseFloatBr(document.getElementById('editPedidoQtd').value); let pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa) { pa.qtd = qtd; pa.unidade = document.getElementById('editPedidoUnidade').value; pa.obs = document.getElementById('editPedidoObs').value.trim(); pa.dataStatus = Date.now(); db.configs.syncPendente = pa.status !== 'rascunho'; salvarBanco(); } fecharModal('modalEditarPedido'); renderizarLista(); if(document.getElementById('modalPedidosHoje').style.display === 'flex') abrirPedidosHoje(); if(pa && pa.status !== 'rascunho') sincronizarFundo(false, true); }
 

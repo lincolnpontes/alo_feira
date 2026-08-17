@@ -20,7 +20,9 @@ function renderizarLista() {
                     let catName = cObj ? escaparHtml(cObj.nome) : "Sem Categoria";
                     let btnAvulso = (cObj && cObj.permiteAvulso) ? `<button onclick="abrirModalAvulso('${cObj.id}'); event.stopPropagation();" style="background:#fff; border:1px solid #ccc; border-radius:4px; color:#1565C0; font-size:12px; padding:2px 8px; cursor:pointer; font-weight:bold;">+ Avulso</button>` : '';
                     if (categoriaAtual === null || categoriaAtual === catId) {
-                        htmlPrincipal += `<li class="cat-header" style="cursor:default;"><span>🏷️ ${catName}</span> ${btnAvulso}</li>`;
+                        const corCategoria = cObj ? cObj.cor : '#e0e0e0';
+                        const corTextoCategoria = cObj ? cObj.corTexto : '#333';
+                        htmlPrincipal += `<li class="cat-header" style="cursor:default; background-color:${corCategoria}; color:${corTextoCategoria};"><span>🏷️ ${catName}</span> ${btnAvulso}</li>`;
                         itensMostrados++;
                     }
                     lastCatId = catId; lastSubcat = null;
@@ -73,7 +75,7 @@ function renderizarLista() {
                 }
 
                 let pedIdAtributo = pedidoEditavel ? pedidoEditavel.idUnico : '';
-                const rotuloAcao = pedidoEditavel ? (pedidoEditavel.status === 'rascunho' ? 'Opções de' : 'Item no fluxo de compra:') : 'Adicionar';
+                const rotuloAcao = pedidoEditavel ? (pedidoEditavel.status === 'rascunho' ? 'Editar pedido de' : 'Item no fluxo de compra:') : 'Adicionar';
                 htmlPrincipal += `<li class="item item-pedido ${classesExtra}" data-id="${p.id}" data-pedid="${pedIdAtributo}" data-cat-id="${catId}" data-sub-id="${subcatGroupId}"><button type="button" class="item-main-action" aria-label="${rotuloAcao} ${escaparHtml(p.nome)}" onclick="cliqueItemPedido('${p.id}', this.closest('.item'))"><span class="item-status-pedido" aria-hidden="true"><span class="status-glyph ${classeIconePedido}">${iconeListaPedido}</span></span><div class="item-info"><div class="item-title">${escaparHtml(p.nome)}</div><div class="item-subtitle">${padraoTexto}</div></div><div class="info-direita" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">${infoDireita}</div></button></li>`;
                 itensMostrados++;
             });
@@ -98,13 +100,14 @@ function renderizarLista() {
                 if (filtroFornecedorComprasId) { if (!p.fornecedores || !p.fornecedores.includes(filtroFornecedorComprasId)) return; }
                 if(categoriaAtual && p.categoria !== categoriaAtual) return; if(catsPermitidas && !catsPermitidas.includes(p.categoria)) return;
                 let cObj = db.categorias.find(c => c.id === p.categoria); let catId = cObj ? cObj.id : "sem_cat"; let subcat = p.subcategoria || ""; let stGroupId = "st_" + pa.status; let catGroupId = "cat_" + idDomSeguro(catId); let subcatGroupId = "cat_" + idDomSeguro(catId) + "_sub_" + idDomSeguro(subcat);
+                if(buscaPedidoTexto) { let busca = normalizarTextoBusca(buscaPedidoTexto); let textoItem = normalizarTextoBusca(`${p.nome} ${p.descFornecedor || ''} ${p.obsPadrao || ''} ${pa.obs || ''} ${subcat} ${cObj ? cObj.nome : ''}`); if(!textoItem.includes(busca)) return; }
                 if (agrupamentoCompradoAtivo) {
                     let statusEfetivo = (pa.transicaoProgresso && (Date.now() - pa.transicaoProgresso < 10000)) ? pa.statusAnterior : pa.status;
                     let currentGroup = statusEfetivo === 'pendente' ? '⏳ PENDENTES' : (statusEfetivo === 'pedido_forn' ? `${iconePedidoFornecedorSvg('icone-send icone-send-grupo')} PEDIDOS AO FORNECEDOR` : (statusEfetivo === 'cancelado' ? '🚫 CANCELADOS' : '✓ COMPRADOS / ENTREGUES'));
                     if (currentGroup !== lastGroup) { htmlPrincipal += `<li class="cat-header" style="background:#546e7a; color:#fff;"><span>${currentGroup}</span></li>`; lastGroup = currentGroup; lastCatId = ""; lastSubcat = null; }
                     catGroupId = stGroupId + "_" + catGroupId; subcatGroupId = stGroupId + "_" + subcatGroupId;
                 }
-                if (categoriaAtual === null || agrupamentoCompradoAtivo) { if (catId !== lastCatId) { let catName = cObj ? escaparHtml(cObj.nome) : "Sem Categoria"; htmlPrincipal += `<li class="cat-header" onclick="selecionarGrupoCompras('${catGroupId}', 'cat')"><span>🏷️ ${catName}</span></li>`; lastCatId = catId; lastSubcat = null; } }
+                if (categoriaAtual === null || agrupamentoCompradoAtivo) { if (catId !== lastCatId) { let catName = cObj ? escaparHtml(cObj.nome) : "Sem Categoria"; let corCategoria = cObj ? cObj.cor : '#e0e0e0'; let corTextoCategoria = cObj ? cObj.corTexto : '#333'; htmlPrincipal += `<li class="cat-header" style="background-color:${corCategoria}; color:${corTextoCategoria};" onclick="selecionarGrupoCompras('${catGroupId}', 'cat')"><span>🏷️ ${catName}</span></li>`; lastCatId = catId; lastSubcat = null; } }
                 if (subcat !== lastSubcat && subcat !== "") { htmlPrincipal += `<li class="subcat-header" onclick="selecionarGrupoCompras('${subcatGroupId}', 'sub')"><span>▪ ${escaparHtml(subcat)}</span></li>`; lastSubcat = subcat; }
                 const catObj = db.categorias.find(c => c.id === p.categoria) || { cor: '#999', corTexto: '#fff' }; let emojiStatus = pa.status === 'pendente' ? '○' : (pa.status === 'pedido_forn' ? iconePedidoFornecedorSvg('icone-send icone-send-status') : (pa.status === 'cancelado' ? '×' : '✓')); let isSelected = itensSelecionadosRelatorio.has(pa.idUnico); let qtyVal = pa.qtd !== '' ? pa.qtd : null; let unVal = pa.unidade ? pa.unidade : null; let qtdStrDisplay = ""; if(qtyVal !== null && unVal !== null) qtdStrDisplay = `${qtyVal} ${unVal}`; else if(qtyVal !== null) qtdStrDisplay = `${qtyVal}`; else if(unVal !== null) qtdStrDisplay = `${unVal}`; let tituloItem = escaparHtml(p.nome);
 

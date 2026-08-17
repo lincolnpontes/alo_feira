@@ -8,11 +8,11 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
     <title>Alô Feira v1.3.1</title>
-    <link rel="stylesheet" href="src/styles/base.css?v=1.3.1-r4">
-    <link rel="stylesheet" href="src/styles/layout.css?v=1.3.1-r4">
-    <link rel="stylesheet" href="src/styles/components.css?v=1.3.1-r4">
-    <link rel="stylesheet" href="src/styles/features.css?v=1.3.1-r4">
-    <link rel="stylesheet" href="src/styles/responsive.css?v=1.3.1-r4">
+    <link rel="stylesheet" href="src/styles/base.css?v=1.3.1-r5">
+    <link rel="stylesheet" href="src/styles/layout.css?v=1.3.1-r5">
+    <link rel="stylesheet" href="src/styles/components.css?v=1.3.1-r5">
+    <link rel="stylesheet" href="src/styles/features.css?v=1.3.1-r5">
+    <link rel="stylesheet" href="src/styles/responsive.css?v=1.3.1-r5">
 </head>
 <body class="theme-pedido">
 <div id="splashScreen">
@@ -39,6 +39,7 @@
             <button id="btnHistHoje" aria-label="Pedidos de hoje" title="Pedidos de hoje" onclick="abrirPedidosHoje()">📋</button>
             <button id="btnLimparComprasBar" style="display:none;" aria-label="Limpar itens comprados e recebidos" title="Limpar comprados e recebidos" onclick="limparComprasAntigas()">🧹</button>
             <button id="btnAdmin" aria-label="Configurações" title="Configurações" onclick="document.getElementById('modalPainelUnificado').style.display='flex'">⚙️</button>
+            <button id="btnRelatorioBar" style="display:none;" aria-label="Criar relatório para fornecedor" title="Relatório para fornecedor" onclick="abrirModalRelatorio()">📄</button>
         </div>
     </div>
     <div class="area-conteudo">
@@ -47,8 +48,6 @@
                 <button class="btn-action-bar" onclick="acaoEmMassa('pedido_forn')" id="btnMassaPedForn" style="display:none; background:#521565;" title="Pedido ao fornecedor" aria-label="Marcar como pedido ao fornecedor"><svg class="icone-send icone-send-barra" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4 20-7Z"></path><path d="M22 2 11 13"></path></svg></button>
                 <button class="btn-action-bar" onclick="acaoEmMassa('concluir')" id="btnMassaComprado" style="display:none; background:#145218;" title="Concluir compra ou recebimento" aria-label="Concluir compra ou recebimento">✓</button>
                 <button class="btn-action-bar" onclick="abrirModalMassaVincular()" id="btnMassaVincular" style="display:none; background:#1565C0;" title="Vincular fornecedor" aria-label="Vincular fornecedor">🔗</button>
-                <button class="btn-action-bar btn-menu-ferramentas" onclick="abrirMenuFerramentas(this)" id="btnMenuFerramentas" title="Mais opções" aria-label="Abrir opções da lista" aria-expanded="false">☰</button>
-                <button class="btn-action-bar" onclick="abrirModalRelatorio()" id="btnRelatorioBar" title="Relatório" aria-label="Criar relatório">📄</button>
             </div>
             <button class="btn-action-bar" onclick="desfazerAcao()" id="btnDesfazerBar" style="display:none; color:#ffb74d;" title="Desfazer" aria-label="Desfazer última ação">↩️</button>
         </div>
@@ -105,19 +104,11 @@
         <div id="acoesDisponiveisCompra" class="menu-compra-acoes"></div>
     </div>
 </div>
-<div class="menu-compra-overlay" id="modalAcaoPedido" onclick="fecharMenuAcaoPedido()">
-    <div class="menu-compra menu-pedido" id="menuAcaoPedido" role="menu" aria-label="Opções do pedido" onclick="event.stopPropagation()">
-        <div class="menu-compra-acoes">
-            <button class="menu-compra-acao detalhes" type="button" role="menuitem" onclick="executarAcaoPedido('editar')"><span class="menu-compra-icone" aria-hidden="true">✏️</span><span>Alterar quantidade / unidade</span></button>
-            <button class="menu-compra-acao cancelar" type="button" role="menuitem" onclick="executarAcaoPedido('remover')"><span class="menu-compra-icone" aria-hidden="true">×</span><span>Remover da lista</span></button>
-        </div>
-    </div>
-</div>
 <div class="menu-compra-overlay" id="overlayMenuFerramentas" onclick="fecharMenuFerramentas()">
-    <div class="menu-ferramentas" id="menuFerramentas" role="menu" aria-label="Opções da lista" onclick="event.stopPropagation()">
-        <button type="button" class="menu-ferramentas-item" role="menuitem" onclick="acionarMenuFerramentas('fornecedor')"><span aria-hidden="true">🚚</span><span>Filtrar por fornecedor</span></button>
+    <div class="menu-ferramentas" id="menuFerramentas" role="menu" aria-label="Visualização da lista" onclick="event.stopPropagation()">
+        <button type="button" class="menu-ferramentas-item" role="menuitem" onclick="acionarMenuFerramentas('todos')"><span aria-hidden="true">≡</span><span>Mostrar todos os itens</span><span class="menu-estado" id="estadoMostrarTodos"></span></button>
+        <button type="button" class="menu-ferramentas-item" role="menuitem" onclick="acionarMenuFerramentas('fornecedor')"><span aria-hidden="true">🚚</span><span>Filtrar por fornecedor</span><span class="menu-estado" id="estadoFiltroFornecedor"></span></button>
         <button type="button" class="menu-ferramentas-item" id="opcaoAgruparStatus" role="menuitem" onclick="acionarMenuFerramentas('agrupar')"><span aria-hidden="true">🗂️</span><span>Agrupar por status</span><span class="menu-estado" id="estadoAgruparStatus"></span></button>
-        <button type="button" class="menu-ferramentas-item" role="menuitem" onclick="acionarMenuFerramentas('limpar')"><span aria-hidden="true">🧹</span><span>Limpar comprados e recebidos</span></button>
     </div>
 </div>
 <div class="modal-overlay" id="modalConfirmarRemoverRascunho">
@@ -207,16 +198,16 @@
             </div>
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
         </div>
-        <h4 style="margin:0 0 5px 0; font-size:14px; color:#333;">Histórico de Pedidos</h4>
-        <div style="background:#e3f2fd; padding:10px; border-radius:5px; margin-bottom:15px;">
+        <div class="historico-pedido-resumo">
             <div id="resumoHistPedidosEdit"></div>
-            <button onclick="toggleDiv('completoHistPedidosEdit')" style="background:none;border:none;color:#1565C0;font-size:12px;padding:5px 0 0 0;cursor:pointer;">Ver detalhes e excluir...</button>
-            <div id="completoHistPedidosEdit" style="display:none; margin-top:5px; border-top:1px solid #ccc; padding-top:5px; max-height:100px; overflow-y:auto;"></div>
+            <button id="btnHistoricoCompletoPedido" class="btn-historico-pedido" onclick="toggleDiv('completoHistPedidosEdit')" aria-label="Abrir histórico completo" title="Histórico completo">🕘</button>
+            <div id="completoHistPedidosEdit" class="historico-pedido-completo"></div>
         </div>
         <div class="modal-actions">
             <button class="btn-cancel" id="btnCancelarEdicaoPedido" onclick="cancelarEdicaoPedido()">Cancelar</button>
             <button class="btn-action" id="btnSalvarEdicaoPedido" onclick="salvarEdicaoPedido()">Salvar Pedido</button>
         </div>
+        <button class="btn-remover-pedido-edicao" id="btnRemoverPedidoEdicao" onclick="removerPedidoPelaEdicao()">Remover do pedido</button>
     </div>
 </div>
 <div class="modal-overlay" id="modalHistoricoCompra">
@@ -506,20 +497,20 @@
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores', true);">Cancelar</button><button class="btn-action" onclick="salvarFornecedor()">Salvar</button></div>
     </div>
 </div>
-<script src="src/scripts/domain.js?v=1.3.1-r4"></script>
-<script src="src/scripts/core.js?v=1.3.1-r4"></script>
-<script src="src/scripts/security.js?v=1.3.1-r4"></script>
-<script src="src/scripts/sync.js?v=1.3.1-r4"></script>
-<script src="src/scripts/auth.js?v=1.3.1-r4"></script>
-<script src="src/scripts/orders.js?v=1.3.1-r4"></script>
-<script src="src/scripts/catalog.js?v=1.3.1-r4"></script>
-<script src="src/scripts/drafts.js?v=1.3.1-r4"></script>
-<script src="src/scripts/purchases.js?v=1.3.1-r4"></script>
-<script src="src/scripts/purchase-details.js?v=1.3.1-r4"></script>
-<script src="src/scripts/reports.js?v=1.3.1-r4"></script>
-<script src="src/scripts/settings.js?v=1.3.1-r4"></script>
-<script src="src/scripts/catalog-settings.js?v=1.3.1-r4"></script>
-<script src="src/scripts/people-settings.js?v=1.3.1-r4"></script>
-<script src="src/scripts/app.js?v=1.3.1-r4"></script>
+<script src="src/scripts/domain.js?v=1.3.1-r5"></script>
+<script src="src/scripts/core.js?v=1.3.1-r5"></script>
+<script src="src/scripts/security.js?v=1.3.1-r5"></script>
+<script src="src/scripts/sync.js?v=1.3.1-r5"></script>
+<script src="src/scripts/auth.js?v=1.3.1-r5"></script>
+<script src="src/scripts/orders.js?v=1.3.1-r5"></script>
+<script src="src/scripts/catalog.js?v=1.3.1-r5"></script>
+<script src="src/scripts/drafts.js?v=1.3.1-r5"></script>
+<script src="src/scripts/purchases.js?v=1.3.1-r5"></script>
+<script src="src/scripts/purchase-details.js?v=1.3.1-r5"></script>
+<script src="src/scripts/reports.js?v=1.3.1-r5"></script>
+<script src="src/scripts/settings.js?v=1.3.1-r5"></script>
+<script src="src/scripts/catalog-settings.js?v=1.3.1-r5"></script>
+<script src="src/scripts/people-settings.js?v=1.3.1-r5"></script>
+<script src="src/scripts/app.js?v=1.3.1-r5"></script>
 </body>
 </html>

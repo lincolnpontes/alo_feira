@@ -6,13 +6,13 @@ function alterarModo(modo) {
     if(modo === 'pedido') filtroFornecedorComprasId = null;
     fecharMenuFerramentas();
     fecharMenuAcaoCompra();
-    fecharMenuAcaoPedido();
     document.body.className = `theme-${modo}`;
     document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#521565';
     document.getElementById('dicasCabecalho').innerHTML = '';
-    document.getElementById('actionBarCompras').style.display = modo === 'compras' ? 'flex' : 'none';
+    document.getElementById('actionBarCompras').style.display = 'none';
     document.getElementById('btnHistHoje').style.display = modo === 'pedido' ? 'inline-flex' : 'none';
-    document.getElementById('btnLimparComprasBar').style.display = modo === 'pedido' ? 'inline-flex' : 'none';
+    document.getElementById('btnLimparComprasBar').style.display = 'inline-flex';
+    document.getElementById('btnRelatorioBar').style.display = modo === 'compras' ? 'inline-flex' : 'none';
     if(modo === 'compras') document.getElementById('containerBotoesEnvio').style.display = 'none';
     renderizarFiltros();
     atualizarControlesSelecao();
@@ -27,11 +27,10 @@ function alterarModo(modo) {
 function renderizarFiltros() {
     const colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId);
     const catsPermitidas = getCatsPermitidas(colabLogado);
-    let html = `<button class="chip ${categoriaAtual === null ? 'active' : ''}" onclick="filtrarCat(null)">TODOS</button>`;
-    if(db.configs.modo === 'pedido') {
-        html += `<button class="btn-busca-filtros ${buscaPedidoTexto ? 'ativo' : ''}" onclick="abrirBuscaPedido()" id="btnBuscaPedido" title="Buscar item" aria-label="Buscar item">🔎</button>`;
-        html += `<div id="boxBuscaPedido" class="busca-filtros-inline" style="display:${buscaPedidoTexto ? 'flex' : 'none'}"><input type="text" id="inputBuscaPedidoInline" value="${escaparHtml(buscaPedidoTexto)}" placeholder="Buscar item..." oninput="aplicarBuscaPedido()" onkeydown="if(event.key === 'Escape') limparBuscaPedido()"></div>`;
-    }
+    const compras = db.configs.modo === 'compras';
+    let html = `<button id="btnTodosFiltros" class="chip ${categoriaAtual === null ? 'active' : ''}" onclick="${compras ? 'abrirMenuFerramentas(this)' : 'filtrarCat(null)'}" ${compras ? 'aria-haspopup="menu" aria-expanded="false"' : ''}>TODOS</button>`;
+    html += `<button class="btn-busca-filtros ${buscaPedidoTexto ? 'ativo' : ''}" onclick="abrirBuscaPedido()" id="btnBuscaPedido" title="Buscar item" aria-label="Buscar item">🔎</button>`;
+    html += `<div id="boxBuscaPedido" class="busca-filtros-inline" style="display:${buscaPedidoTexto ? 'flex' : 'none'}"><input type="text" id="inputBuscaPedidoInline" value="${escaparHtml(buscaPedidoTexto)}" placeholder="Buscar item..." oninput="aplicarBuscaPedido()" onkeydown="if(event.key === 'Escape') limparBuscaPedido()"></div>`;
     db.categorias.filter(cat => cat.ativo !== false).forEach(cat => {
         if(catsPermitidas && !catsPermitidas.includes(cat.id)) return;
         const isActive = categoriaAtual === cat.id;
@@ -50,7 +49,6 @@ function abrirMenuFerramentas(origemEl) {
     if(modoSelecaoAtivo || db.configs.modo !== 'compras') return;
     const overlay = document.getElementById('overlayMenuFerramentas');
     const menu = document.getElementById('menuFerramentas');
-    document.getElementById('opcaoAgruparStatus').style.display = db.configs.modo === 'compras' ? 'flex' : 'none';
     atualizarEstadoMenuFerramentas();
     overlay.style.display = 'block';
     const margem = 10;
@@ -68,31 +66,42 @@ function abrirMenuFerramentas(origemEl) {
 
 function fecharMenuFerramentas() {
     const overlay = document.getElementById('overlayMenuFerramentas');
-    const botao = document.getElementById('btnMenuFerramentas');
+    const botao = document.getElementById('btnTodosFiltros');
     if(overlay) overlay.style.display = 'none';
     if(botao) botao.setAttribute('aria-expanded', 'false');
 }
 
 function acionarMenuFerramentas(acao) {
     fecharMenuFerramentas();
-    if(acao === 'fornecedor') abrirModalFiltroFornCompras();
-    else if(acao === 'agrupar') alternarAgrupamentoCompras();
-    else if(acao === 'limpar') limparComprasAntigas();
+    if(acao === 'todos') mostrarTodosCompras();
+    else if(acao === 'fornecedor') abrirModalFiltroFornCompras();
+    else if(acao === 'agrupar') ativarAgrupamentoCompras();
 }
 
 function atualizarEstadoMenuFerramentas() {
-    const btn = document.getElementById('btnMenuFerramentas');
-    const estado = document.getElementById('estadoAgruparStatus');
-    if(estado) estado.textContent = agrupamentoCompradoAtivo ? '✓' : '';
-    if(!btn) return;
-    const ativo = Boolean(filtroFornecedorComprasId || agrupamentoCompradoAtivo);
-    btn.style.backgroundColor = ativo ? '#521565' : 'rgba(255,255,255,0.15)';
+    const todos = document.getElementById('estadoMostrarTodos');
+    const fornecedor = document.getElementById('estadoFiltroFornecedor');
+    const agrupado = document.getElementById('estadoAgruparStatus');
+    if(todos) todos.textContent = !filtroFornecedorComprasId && !agrupamentoCompradoAtivo ? '✓' : '';
+    if(fornecedor) fornecedor.textContent = filtroFornecedorComprasId ? '✓' : '';
+    if(agrupado) agrupado.textContent = agrupamentoCompradoAtivo ? '✓' : '';
 }
 
-function alternarAgrupamentoCompras() {
+function mostrarTodosCompras() {
+    filtroFornecedorComprasId = null;
+    agrupamentoCompradoAtivo = false;
+    categoriaAtual = null;
+    renderizarFiltros();
+    renderizarLista();
+}
+
+function ativarAgrupamentoCompras() {
     if(db.configs.modo !== 'compras') return;
-    agrupamentoCompradoAtivo = !agrupamentoCompradoAtivo;
+    filtroFornecedorComprasId = null;
+    agrupamentoCompradoAtivo = true;
+    categoriaAtual = null;
     atualizarEstadoMenuFerramentas();
+    renderizarFiltros();
     renderizarLista();
 }
 
@@ -122,7 +131,6 @@ function executarLimpezaComprasAntigas() {
 
 function atualizarControlesSelecao() {
     const pedido = db.configs.modo === 'pedido';
-    const btnMenu = document.getElementById('btnMenuFerramentas');
     const btnRelatorio = document.getElementById('btnRelatorioBar');
     const btnComprado = document.getElementById('btnMassaComprado');
     const btnPedidoFornecedor = document.getElementById('btnMassaPedForn');
@@ -132,15 +140,21 @@ function atualizarControlesSelecao() {
     btnComprado.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
     btnPedidoFornecedor.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
     btnVincular.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
-    btnMenu.style.display = !pedido && !modoSelecaoAtivo ? 'flex' : 'none';
-    btnLimpar.style.display = pedido ? 'inline-flex' : 'none';
-    btnRelatorio.style.display = !pedido && !modoSelecaoAtivo ? 'flex' : 'none';
+    btnLimpar.style.display = 'inline-flex';
+    btnRelatorio.style.display = !pedido ? 'inline-flex' : 'none';
     if(modoSelecaoAtivo) {
         fecharMenuFerramentas();
         document.getElementById('btnDesfazerBar').style.display = 'none';
     } else {
         atualizarBotaoDesfazer();
     }
+    atualizarVisibilidadeBarraCompras();
+}
+
+function atualizarVisibilidadeBarraCompras() {
+    const compras = db.configs.modo === 'compras';
+    const temDesfazer = pilhaDesfazer.length > 0 && !modoSelecaoAtivo;
+    document.getElementById('actionBarCompras').style.display = compras && (modoSelecaoAtivo || temDesfazer) ? 'flex' : 'none';
 }
 
 function toggleModoSelecao() {
@@ -269,17 +283,18 @@ function abrirModalFiltroFornCompras() {
 
 function aplicarFiltroFornCompras() {
     filtroFornecedorComprasId = document.getElementById('filtroComprasForn').value;
+    agrupamentoCompradoAtivo = false;
+    categoriaAtual = null;
     fecharModal('modalFiltroFornCompras');
     atualizarEstadoMenuFerramentas();
+    renderizarFiltros();
     renderizarLista();
 }
 
 function zerarFiltroForn() {
-    filtroFornecedorComprasId = null;
     document.getElementById('filtroComprasForn').value = '';
     fecharModal('modalFiltroFornCompras');
-    atualizarEstadoMenuFerramentas();
-    renderizarLista();
+    mostrarTodosCompras();
 }
 
 function normalizarTextoBusca(str) { return removerAcentos(String(str || '').toLowerCase()); }

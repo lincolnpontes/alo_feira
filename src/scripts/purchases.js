@@ -1,6 +1,6 @@
 function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(pa))]); atualizarBotaoDesfazer(); }
     function desfazerAcao() { if(pilhaDesfazer.length === 0) return; let last = pilhaDesfazer.pop(); let itensRestore = Array.isArray(last) ? last : [last]; itensRestore.forEach(itemBackup => { let idx = db.pedidosAtivos.findIndex(x => x.idUnico === itemBackup.idUnico); if(idx !== -1) { itemBackup.dataStatus = Date.now(); db.pedidosAtivos[idx] = itemBackup; } }); db.configs.syncPendente = true; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); atualizarBotaoDesfazer(); mostrarToast('Última alteração desfeita.', 'sucesso'); }
-    function atualizarBotaoDesfazer() { const btn = document.getElementById('btnDesfazerBar'); if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0 && !modoSelecaoAtivo) { btn.style.display = 'flex'; } else { btn.style.display = 'none'; } }
+    function atualizarBotaoDesfazer() { const btn = document.getElementById('btnDesfazerBar'); if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0 && !modoSelecaoAtivo) { btn.style.display = 'flex'; } else { btn.style.display = 'none'; } if(typeof atualizarVisibilidadeBarraCompras === 'function') atualizarVisibilidadeBarraCompras(); }
 
     function getPermissaoColab() { let c = db.colaboradores.find(col => col.id === db.configs.colabAtivoId); return c ? (c.apenasReceber || false) : false; }
 
@@ -21,7 +21,7 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
             return;
         }
         const pedido = db.pedidosAtivos.find(pa => pa.idUnico === pedId);
-        if(pedido && pedido.status === 'rascunho') abrirAcoesPedido(pedId, el);
+        if(pedido && pedido.status === 'rascunho') abrirModalEditarPedido(pedId, pId);
         else mostrarToast('Este item já está no fluxo de compra.', 'info');
     }
     function acaoDuploToque(el) { if(db.configs.modo === 'pedido') { const pId = el.getAttribute('data-id'); const pedidosDeste = db.pedidosAtivos.filter(pa => pa.produtoId === pId && !pa.excluido && (pa.status === 'rascunho' || pa.status === 'pendente' || pa.status === 'pedido_forn')); const pedidoEditavel = pedidosDeste[pedidosDeste.length-1]; if(pedidoEditavel && pedidoEditavel.status !== 'rascunho') { let colabLogado = db.colaboradores.find(c => c.id === db.configs.colabAtivoId); let isAdmin = temAcessoAdmin(); if(!isAdmin && pedidoEditavel.colaboradorId !== db.configs.colabAtivoId) { return alert("🔒 Acesso Negado: Você só pode visualizar e editar pedidos que foram enviados pelo seu próprio perfil."); } } abrirModalEditarPedido(pedidoEditavel ? pedidoEditavel.idUnico : null, pId); } else { if (getPermissaoColab()) return alert("Seu perfil não permite editar os detalhes das compras."); const paId = el.getAttribute('data-id'); const pa = db.pedidosAtivos.find(x => x.idUnico === paId); if(pa && !pa.excluido) { abrirHistoricoCompra(paId); } } }
@@ -31,39 +31,7 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
     function abrirConfirmarRemoverRascunho(pedId) { const pa = db.pedidosAtivos.find(x => x.idUnico === pedId && x.status === 'rascunho'); if(!pa) return; const p = db.produtos.find(prod => prod.id === pa.produtoId); document.getElementById('rascunhoRemoverId').value = pedId; document.getElementById('textoConfirmarRemoverRascunho').innerHTML = `<strong>${escaparHtml(p ? p.nome : 'Este item')}</strong>`; document.getElementById('modalConfirmarRemoverRascunho').style.display = 'flex'; }
     function confirmarRemocaoRascunho() { const pedId = document.getElementById('rascunhoRemoverId').value; const pa = db.pedidosAtivos.find(x => x.idUnico === pedId); if(!pa || pa.status !== 'rascunho') return fecharModal('modalConfirmarRemoverRascunho'); db.pedidosAtivos = db.pedidosAtivos.filter(x => x.idUnico !== pedId); salvarBanco(); fecharModal('modalConfirmarRemoverRascunho'); renderizarLista(); mostrarToast('Item removido do pedido.', 'sucesso'); }
 
-    function fecharMenuAcaoPedido() {
-        const overlay = document.getElementById('modalAcaoPedido');
-        if(overlay) overlay.style.display = 'none';
-        modalAcaoPedidoId = null;
-    }
-
-    function abrirAcoesPedido(pedId, origemEl) {
-        const pa = db.pedidosAtivos.find(x => x.idUnico === pedId && x.status === 'rascunho' && !x.excluido);
-        if(!pa) return;
-        modalAcaoPedidoId = pedId;
-        const overlay = document.getElementById('modalAcaoPedido');
-        const menu = document.getElementById('menuAcaoPedido');
-        overlay.style.display = 'block';
-        const margem = 10;
-        const largura = Math.min(290, window.innerWidth - margem * 2);
-        menu.style.width = `${largura}px`;
-        const origem = origemEl.getBoundingClientRect();
-        const altura = menu.offsetHeight;
-        let esquerda = Math.max(margem, Math.min(origem.right - largura - 10, window.innerWidth - largura - margem));
-        let topo = origem.bottom + 6;
-        if(topo + altura > window.innerHeight - margem) topo = origem.top - altura - 6;
-        menu.style.left = `${Math.round(esquerda)}px`;
-        menu.style.top = `${Math.max(margem, Math.round(topo))}px`;
-    }
-
-    function executarAcaoPedido(acao) {
-        const pedId = modalAcaoPedidoId;
-        const pa = db.pedidosAtivos.find(x => x.idUnico === pedId && x.status === 'rascunho');
-        fecharMenuAcaoPedido();
-        if(!pa) return;
-        if(acao === 'editar') abrirModalEditarPedido(pa.idUnico, pa.produtoId);
-        else if(acao === 'remover') abrirConfirmarRemoverRascunho(pa.idUnico);
-    }
+    function removerPedidoPelaEdicao() { const pedId = document.getElementById('editPedidoId').value; const pa = db.pedidosAtivos.find(x => x.idUnico === pedId && x.status === 'rascunho'); if(!pa) return; fecharModal('modalEditarPedido'); setTimeout(() => abrirConfirmarRemoverRascunho(pedId), 380); }
 
     function rotuloStatusCompra(status) {
         return { pendente:'Pendente', pedido_forn:'Pedido ao fornecedor', comprado:'Comprado', entregue:'Recebido', cancelado:'Cancelado' }[status] || status;

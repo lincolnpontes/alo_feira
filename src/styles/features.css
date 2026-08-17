@@ -26,7 +26,6 @@
 
         .menu-compra-overlay { display:none; position:fixed; inset:0; z-index:1050; background:transparent; }
         .menu-compra { position:fixed; width:270px; padding:6px; background:#fff; border:1px solid #d9dde1; border-radius:8px; box-shadow:0 10px 28px rgba(25,31,36,.2); }
-        .menu-pedido { width:290px; }
         .menu-compra-acoes { display:grid; gap:4px; }
         .menu-compra-acao { width:100%; min-height:46px; display:flex; align-items:center; gap:10px; border:0; border-radius:6px; padding:7px 10px; text-align:left; font-size:14px; font-weight:750; cursor:pointer; transition:filter .15s, transform .15s; }
         .menu-compra-acao:active { transform:scale(.985); }
@@ -62,3 +61,13 @@
         .btn-icon-lista { min-width:44px; min-height:44px; border:0; background:transparent; cursor:pointer; font-size:18px; }
         .btn-icon-lista.perigo { color:#b3261e; }
         .texto-ajuda-form { margin:-5px 0 14px; color:#687078; font-size:13px; line-height:1.4; }
+        .historico-pedido-resumo { display:grid; grid-template-columns:minmax(0,1fr) 44px; align-items:center; gap:4px 8px; background:#e3f2fd; padding:8px 10px; border-radius:5px; margin-bottom:12px; }
+        .ultimo-pedido-label { color:#52616b; font-size:10px; font-weight:800; text-transform:uppercase; }
+        .ultimo-pedido-valor { color:#263238; font-size:13px; margin-top:2px; }
+        .ultimo-pedido-valor b { color:#1565c0; }
+        .sem-historico-pedido { color:#66747d; font-size:13px; }
+        .btn-historico-pedido { width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; border:0; border-radius:5px; background:rgba(21,101,192,.1); color:#1565c0; font-size:20px; cursor:pointer; }
+        .historico-pedido-completo { display:none; grid-column:1 / -1; margin-top:4px; padding-top:5px; border-top:1px solid #b9d7f2; max-height:120px; overflow-y:auto; }
+        .historico-pedido-linha { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid rgba(21,101,192,.12); font-size:12px; }
+        .historico-pedido-linha button { width:36px; height:36px; border:0; background:transparent; color:#c62828; font-size:16px; cursor:pointer; flex-shrink:0; }
+        .btn-remover-pedido-edicao { display:none; width:100%; min-height:44px; margin-top:8px; border:0; border-radius:5px; background:#c62828; color:#fff; font-size:14px; font-weight:800; cursor:pointer; }
