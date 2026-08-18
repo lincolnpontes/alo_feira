@@ -76,6 +76,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(purchases, /classList\.toggle\('com-centro'/);
   assert.match(orders, /ocultoCompras = true; pa\.dataStatus = agora/);
   assert.match(orders, /\['comprado', 'entregue', 'cancelado'\]/);
+  assert.match(orders, /btnLimpar\.style\.display = !pedido && !modoSelecaoAtivo \? 'inline-flex' : 'none'/);
   assert.match(orders, /btn-busca-filtros[\s\S]*boxBuscaPedido/);
   assert.match(purchases, /pedido\.status === 'rascunho'\) abrirModalEditarPedido/);
   assert.match(purchases, /function removerPedidoPelaEdicao[\s\S]*db\.pedidosAtivos = db\.pedidosAtivos\.filter/);
@@ -98,6 +99,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(html + settings, /btnFiltroGerenciarCat[\s\S]*modalFiltroCategoriasProdutos[\s\S]*selecionarFiltroCategoriaProduto/);
   assert.match(html, /class="header-profile"[\s\S]*id="btnTrocarPerfil"[\s\S]*class="header-actions"/);
   assert.match(html, /Alô Feira v1\.3\.2/);
-  assert.match(html + serviceWorker, /v1\.3\.2-r3/);
-  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r2/);
+  assert.match(html + serviceWorker, /v1\.3\.2-r4/);
+  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r3/);
+  assert.doesNotMatch(html, /1\.3\.2-r[0-3]/);
 });

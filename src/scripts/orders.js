@@ -10,7 +10,7 @@ function alterarModo(modo) {
     document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#521565';
     document.getElementById('dicasCabecalho').innerHTML = '';
     document.getElementById('btnHistHoje').style.display = modo === 'pedido' ? 'inline-flex' : 'none';
-    document.getElementById('btnLimparComprasBar').style.display = 'inline-flex';
+    document.getElementById('btnLimparComprasBar').style.display = modo === 'compras' ? 'inline-flex' : 'none';
     document.getElementById('btnRelatorioBar').style.display = modo === 'compras' ? 'inline-flex' : 'none';
     if(modo === 'compras') document.getElementById('containerBotoesEnvio').style.display = 'none';
     renderizarFiltros();
@@ -176,7 +176,7 @@ function atualizarControlesSelecao() {
     btnPedidoFornecedor.style.display = 'inline-flex';
     btnVincular.style.display = 'inline-flex';
     acoesSelecao.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
-    btnLimpar.style.display = modoSelecaoAtivo ? 'none' : 'inline-flex';
+    btnLimpar.style.display = !pedido && !modoSelecaoAtivo ? 'inline-flex' : 'none';
     btnRelatorio.style.display = !pedido ? 'inline-flex' : 'none';
     if(modoSelecaoAtivo) {
         fecharMenuFerramentas();
@@ -332,11 +332,16 @@ function normalizarTextoBusca(str) { return removerAcentos(String(str || '').toL
 function abrirBuscaPedido() {
     const box = document.getElementById('boxBuscaPedido');
     const input = document.getElementById('inputBuscaPedidoInline');
+    const container = document.getElementById('containerFiltros');
     const aberto = box.style.display === 'flex';
     if(aberto || buscaPedidoTexto) { limparBuscaPedido(); return; }
     box.style.display = 'flex';
     input.value = buscaPedidoTexto;
-    setTimeout(() => input.focus(), 80);
+    if(container) container.scrollLeft = 0;
+    setTimeout(() => {
+        input.focus({ preventScroll:true });
+        if(container) container.scrollLeft = 0;
+    }, 80);
 }
 
 function aplicarBuscaPedido() {
