@@ -8,11 +8,11 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png">
     <title>Alô Feira v1.3.2</title>
-    <link rel="stylesheet" href="src/styles/base.css?v=1.3.2-r1">
-    <link rel="stylesheet" href="src/styles/layout.css?v=1.3.2-r1">
-    <link rel="stylesheet" href="src/styles/components.css?v=1.3.2-r1">
-    <link rel="stylesheet" href="src/styles/features.css?v=1.3.2-r1">
-    <link rel="stylesheet" href="src/styles/responsive.css?v=1.3.2-r1">
+    <link rel="stylesheet" href="src/styles/base.css?v=1.3.2-r2">
+    <link rel="stylesheet" href="src/styles/layout.css?v=1.3.2-r2">
+    <link rel="stylesheet" href="src/styles/components.css?v=1.3.2-r2">
+    <link rel="stylesheet" href="src/styles/features.css?v=1.3.2-r2">
+    <link rel="stylesheet" href="src/styles/responsive.css?v=1.3.2-r2">
 </head>
 <body class="theme-pedido">
 <div id="splashScreen">
@@ -29,28 +29,34 @@
 </div>
 <div class="app-container">
     <div class="header" id="mainHeader">
-        <select class="header-select" id="seletorModo" aria-label="Modo do aplicativo" onchange="alterarModo(this.value)">
-            <option value="pedido">📝 Pedido</option>
-            <option value="compras">🛒 Compras</option>
-        </select>
-        <div id="dicasCabecalho" class="dicas-cabecalho"></div>
-        <div class="header-actions">
+        <div class="header-mode">
+            <select class="header-select" id="seletorModo" aria-label="Modo do aplicativo" onchange="alterarModo(this.value)">
+                <option value="pedido">📝 Pedido</option>
+                <option value="compras">🛒 Compras</option>
+            </select>
+            <div id="dicasCabecalho" class="dicas-cabecalho"></div>
+        </div>
+        <div class="header-profile">
             <button id="btnTrocarPerfil" class="btn-perfil" aria-label="Trocar perfil" title="Trocar perfil" onclick="abrirSelecaoColaboradorInicial(true)">👤 Perfil</button>
+        </div>
+        <div class="header-actions">
             <button id="btnAdmin" aria-label="Configurações" title="Configurações" onclick="document.getElementById('modalPainelUnificado').style.display='flex'">⚙️</button>
         </div>
     </div>
     <div class="area-conteudo">
         <div class="filters">
             <div class="filtros-principais" id="containerFiltros"></div>
-            <div class="filtros-acoes-selecao" id="acoesSelecaoCompras" style="display:none;">
-                <button onclick="acaoEmMassa('pedido_forn')" id="btnMassaPedForn" style="background:#521565;" title="Pedido ao fornecedor" aria-label="Marcar como pedido ao fornecedor"><svg class="icone-send icone-send-barra" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4 20-7Z"></path><path d="M22 2 11 13"></path></svg></button>
-                <button onclick="acaoEmMassa('concluir')" id="btnMassaComprado" style="background:#145218;" title="Concluir compra ou recebimento" aria-label="Concluir compra ou recebimento">✓</button>
-                <button onclick="abrirModalMassaVincular()" id="btnMassaVincular" style="background:#1565C0;" title="Vincular fornecedor" aria-label="Vincular fornecedor">🔗</button>
+            <div class="filtros-centro" id="filtrosCentroCompras" style="display:none;">
+                <div class="filtros-acoes-selecao" id="acoesSelecaoCompras" style="display:none;">
+                    <button onclick="acaoEmMassa('pedido_forn')" id="btnMassaPedForn" style="background:#521565;" title="Pedido ao fornecedor" aria-label="Marcar como pedido ao fornecedor"><svg class="icone-send icone-send-barra" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4 20-7Z"></path><path d="M22 2 11 13"></path></svg></button>
+                    <button onclick="acaoEmMassa('concluir')" id="btnMassaComprado" style="background:#145218;" title="Concluir compra ou recebimento" aria-label="Concluir compra ou recebimento">✓</button>
+                    <button onclick="abrirModalMassaVincular()" id="btnMassaVincular" style="background:#1565C0;" title="Vincular fornecedor" aria-label="Vincular fornecedor">🔗</button>
+                </div>
+                <button id="btnDesfazerBar" class="btn-desfazer-filtros" style="display:none;" aria-label="Desfazer última ação" title="Desfazer" onclick="desfazerAcao()">↩️</button>
             </div>
             <div class="filtros-acoes">
                 <button id="btnHistHoje" style="display:none;" aria-label="Pedidos enviados hoje" title="Pedidos enviados hoje" onclick="abrirPedidosHoje()">📋</button>
                 <button id="btnRelatorioBar" style="display:none;" aria-label="Criar relatório para fornecedor" title="Relatório para fornecedor" onclick="abrirModalRelatorio()">📄</button>
-                <button id="btnDesfazerBar" class="btn-desfazer-filtros" style="display:none;" aria-label="Desfazer última ação" title="Desfazer" onclick="desfazerAcao()">↩️</button>
                 <button id="btnLimparComprasBar" style="display:none;" aria-label="Limpar itens comprados e recebidos" title="Limpar comprados e recebidos" onclick="limparComprasAntigas()">🧹</button>
             </div>
         </div>
@@ -104,6 +110,26 @@
 <div class="menu-compra-overlay" id="modalAcaoCompra" onclick="fecharMenuAcaoCompra()">
     <div class="menu-compra" id="menuAcaoCompra" role="menu" aria-label="Ações do item" onclick="event.stopPropagation()">
         <div id="acoesDisponiveisCompra" class="menu-compra-acoes"></div>
+    </div>
+</div>
+<div class="modal-overlay" id="modalPrecoRapido" role="dialog" aria-modal="true" aria-labelledby="tituloPrecoRapido">
+    <div class="modal modal-preco-rapido">
+        <div class="modal-title titulo-preco-rapido" id="tituloPrecoRapido">Preço e fornecedor</div>
+        <div class="produto-preco-rapido" id="produtoPrecoRapido"></div>
+        <input type="hidden" id="precoRapidoPedidoId">
+        <div class="form-group campo-preco-destaque">
+            <label for="precoRapidoValor">Preço</label>
+            <div class="entrada-preco-rapido"><span>R$</span><input type="text" id="precoRapidoValor" inputmode="numeric" autocomplete="off" oninput="maskMoeda(this)" placeholder="0,00"></div>
+        </div>
+        <div class="grade-preco-rapido">
+            <div class="form-group"><label for="precoRapidoFornecedor">Fornecedor</label><select id="precoRapidoFornecedor"></select></div>
+            <div class="form-group"><label for="precoRapidoUnidade">Unidade</label><select id="precoRapidoUnidade"></select></div>
+        </div>
+        <div class="historico-preco-rapido" id="historicoPrecoRapido"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="fecharModal('modalPrecoRapido')">Cancelar</button>
+            <button class="btn-salvar-preco" id="btnSalvarPrecoRapido" onclick="salvarPrecoRapido()">Salvar preço</button>
+        </div>
     </div>
 </div>
 <div class="menu-compra-overlay" id="overlayMenuFerramentas" onclick="fecharMenuFerramentas()">
@@ -344,19 +370,27 @@
     <div class="modal" style="position: relative; width: 95%; overflow: hidden; display: flex; flex-direction: column;">
         <div class="modal-title titulo-listagem" style="flex-shrink:0;">
             <span id="tituloListagem">Gerenciar</span>
-            <button type="button" id="btnCategoriasProdutos" class="btn-categorias-produtos" style="display:none;" onclick="abrirCategoriasDosProdutos()" aria-label="Gerenciar categorias" title="Gerenciar categorias">🏷️</button>
+            <button type="button" id="btnCategoriasProdutos" class="btn-categorias-produtos" style="display:none;" onclick="abrirCategoriasDosProdutos()" aria-label="Gerenciar categorias" title="Gerenciar categorias"><span aria-hidden="true">🏷️</span><span>Categorias</span></button>
         </div>
         <div class="form-group" id="filtroGerenciarCatBox" style="display: none; flex-shrink: 0; flex-direction: column; gap: 8px;">
             <div style="display:flex; align-items:center; position:relative;">
                 <span style="position:absolute; left:10px; font-size:16px;">🔎</span>
                 <input type="text" id="inputBuscaProd" oninput="renderizarFiltroGerenciar()" placeholder="Buscar produto..." style="width:100%; padding:10px 10px 10px 35px; border:1px solid #ccc; border-radius:5px; box-sizing:border-box; font-size:14px;">
             </div>
-            <select id="filtroGerenciarCat" onchange="renderizarFiltroGerenciar()"></select>
+            <button type="button" id="btnFiltroGerenciarCat" class="btn-filtro-categorias-produtos" onclick="abrirFiltroCategoriasProdutos()"><span id="corFiltroGerenciarCat" class="filtro-categoria-amostra"></span><span id="rotuloFiltroGerenciarCat">Todas as categorias</span><span class="filtro-categoria-seta" aria-hidden="true">⌄</span></button>
+            <select id="filtroGerenciarCat" class="select-filtro-categorias-oculto" tabindex="-1" aria-hidden="true" onchange="renderizarFiltroGerenciar()"></select>
         </div>
         <button class="btn-action" id="btnNovoListagem" style="width: 100%; margin-bottom: 15px; flex-shrink: 0;">+ Novo</button>
         <div id="conteudoListagem" style="flex: 1; overflow-y: auto; padding-right: 25px; min-height: 40vh;"></div>
         <div class="sidebar-alfabeto" id="sidebarAlfabeto" style="display: none;"></div>
         <div class="modal-actions" style="flex-shrink: 0;"><button class="btn-cancel" onclick="voltarDaListagem()" style="width: 100%;">Voltar</button></div>
+    </div>
+</div>
+<div class="modal-overlay" id="modalFiltroCategoriasProdutos" role="dialog" aria-modal="true" aria-labelledby="tituloFiltroCategoriasProdutos">
+    <div class="modal modal-filtro-categorias-produtos">
+        <div class="modal-title" id="tituloFiltroCategoriasProdutos">Filtrar produtos</div>
+        <div id="opcoesFiltroCategoriasProdutos" class="opcoes-filtro-categorias"></div>
+        <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFiltroCategoriasProdutos')">Fechar</button></div>
     </div>
 </div>
 <div class="modal-overlay" id="modalFormRestaurante">
@@ -494,20 +528,20 @@
         <div class="modal-actions"><button class="btn-cancel" onclick="fecharModal('modalFormFornecedor'); abrirGerenciar('fornecedores', true);">Cancelar</button><button class="btn-action" onclick="salvarFornecedor()">Salvar</button></div>
     </div>
 </div>
-<script src="src/scripts/domain.js?v=1.3.2-r1"></script>
-<script src="src/scripts/core.js?v=1.3.2-r1"></script>
-<script src="src/scripts/security.js?v=1.3.2-r1"></script>
-<script src="src/scripts/sync.js?v=1.3.2-r1"></script>
-<script src="src/scripts/auth.js?v=1.3.2-r1"></script>
-<script src="src/scripts/orders.js?v=1.3.2-r1"></script>
-<script src="src/scripts/catalog.js?v=1.3.2-r1"></script>
-<script src="src/scripts/drafts.js?v=1.3.2-r1"></script>
-<script src="src/scripts/purchases.js?v=1.3.2-r1"></script>
-<script src="src/scripts/purchase-details.js?v=1.3.2-r1"></script>
-<script src="src/scripts/reports.js?v=1.3.2-r1"></script>
-<script src="src/scripts/settings.js?v=1.3.2-r1"></script>
-<script src="src/scripts/catalog-settings.js?v=1.3.2-r1"></script>
-<script src="src/scripts/people-settings.js?v=1.3.2-r1"></script>
-<script src="src/scripts/app.js?v=1.3.2-r1"></script>
+<script src="src/scripts/domain.js?v=1.3.2-r2"></script>
+<script src="src/scripts/core.js?v=1.3.2-r2"></script>
+<script src="src/scripts/security.js?v=1.3.2-r2"></script>
+<script src="src/scripts/sync.js?v=1.3.2-r2"></script>
+<script src="src/scripts/auth.js?v=1.3.2-r2"></script>
+<script src="src/scripts/orders.js?v=1.3.2-r2"></script>
+<script src="src/scripts/catalog.js?v=1.3.2-r2"></script>
+<script src="src/scripts/drafts.js?v=1.3.2-r2"></script>
+<script src="src/scripts/purchases.js?v=1.3.2-r2"></script>
+<script src="src/scripts/purchase-details.js?v=1.3.2-r2"></script>
+<script src="src/scripts/reports.js?v=1.3.2-r2"></script>
+<script src="src/scripts/settings.js?v=1.3.2-r2"></script>
+<script src="src/scripts/catalog-settings.js?v=1.3.2-r2"></script>
+<script src="src/scripts/people-settings.js?v=1.3.2-r2"></script>
+<script src="src/scripts/app.js?v=1.3.2-r2"></script>
 </body>
 </html>

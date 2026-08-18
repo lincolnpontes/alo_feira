@@ -35,20 +35,34 @@ function json(response, status, value) {
 }
 
 function handleBackend(request, response) {
-  if(request.method === 'GET') return json(response, 200, database);
+  if(request.method === 'GET') return json(response, 200, Object.assign({}, database, { serverNow: Date.now() }));
   if(request.method !== 'POST') return json(response, 405, { status: 'erro', msg: 'Metodo invalido.' });
   let body = '';
   request.on('data', chunk => { body += chunk; });
   request.on('end', () => {
     try {
       const payload = JSON.parse(body);
-      if(payload.action !== 'salvar_banco' || !payload.dados) throw new Error('Payload invalido.');
       if(!payload.force && Number(payload.baseRevision || 0) !== Number(database.syncRevision || 0)) {
         return json(response, 200, { status: 'conflito', revision: database.syncRevision, dados: database });
       }
+      if(payload.action === 'enviar_pedidos') {
+        const agora = Date.now();
+        const produtos = new Map(database.produtos.map(item => [item.id, item]));
+        (payload.produtos || []).forEach(item => { if(!produtos.has(item.id)) database.produtos.push(item); });
+        const pedidos = new Map(database.pedidosAtivos.map(item => [item.idUnico, item]));
+        (payload.pedidos || []).forEach(item => {
+          if(pedidos.has(item.idUnico)) return;
+          const pedido = Object.assign({}, item, { status:'pendente', dataEnvio:agora, dataStatus:agora });
+          database.pedidosAtivos.push(pedido);
+          pedidos.set(pedido.idUnico, pedido);
+        });
+        database.syncRevision = Number(database.syncRevision || 0) + 1;
+        return json(response, 200, { status:'sucesso', revision:database.syncRevision, serverNow:agora, pedidosAtualizados:database.pedidosAtivos.map(item => ({ idUnico:item.idUnico, dataEnvio:item.dataEnvio, dataStatus:item.dataStatus })) });
+      }
+      if(payload.action !== 'salvar_banco' || !payload.dados) throw new Error('Payload invalido.');
       database = payload.dados;
       database.syncRevision = Number(database.syncRevision || 0) + 1;
-      return json(response, 200, { status: 'sucesso', revision: database.syncRevision });
+      return json(response, 200, { status: 'sucesso', revision: database.syncRevision, serverNow: Date.now() });
     } catch(error) {
       return json(response, 200, { status: 'erro', msg: error.message });
     }

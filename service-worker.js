@@ -1,4 +1,4 @@
-const CACHE_NAME = 'alo-feira-v1.3.2-r1';
+const CACHE_NAME = 'alo-feira-v1.3.2-r2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -6,26 +6,26 @@ const APP_SHELL = [
   './icon.png',
   './src/assets/icon-192.png',
   './src/assets/icon-512.png',
-  './src/styles/base.css?v=1.3.2-r1',
-  './src/styles/layout.css?v=1.3.2-r1',
-  './src/styles/components.css?v=1.3.2-r1',
-  './src/styles/features.css?v=1.3.2-r1',
-  './src/styles/responsive.css?v=1.3.2-r1',
-  './src/scripts/domain.js?v=1.3.2-r1',
-  './src/scripts/core.js?v=1.3.2-r1',
-  './src/scripts/security.js?v=1.3.2-r1',
-  './src/scripts/sync.js?v=1.3.2-r1',
-  './src/scripts/auth.js?v=1.3.2-r1',
-  './src/scripts/orders.js?v=1.3.2-r1',
-  './src/scripts/catalog.js?v=1.3.2-r1',
-  './src/scripts/drafts.js?v=1.3.2-r1',
-  './src/scripts/purchases.js?v=1.3.2-r1',
-  './src/scripts/purchase-details.js?v=1.3.2-r1',
-  './src/scripts/reports.js?v=1.3.2-r1',
-  './src/scripts/settings.js?v=1.3.2-r1',
-  './src/scripts/catalog-settings.js?v=1.3.2-r1',
-  './src/scripts/people-settings.js?v=1.3.2-r1',
-  './src/scripts/app.js?v=1.3.2-r1'
+  './src/styles/base.css?v=1.3.2-r2',
+  './src/styles/layout.css?v=1.3.2-r2',
+  './src/styles/components.css?v=1.3.2-r2',
+  './src/styles/features.css?v=1.3.2-r2',
+  './src/styles/responsive.css?v=1.3.2-r2',
+  './src/scripts/domain.js?v=1.3.2-r2',
+  './src/scripts/core.js?v=1.3.2-r2',
+  './src/scripts/security.js?v=1.3.2-r2',
+  './src/scripts/sync.js?v=1.3.2-r2',
+  './src/scripts/auth.js?v=1.3.2-r2',
+  './src/scripts/orders.js?v=1.3.2-r2',
+  './src/scripts/catalog.js?v=1.3.2-r2',
+  './src/scripts/drafts.js?v=1.3.2-r2',
+  './src/scripts/purchases.js?v=1.3.2-r2',
+  './src/scripts/purchase-details.js?v=1.3.2-r2',
+  './src/scripts/reports.js?v=1.3.2-r2',
+  './src/scripts/settings.js?v=1.3.2-r2',
+  './src/scripts/catalog-settings.js?v=1.3.2-r2',
+  './src/scripts/people-settings.js?v=1.3.2-r2',
+  './src/scripts/app.js?v=1.3.2-r2'
 ];
 
 self.addEventListener('install', event => {

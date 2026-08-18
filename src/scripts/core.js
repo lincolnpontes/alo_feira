@@ -48,7 +48,7 @@ function criarBancoBase() {
         });
         banco.categorias.forEach((c, index) => { if(!c.subcategorias) c.subcategorias = []; if(c.ativo === undefined) c.ativo = true; if(c.ordem === undefined) c.ordem = index; });
         banco.categorias.sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0));
-        banco.produtos.forEach(p => { if(!p.unidades) p.unidades = ['']; if(!p.fornecedores) p.fornecedores = []; if(!p.historicoPrecos) p.historicoPrecos = []; if(p.ativo === undefined) p.ativo = true; });
+        banco.produtos.forEach(p => { if(!p.unidades) p.unidades = ['']; if(!p.fornecedores) p.fornecedores = []; p.historicoPrecos = AloFeiraDomain.normalizarHistoricoPrecos(p.historicoPrecos, p.atualizadoEm); if(!p.precosExcluidos || typeof p.precosExcluidos !== 'object') p.precosExcluidos = {}; if(p.ativo === undefined) p.ativo = true; });
         banco.fornecedores.forEach(f => { if(f.ativo === undefined) f.ativo = true; });
         banco.colaboradores.forEach(c => { if(c.ativo === undefined) c.ativo = true; if(!c.emoji) c.emoji = '👤'; });
         if(banco.configs.ultimaMudancaLocal === undefined) banco.configs.ultimaMudancaLocal = 0;
@@ -73,7 +73,7 @@ function criarBancoBase() {
     function getHojeSTR() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
     function agoraServidor() { return Math.round(Date.now() + Number(db.configs.relogioServidorOffset || 0)); }
     function registrarRelogioServidor(serverNow, inicioRequisicao = Date.now(), fimRequisicao = Date.now()) { const servidor = Number(serverNow); if(!Number.isFinite(servidor) || servidor <= 0) return; const meioRequisicao = Number(inicioRequisicao) + Math.max(0, Number(fimRequisicao) - Number(inicioRequisicao)) / 2; db.configs.relogioServidorOffset = Math.round(servidor - meioRequisicao); db.configs.relogioServidorSincronizadoEm = Date.now(); }
-    function marcarMudancaEstrutural(registro = null) { const agora = agoraServidor(); db.configs.ultimaMudancaLocal = agora; db.configs.syncPendente = true; if(registro) registro.atualizadoEm = agora; salvarBanco(); }
+    function marcarMudancaEstrutural(registro = null) { const agora = agoraServidor(); db.configs.ultimaMudancaLocal = agora; db.configs.syncPendente = true; if(registro) { registro.atualizadoEm = agora; if(Array.isArray(registro.historicoPrecos)) registro.historicoPrecos = AloFeiraDomain.normalizarHistoricoPrecos(registro.historicoPrecos, agora); } salvarBanco(); }
     function marcarMudancaConfiguracao() { const agora = agoraServidor(); db.configs.atualizadoEm = agora; db.configs.ultimaMudancaLocal = agora; db.configs.syncPendente = true; salvarBanco(); }
     function marcarMudancaPedido(pedido) { if(!pedido) return; pedido.dataStatus = agoraServidor(); db.configs.syncPendente = true; salvarBanco(); }
     function getCatsPermitidas(colabLogado) { if(!colabLogado) return null; if(colabLogado.isAdmin) return null; let cats = db.configs.modo === 'pedido' ? colabLogado.catsPermitidasPedido : colabLogado.catsPermitidasCompras; return cats !== undefined ? cats : colabLogado.catsPermitidas; }
@@ -88,6 +88,7 @@ function criarBancoBase() {
     function maskTelefone(el) { let v = el.value.replace(/\D/g,""); v = v.replace(/^(\d{2})(\d)/g,"($1) $2"); v = v.replace(/(\d)(\d{4})$/,"$1-$2"); el.value = v; }
     function maskMoeda(el) { let v = el.value.replace(/\D/g, ""); if(!v) { el.value = ""; return; } v = (parseFloat(v) / 100).toLocaleString('pt-BR', {minimumFractionDigits: 2}); el.value = v; }
     function parseMoeda(str) { if(!str) return 0; return parseFloat(str.replace(/\./g, "").replace(",", ".")); }
+    function criarRegistroPreco(preco, unidade = '', fornecedorId = '', data = '') { const agora = agoraServidor(); const d = new Date(agora); const dataServidor = data || `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; return { id:`preco_${agora}_${Math.random().toString(36).slice(2,7)}`, data:dataServidor, preco, unidade, fornecedorId, registradoEm:agora, atualizadoEm:agora }; }
     function parseFloatBr(str) { if(str === '' || str === null || str === undefined) return ''; const valor = Number(String(str).replace(',','.')); return Number.isFinite(valor) ? valor : ''; }
     function removerAcentos(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
     function atualizarVisibilidadeAdmin() { const btnAdmin = document.getElementById('btnAdmin'); if(!btnAdmin) return; let colab = db.colaboradores.find(c => c.id === db.configs.colabAtivoId && c.ativo !== false); let ativos = db.colaboradores.filter(c => c.ativo !== false); btnAdmin.style.display = (ativos.length === 0 || (colab && colab.isAdmin)) ? 'inline-flex' : 'none'; }

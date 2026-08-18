@@ -32,6 +32,10 @@ test('payload compartilha dados operacionais e preserva estado local do aparelho
   const entrada = {
     app_id: 'alofeira',
     syncRevision: 4,
+    restaurante: { nome:'Restaurante', atualizadoEm:180 },
+    categorias: [{ id:'c_1', nome:'Secos', ordem:0, atualizadoEm:180 }],
+    fornecedores: [{ id:'f_1', nome:'Fornecedor', atualizadoEm:180 }],
+    produtos: [{ id:'p_1', nome:'Arroz', atualizadoEm:220, historicoPrecos:[{ id:'preco_1', data:'2026-08-17', preco:12.34, fornecedorId:'f_1', atualizadoEm:220 }] }],
     colaboradores: [{ id: 'col_1', nome: 'Lincoln', emoji: '🧑‍🍳', atualizadoEm: 200 }],
     pedidosAtivos: [
       { idUnico: 'pa_1', produtoId: 'p_1', status: 'entregue', ocultoCompras: true, dataStatus: 300 },
@@ -46,6 +50,10 @@ test('payload compartilha dados operacionais e preserva estado local do aparelho
   };
   const payload = executar('db = normalizarBanco(entradaTeste); prepararBancoParaNuvem()', entrada);
   assert.equal(payload.colaboradores[0].emoji, '🧑‍🍳');
+  assert.equal(payload.restaurante.nome, 'Restaurante');
+  assert.equal(payload.categorias[0].nome, 'Secos');
+  assert.equal(payload.fornecedores[0].nome, 'Fornecedor');
+  assert.equal(payload.produtos[0].historicoPrecos[0].preco, 12.34);
   assert.equal(payload.pedidosAtivos[0].ocultoCompras, true);
   assert.equal(payload.pedidosAtivos.some(p => p.status === 'rascunho'), false);
   assert.equal(payload.configs.exigirColaborador, false);
@@ -80,4 +88,46 @@ test('mesclagem traz emoji, conserva configuracao mais nova e respeita ordem das
   assert.equal(resultado.banco.configs.url, 'local');
   assert.equal(resultado.banco.configs.modo, 'compras');
   assert.equal(resultado.precisaEnviar, true);
+});
+
+test('mesclagem preserva precos criados em aparelhos diferentes', () => {
+  const local = {
+    app_id: 'alofeira', syncRevision: 7,
+    produtos: [{
+      id: 'p_1', nome: 'Arroz', atualizadoEm: 200, fornecedores: ['f_2'],
+      historicoPrecos: [{ id: 'preco_local', data: '2026-08-17', preco: 11, fornecedorId: 'f_2', atualizadoEm: 200 }]
+    }],
+    configs: { url: 'local', modo: 'compras', syncPendente: false }
+  };
+  const remoto = {
+    app_id: 'alofeira', syncRevision: 8,
+    produtos: [{
+      id: 'p_1', nome: 'Arroz', atualizadoEm: 300, fornecedores: ['f_1'],
+      historicoPrecos: [{ id: 'preco_remoto', data: '2026-08-16', preco: 10, fornecedorId: 'f_1', atualizadoEm: 100 }]
+    }],
+    configs: {}
+  };
+  const resultado = executar('mesclarBancos(entradaTeste.local, entradaTeste.remoto)', { local, remoto });
+  const produto = resultado.banco.produtos[0];
+  assert.deepEqual(Array.from(produto.historicoPrecos, item => item.id), ['preco_remoto', 'preco_local']);
+  assert.deepEqual(Array.from(produto.fornecedores).sort(), ['f_1', 'f_2']);
+  assert.equal(resultado.precisaEnviar, true);
+});
+
+test('mesclagem baixa limpeza da vassoura e emoji mais recentes', () => {
+  const local = {
+    app_id: 'alofeira', syncRevision: 2,
+    pedidosAtivos: [{ idUnico: 'pa_1', produtoId: 'p_1', status: 'entregue', ocultoCompras: false, dataStatus: 100 }],
+    colaboradores: [{ id: 'col_1', nome: 'Lincoln', emoji: '👤', atualizadoEm: 100 }],
+    configs: { url: 'local', colabAtivoId: 'col_1' }
+  };
+  const remoto = {
+    app_id: 'alofeira', syncRevision: 3,
+    pedidosAtivos: [{ idUnico: 'pa_1', produtoId: 'p_1', status: 'entregue', ocultoCompras: true, dataStatus: 300 }],
+    colaboradores: [{ id: 'col_1', nome: 'Lincoln', emoji: '🧑‍🍳', atualizadoEm: 300 }],
+    configs: {}
+  };
+  const resultado = executar('mesclarBancos(entradaTeste.local, entradaTeste.remoto)', { local, remoto });
+  assert.equal(resultado.banco.pedidosAtivos[0].ocultoCompras, true);
+  assert.equal(resultado.banco.colaboradores[0].emoji, '🧑‍🍳');
 });

@@ -38,6 +38,16 @@ test('propaga a limpeza quando ela possui data de alteracao mais nova', () => {
   assert.equal(resultado[0].dataStatus, 200);
 });
 
+test('mescla historicos de precos e respeita exclusoes sincronizadas', () => {
+  const remoto = [{ id: 'preco_a', data: '2026-08-15', preco: 10, fornecedorId: 'f_1', atualizadoEm: 100 }];
+  const local = [{ id: 'preco_b', data: '2026-08-16', preco: 12, fornecedorId: 'f_2', atualizadoEm: 200 }];
+  const mesclado = domain.mesclarHistoricosPrecos(local, remoto, {}, 200, 100);
+  assert.deepEqual(mesclado.map(item => item.id), ['preco_a', 'preco_b']);
+
+  const aposExclusao = domain.mesclarHistoricosPrecos(local, remoto, { preco_a: 300 }, 200, 100);
+  assert.deepEqual(aposExclusao.map(item => item.id), ['preco_b']);
+});
+
 test('registra a data indicada para pedido ao fornecedor e preserva no recebimento', () => {
   const pedido = { status: 'pendente', dataStatus: 10 };
   assert.equal(domain.aplicarTransicao(pedido, 'pedido_forn', 1000).ok, true);

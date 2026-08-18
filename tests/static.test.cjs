@@ -43,6 +43,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   const sync = fs.readFileSync(path.join(root, 'src', 'scripts', 'sync.js'), 'utf8');
   const settings = fs.readFileSync(path.join(root, 'src', 'scripts', 'settings.js'), 'utf8');
   const layout = fs.readFileSync(path.join(root, 'src', 'styles', 'layout.css'), 'utf8');
+  const serviceWorker = fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8');
   const scripts = fs.readdirSync(path.join(root, 'src', 'scripts')).filter(name => name.endsWith('.js')).map(name => fs.readFileSync(path.join(root, 'src', 'scripts', name), 'utf8')).join('\n');
   assert.match(html, /class="menu-compra"/);
   assert.doesNotMatch(html, /id="modalAcaoPedido"|id="btnMenuFerramentas"/);
@@ -50,7 +51,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(orders, /Filtrar por fornecedor/);
   assert.match(orders, /Agrupar por status/);
   assert.match(orders, /menu-ferramentas-separador[\s\S]*Agrupar por categoria:[\s\S]*menu-categoria-item/);
-  assert.match(html, /class="filtros-acoes"[\s\S]*id="btnHistHoje"[\s\S]*id="btnRelatorioBar"[\s\S]*id="btnDesfazerBar"[\s\S]*id="btnLimparComprasBar"/);
+  assert.match(html, /id="filtrosCentroCompras"[\s\S]*id="acoesSelecaoCompras"[\s\S]*id="btnDesfazerBar"[\s\S]*class="filtros-acoes"[\s\S]*id="btnRelatorioBar"[\s\S]*id="btnLimparComprasBar"/);
   assert.match(html, /id="acoesSelecaoCompras"[\s\S]*id="btnMassaPedForn"[\s\S]*id="btnMassaComprado"[\s\S]*id="btnMassaVincular"/);
   assert.match(html, /id="btnLimparComprasBar"/);
   assert.match(html, /id="btnRelatorioBar"[\s\S]*Relatório para fornecedor/);
@@ -59,7 +60,8 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.doesNotMatch(scripts, /\bconfirm\s*\(/);
   assert.doesNotMatch(html, /id="btnModoSelecaoBar"|id="btnFiltroForn"|id="btnAgruparStatus"/);
   assert.doesNotMatch(html + purchases, /Escolha conscientemente|Registra o momento|Para compras feitas|Pede confirmação|Toque novamente/);
-  assert.match(purchases, /botaoAcaoCompra\('comprado',[\s\S]*botaoAcaoCompra\('pedido_forn',[\s\S]*botaoAcaoCompra\('detalhes',[\s\S]*botaoAcaoCompra\('cancelar'/);
+  assert.match(purchases, /botaoAcaoCompra\('comprado',[\s\S]*botaoAcaoCompra\('pedido_forn',[\s\S]*botaoAcaoCompra\('preco',[\s\S]*botaoAcaoCompra\('detalhes',[\s\S]*botaoAcaoCompra\('cancelar'/);
+  assert.match(html + purchases, /modalPrecoRapido[\s\S]*precoRapidoValor[\s\S]*precoRapidoFornecedor[\s\S]*historicoPrecoRapido[\s\S]*salvarPrecoRapido/);
   assert.doesNotMatch(catalog + purchases, /ontouchstart|ontouchmove|ontouchend|handleTouch|acaoDeslizar/);
   assert.doesNotMatch(html + catalog + purchases, /✈/);
   assert.doesNotMatch(catalog, /✓ Todos/);
@@ -71,7 +73,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(orders, /function selecionarGrupoCompras[\s\S]*alternarSelecaoGrupo/);
   assert.match(orders, /function mostrarTodosCompras[\s\S]*function ativarAgrupamentoCompras/);
   assert.doesNotMatch(html + layout + orders, /actionBarCompras|action-bar-compras|btn-action-bar/);
-  assert.match(orders, /classList\.toggle\('selecionando'/);
+  assert.match(purchases, /classList\.toggle\('com-centro'/);
   assert.match(orders, /ocultoCompras = true; pa\.dataStatus = agora/);
   assert.match(orders, /\['comprado', 'entregue', 'cancelado'\]/);
   assert.match(orders, /btn-busca-filtros[\s\S]*boxBuscaPedido/);
@@ -89,5 +91,10 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(sync, /atualizarBotaoPerfil\(\)[\s\S]*atualizarVisibilidadeAdmin\(\)/);
   assert.doesNotMatch(html, /Gerenciar Categorias<\/button>/);
   assert.match(html + settings, /btnCategoriasProdutos[\s\S]*abrirCategoriasDosProdutos/);
+  assert.match(html, /btnCategoriasProdutos[\s\S]*🏷️[\s\S]*Categorias/);
+  assert.match(html + settings, /btnFiltroGerenciarCat[\s\S]*modalFiltroCategoriasProdutos[\s\S]*selecionarFiltroCategoriaProduto/);
+  assert.match(html, /class="header-profile"[\s\S]*id="btnTrocarPerfil"[\s\S]*class="header-actions"/);
   assert.match(html, /Alô Feira v1\.3\.2/);
+  assert.match(html + serviceWorker, /v1\.3\.2-r2/);
+  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r1/);
 });

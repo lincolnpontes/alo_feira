@@ -69,6 +69,32 @@ function mesclarColecao(locais, remotos) {
     return Array.from(mapa.values());
 }
 
+function mesclarProdutos(locais, remotos) {
+    const produtos = mesclarColecao(locais, remotos).map(item => JSON.parse(JSON.stringify(item)));
+    const locaisPorId = new Map((locais || []).map(item => [item.id, item]));
+    const remotosPorId = new Map((remotos || []).map(item => [item.id, item]));
+    produtos.forEach(produto => {
+        const local = locaisPorId.get(produto.id);
+        const remoto = remotosPorId.get(produto.id);
+        if(!local || !remoto) return;
+        const exclusoes = Object.assign({}, remoto.precosExcluidos || {});
+        Object.entries(local.precosExcluidos || {}).forEach(([id, timestamp]) => {
+            exclusoes[id] = Math.max(Number(exclusoes[id] || 0), Number(timestamp || 0));
+        });
+        produto.precosExcluidos = exclusoes;
+        produto.historicoPrecos = AloFeiraDomain.mesclarHistoricosPrecos(
+            local.historicoPrecos,
+            remoto.historicoPrecos,
+            exclusoes,
+            local.atualizadoEm,
+            remoto.atualizadoEm
+        );
+        const fornecedoresDePrecos = produto.historicoPrecos.map(item => item.fornecedorId).filter(Boolean);
+        produto.fornecedores = Array.from(new Set([...(produto.fornecedores || []), ...fornecedoresDePrecos]));
+    });
+    return produtos;
+}
+
 function mesclarBancos(local, remotoBruto) {
     const remoto = normalizarBanco(remotoBruto);
     const localNormalizado = normalizarBanco(local);
@@ -86,7 +112,7 @@ function mesclarBancos(local, remotoBruto) {
 
     const banco = normalizarBanco(remoto);
     banco.pedidosAtivos = pedidos;
-    banco.produtos = mesclarColecao(localNormalizado.produtos, remoto.produtos);
+    banco.produtos = mesclarProdutos(localNormalizado.produtos, remoto.produtos);
     banco.categorias = mesclarColecao(localNormalizado.categorias, remoto.categorias)
         .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0));
     banco.fornecedores = mesclarColecao(localNormalizado.fornecedores, remoto.fornecedores);
@@ -123,7 +149,13 @@ function mesclarBancos(local, remotoBruto) {
             return !remotoItem || Number(item.atualizadoEm || 0) > Number(remotoItem.atualizadoEm || 0);
         })
     );
-    const precisaEnviar = banco.configs.syncPendente || colecoesLocaisMaisNovas || localRestTs > remotoRestTs || localConfigTs > remotoConfigTs;
+    const historicosPrecosRecuperados = banco.produtos.some(produto => {
+        const remotoProduto = remoto.produtos.find(item => item.id === produto.id);
+        if(!remotoProduto) return true;
+        return JSON.stringify(produto.historicoPrecos || []) !== JSON.stringify(remotoProduto.historicoPrecos || []) ||
+            JSON.stringify(produto.precosExcluidos || {}) !== JSON.stringify(remotoProduto.precosExcluidos || {});
+    });
+    const precisaEnviar = banco.configs.syncPendente || colecoesLocaisMaisNovas || historicosPrecosRecuperados || localRestTs > remotoRestTs || localConfigTs > remotoConfigTs;
     banco.configs.syncPendente = precisaEnviar;
     return { banco, precisaEnviar };
 }

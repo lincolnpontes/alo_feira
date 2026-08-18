@@ -36,6 +36,50 @@
         return Array.from(mesclados.values());
     }
 
+    function hashTexto(valor) {
+        let hash = 2166136261;
+        const texto = String(valor == null ? '' : valor);
+        for (let i = 0; i < texto.length; i++) {
+            hash ^= texto.charCodeAt(i);
+            hash = Math.imul(hash, 16777619);
+        }
+        return (hash >>> 0).toString(36);
+    }
+
+    function timestampPreco(registro, fallback = 0) {
+        if (!registro) return numeroSeguro(fallback);
+        const explicito = Math.max(numeroSeguro(registro.atualizadoEm), numeroSeguro(registro.registradoEm));
+        if (explicito) return explicito;
+        if (numeroSeguro(fallback)) return numeroSeguro(fallback);
+        const data = registro.data ? Date.parse(`${registro.data}T12:00:00`) : 0;
+        return numeroSeguro(data);
+    }
+
+    function normalizarHistoricoPrecos(registros = [], fallback = 0) {
+        const repeticoes = new Map();
+        return (Array.isArray(registros) ? registros : []).map(registro => {
+            const item = registro && typeof registro === 'object' ? registro : {};
+            const assinatura = [item.data || '', item.preco || '', item.unidade || '', item.fornecedorId || ''].join('|');
+            const ocorrencia = repeticoes.get(assinatura) || 0;
+            repeticoes.set(assinatura, ocorrencia + 1);
+            if (!item.id) item.id = `preco_leg_${hashTexto(assinatura)}_${ocorrencia}`;
+            if (!item.atualizadoEm) item.atualizadoEm = timestampPreco(item, fallback);
+            return item;
+        });
+    }
+
+    function mesclarHistoricosPrecos(locais = [], remotos = [], exclusoes = {}, localFallback = 0, remotoFallback = 0) {
+        const mesclados = new Map();
+        normalizarHistoricoPrecos(remotos, remotoFallback).forEach(item => mesclados.set(item.id, item));
+        normalizarHistoricoPrecos(locais, localFallback).forEach(item => {
+            const remoto = mesclados.get(item.id);
+            if (!remoto || timestampPreco(item, localFallback) >= timestampPreco(remoto, remotoFallback)) mesclados.set(item.id, item);
+        });
+        return Array.from(mesclados.values())
+            .filter(item => numeroSeguro(exclusoes[item.id]) < timestampPreco(item))
+            .sort((a, b) => timestampPreco(a) - timestampPreco(b));
+    }
+
     function aplicarTransicao(pedido, acao, agora = Date.now(), apenasReceber = false) {
         if (!pedido || pedido.excluido || pedido.status === 'cancelado') {
             return { ok: false, motivo: 'Item indisponível para alteração.' };
@@ -90,8 +134,11 @@
         aplicarTransicao,
         escaparHtml,
         idDomSeguro,
+        mesclarHistoricosPrecos,
         mesclarPedidos,
+        normalizarHistoricoPrecos,
         numeroSeguro,
+        timestampPreco,
         timestampPedido,
         validarRespostaServidor
     };

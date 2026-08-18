@@ -1,6 +1,7 @@
 function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(pa))]); atualizarBotaoDesfazer(); }
     function desfazerAcao() { if(pilhaDesfazer.length === 0) return; const agora = agoraServidor(); let last = pilhaDesfazer.pop(); let itensRestore = Array.isArray(last) ? last : (last.pedidos || [last]); itensRestore.forEach(itemBackup => { let idx = db.pedidosAtivos.findIndex(x => x.idUnico === itemBackup.idUnico); if(idx !== -1) { itemBackup.dataStatus = agora; db.pedidosAtivos[idx] = itemBackup; } }); if(last && !Array.isArray(last) && last.produtos) { last.produtos.forEach(produtoBackup => { produtoBackup.atualizadoEm = agora; const idx = db.produtos.findIndex(p => p.id === produtoBackup.id); if(idx >= 0) db.produtos[idx] = produtoBackup; else db.produtos.push(produtoBackup); }); } db.configs.syncPendente = true; salvarBanco(); renderizarLista(); sincronizarFundo(false, true); atualizarBotaoDesfazer(); mostrarToast('Última alteração desfeita.', 'sucesso'); }
-    function atualizarBotaoDesfazer() { const btn = document.getElementById('btnDesfazerBar'); if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0 && !modoSelecaoAtivo) { btn.style.display = 'inline-flex'; } else { btn.style.display = 'none'; } }
+    function atualizarCentroFiltrosCompras() { const centro = document.getElementById('filtrosCentroCompras'); const barra = document.querySelector('.filters'); const acoes = document.getElementById('acoesSelecaoCompras'); const desfazer = document.getElementById('btnDesfazerBar'); const visivel = db.configs.modo === 'compras' && (acoes.style.display !== 'none' || desfazer.style.display !== 'none'); centro.style.display = visivel ? 'flex' : 'none'; barra.classList.toggle('com-centro', visivel); }
+    function atualizarBotaoDesfazer() { const btn = document.getElementById('btnDesfazerBar'); if (db.configs.modo === 'compras' && pilhaDesfazer.length > 0 && !modoSelecaoAtivo) { btn.style.display = 'inline-flex'; } else { btn.style.display = 'none'; } atualizarCentroFiltrosCompras(); }
 
     function getPermissaoColab() { let c = db.colaboradores.find(col => col.id === db.configs.colabAtivoId); return c ? (c.apenasReceber || false) : false; }
 
@@ -81,6 +82,7 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
         } else if(pa.status === 'cancelado' && !apenasReceber) {
             html += botaoAcaoCompra('restaurar', '↶', 'Restaurar', 'secundaria');
         }
+        if(!apenasReceber) html += botaoAcaoCompra('preco', 'R$', 'Preço e fornecedor', 'preco');
         if(!apenasReceber) html += botaoAcaoCompra('detalhes', 'i', 'Detalhes', 'detalhes');
         if(!apenasReceber && (pa.status === 'pendente' || pa.status === 'pedido_forn')) html += botaoAcaoCompra('cancelar', '×', 'Cancelar item', 'cancelar');
         if(!html) return mostrarToast('Nenhuma ação disponível.', 'info');
@@ -93,6 +95,87 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
         const paId = modalAcaoCompraId;
         fecharMenuAcaoCompra();
         if(paId) abrirHistoricoCompra(paId);
+    }
+
+    function renderizarHistoricoPrecoRapido(produto) {
+        const box = document.getElementById('historicoPrecoRapido');
+        const registros = [...(produto.historicoPrecos || [])]
+            .sort((a, b) => AloFeiraDomain.timestampPreco(b) - AloFeiraDomain.timestampPreco(a))
+            .slice(0, 4);
+        let html = '<div class="historico-preco-titulo">Histórico recente</div>';
+        if(!registros.length) {
+            box.innerHTML = html + '<div class="historico-preco-vazio">Nenhum preço registrado.</div>';
+            return;
+        }
+        registros.forEach(registro => {
+            const fornecedor = db.fornecedores.find(item => item.id === registro.fornecedorId);
+            const local = fornecedor ? fornecedor.nome : 'Local não informado';
+            const unidade = registro.unidade ? ` / ${registro.unidade}` : '';
+            html += `<div class="historico-preco-linha"><span>${formatarDataBr(registro.data)} · ${escaparHtml(local)}</span><strong>R$ ${Number(registro.preco || 0).toLocaleString('pt-BR', { minimumFractionDigits:2 })}${escaparHtml(unidade)}</strong></div>`;
+        });
+        box.innerHTML = html;
+    }
+
+    function abrirPrecoRapido() {
+        const paId = modalAcaoCompraId;
+        const pa = db.pedidosAtivos.find(item => item.idUnico === paId);
+        const produto = pa && db.produtos.find(item => item.id === pa.produtoId);
+        fecharMenuAcaoCompra();
+        if(!pa || !produto) return;
+        document.getElementById('precoRapidoPedidoId').value = paId;
+        document.getElementById('produtoPrecoRapido').textContent = produto.nome;
+        document.getElementById('precoRapidoValor').value = '';
+
+        const fornecedores = db.fornecedores.filter(item => item.ativo !== false).sort((a, b) => a.nome.localeCompare(b.nome));
+        const comboFornecedor = document.getElementById('precoRapidoFornecedor');
+        comboFornecedor.innerHTML = '<option value="">Local não informado</option>';
+        fornecedores.forEach(fornecedor => {
+            const option = document.createElement('option');
+            option.value = fornecedor.id;
+            option.textContent = fornecedor.nome;
+            comboFornecedor.appendChild(option);
+        });
+        const fornecedorPadrao = pa.fornecedorId || (produto.fornecedores || []).find(id => fornecedores.some(item => item.id === id)) || '';
+        comboFornecedor.value = fornecedorPadrao;
+
+        const unidades = Array.from(new Set([pa.unidade, ...(produto.unidades || [])].filter(Boolean)));
+        const comboUnidade = document.getElementById('precoRapidoUnidade');
+        comboUnidade.innerHTML = '';
+        (unidades.length ? unidades : ['']).forEach(unidade => {
+            const option = document.createElement('option');
+            option.value = unidade;
+            option.textContent = unidade || 'Sem unidade';
+            comboUnidade.appendChild(option);
+        });
+        renderizarHistoricoPrecoRapido(produto);
+        document.getElementById('modalPrecoRapido').style.display = 'flex';
+        const campo = document.getElementById('precoRapidoValor');
+        campo.onkeydown = event => { if(event.key === 'Enter') { event.preventDefault(); salvarPrecoRapido(); } };
+        setTimeout(() => campo.focus(), 120);
+    }
+
+    function salvarPrecoRapido() {
+        const pa = db.pedidosAtivos.find(item => item.idUnico === document.getElementById('precoRapidoPedidoId').value);
+        const produto = pa && db.produtos.find(item => item.id === pa.produtoId);
+        if(!produto) return fecharModal('modalPrecoRapido');
+        const preco = parseMoeda(document.getElementById('precoRapidoValor').value);
+        if(!(preco > 0)) {
+            document.getElementById('precoRapidoValor').focus();
+            return mostrarToast('Digite um preço válido.', 'erro');
+        }
+        const fornecedorId = document.getElementById('precoRapidoFornecedor').value;
+        const unidade = document.getElementById('precoRapidoUnidade').value;
+        produto.historicoPrecos = produto.historicoPrecos || [];
+        produto.historicoPrecos.push(criarRegistroPreco(preco, unidade, fornecedorId));
+        if(fornecedorId) {
+            produto.fornecedores = produto.fornecedores || [];
+            if(!produto.fornecedores.includes(fornecedorId)) produto.fornecedores.push(fornecedorId);
+        }
+        marcarMudancaEstrutural(produto);
+        fecharModal('modalPrecoRapido');
+        renderizarLista();
+        sincronizarFundo(false, true);
+        mostrarToast('Preço salvo no histórico.', 'sucesso');
     }
 
     function voltarStatusCompra(pa, destino) {
@@ -111,6 +194,7 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
     function executarAcaoCompra(acao) {
         const pa = db.pedidosAtivos.find(x => x.idUnico === modalAcaoCompraId);
         if(!pa) return fecharMenuAcaoCompra();
+        if(acao === 'preco') return abrirPrecoRapido();
         if(acao === 'detalhes') return abrirDetalhesDaAcaoCompra();
         if(acao === 'cancelar') {
             fecharMenuAcaoCompra();
@@ -137,5 +221,5 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
         mostrarToast(`Item marcado como ${rotuloStatusCompra(pa.status).toLowerCase()}.`, 'sucesso');
     }
 
-    function deletarPrecoDireto(pId, idx, paId) { abrirConfirmacaoApp({ titulo:'Excluir preço?', mensagem:'Este registro será removido do histórico de preços.', rotulo:'Excluir', cor:'#c62828', acao:() => { let p = db.produtos.find(x => x.id === pId); if(p && p.historicoPrecos) { p.historicoPrecos.splice(idx, 1); marcarMudancaEstrutural(p); sincronizarFundo(false, true); if (document.getElementById('modalHistoricoCompra').style.display === 'flex') { abrirHistoricoCompra(paId); } else if(document.getElementById('modalEditarPedido').style.display === 'flex') { abrirModalEditarPedido(paId, pId); } else { abrirFormProduto(pId); } } } }); }
+    function deletarPrecoDireto(pId, idx, paId) { abrirConfirmacaoApp({ titulo:'Excluir preço?', mensagem:'Este registro será removido do histórico de preços.', rotulo:'Excluir', cor:'#c62828', acao:() => { let p = db.produtos.find(x => x.id === pId); if(p && p.historicoPrecos && p.historicoPrecos[idx]) { p.historicoPrecos = AloFeiraDomain.normalizarHistoricoPrecos(p.historicoPrecos, p.atualizadoEm); const removido = p.historicoPrecos[idx]; p.precosExcluidos = p.precosExcluidos || {}; p.precosExcluidos[removido.id] = agoraServidor(); p.historicoPrecos.splice(idx, 1); marcarMudancaEstrutural(p); sincronizarFundo(false, true); if (document.getElementById('modalHistoricoCompra').style.display === 'flex') { abrirHistoricoCompra(paId); } else if(document.getElementById('modalEditarPedido').style.display === 'flex') { abrirModalEditarPedido(paId, pId); } else { abrirFormProduto(pId); } } } }); }
     function deletarPedidoDireto(idUnico, pId, paId) { abrirConfirmacaoApp({ titulo:'Excluir pedido?', mensagem:'Este pedido será removido do histórico geral.', rotulo:'Excluir', cor:'#c62828', acao:() => { let pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); if(pa) { pa.excluido = true; pa.excluidoCompras = true; pa.dataExclusao = agoraServidor(); pa.dataStatus = pa.dataExclusao; db.configs.syncPendente = true; salvarBanco(); sincronizarFundo(false, true); const historicoAberto = document.getElementById('modalHistoricoPedidosProduto').style.display === 'flex'; if(historicoAberto && paId && paId !== idUnico) renderizarHistoricoPedidosProduto(pId, paId); else if(paId && paId !== idUnico) abrirModalEditarPedido(paId, pId); else abrirFormProduto(pId); } } }); }

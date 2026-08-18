@@ -4,6 +4,32 @@ function abrirCategoriasDosProdutos() {
     abrirGerenciar('categorias', true);
 }
 
+function atualizarRotuloFiltroCategoriasProdutos() {
+    const select = document.getElementById('filtroGerenciarCat');
+    const rotulo = document.getElementById('rotuloFiltroGerenciarCat');
+    const amostra = document.getElementById('corFiltroGerenciarCat');
+    if(!select || !rotulo || !amostra) return;
+    const categoria = db.categorias.find(item => item.id === select.value);
+    rotulo.textContent = categoria ? categoria.nome : 'Todas as categorias';
+    amostra.style.background = categoria ? categoria.cor : '#eceff1';
+}
+
+function abrirFiltroCategoriasProdutos() {
+    const atual = document.getElementById('filtroGerenciarCat').value || 'todos';
+    const opcao = (id, nome, cor) => `<button type="button" class="opcao-filtro-categoria ${atual === id ? 'ativa' : ''}" onclick="selecionarFiltroCategoriaProduto('${id}')"><span class="opcao-filtro-categoria-cor" style="background:${cor}"></span><span>${escaparHtml(nome)}</span><span class="opcao-filtro-categoria-check">${atual === id ? '✓' : ''}</span></button>`;
+    let html = opcao('todos', 'Todas as categorias', '#eceff1');
+    db.categorias.filter(item => item.ativo !== false).forEach(categoria => { html += opcao(categoria.id, categoria.nome, categoria.cor); });
+    document.getElementById('opcoesFiltroCategoriasProdutos').innerHTML = html;
+    document.getElementById('modalFiltroCategoriasProdutos').style.display = 'flex';
+}
+
+function selecionarFiltroCategoriaProduto(id) {
+    document.getElementById('filtroGerenciarCat').value = id;
+    currentGerenciarFiltro = id;
+    fecharModal('modalFiltroCategoriasProdutos');
+    renderizarFiltroGerenciar();
+}
+
 function voltarDaListagem() {
     if(tipoGerenciarAtual === 'categorias') return abrirGerenciar('produtos', true);
     tipoGerenciarAtual = null;
@@ -28,3 +54,18 @@ function voltarDaListagem() {
     }
     function duplicarProduto(id) { const p = db.produtos.find(x => x.id === id); if(!p) return; abrirConfirmacaoApp({ titulo:'Duplicar produto?', mensagem:`Será criada uma cópia de ${p.nome} com os mesmos dados.`, rotulo:'Duplicar', cor:'#1565C0', acao:() => { let copia = JSON.parse(JSON.stringify(p)); copia.id = 'p_' + Date.now(); copia.atualizadoEm = agoraServidor(); db.produtos.push(copia); marcarMudancaEstrutural(copia); abrirGerenciar('produtos', true); sincronizarFundo(false, true); } }); }
     function salvarRestaurante() { const nome = document.getElementById('restNome').value.trim(); if(!nome) return alert('Informe o nome do restaurante.'); db.restaurante.nome = nome; db.restaurante.cnpj = document.getElementById('restCNPJ').value; db.restaurante.rua = document.getElementById('restRua').value.trim(); db.restaurante.numero = document.getElementById('restNum').value.trim(); db.restaurante.bairro = document.getElementById('restBairro').value.trim(); db.restaurante.cidade = document.getElementById('restCidade').value.trim(); db.restaurante.uf = document.getElementById('restUF').value; db.restaurante.ponto = document.getElementById('restPonto').value.trim(); db.restaurante.atualizadoEm = agoraServidor(); marcarMudancaEstrutural(); fecharModal('modalFormRestaurante'); document.getElementById('modalPainelUnificado').style.display = 'flex'; sincronizarFundo(false, true); }
+
+const renderizarFiltroGerenciarBase = renderizarFiltroGerenciar;
+renderizarFiltroGerenciar = function() {
+    renderizarFiltroGerenciarBase();
+    atualizarRotuloFiltroCategoriasProdutos();
+};
+
+const abrirGerenciarBase = abrirGerenciar;
+abrirGerenciar = function(tipo, preserveState = false) {
+    abrirGerenciarBase(tipo, preserveState);
+    if(tipo === 'categorias') {
+        document.querySelectorAll('button[aria-label="Mover para cima"]').forEach(botao => { botao.textContent = '🔼'; });
+        document.querySelectorAll('button[aria-label="Mover para baixo"]').forEach(botao => { botao.textContent = '🔽'; });
+    }
+};

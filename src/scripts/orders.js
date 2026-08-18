@@ -171,13 +171,11 @@ function atualizarControlesSelecao() {
     const btnVincular = document.getElementById('btnMassaVincular');
     const acoesSelecao = document.getElementById('acoesSelecaoCompras');
     const btnLimpar = document.getElementById('btnLimparComprasBar');
-    const barraFiltros = document.querySelector('.filters');
 
     btnComprado.style.display = 'inline-flex';
     btnPedidoFornecedor.style.display = 'inline-flex';
     btnVincular.style.display = 'inline-flex';
     acoesSelecao.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
-    barraFiltros.classList.toggle('selecionando', !pedido && modoSelecaoAtivo);
     btnLimpar.style.display = modoSelecaoAtivo ? 'none' : 'inline-flex';
     btnRelatorio.style.display = !pedido ? 'inline-flex' : 'none';
     if(modoSelecaoAtivo) {
@@ -186,6 +184,7 @@ function atualizarControlesSelecao() {
     } else {
         atualizarBotaoDesfazer();
     }
+    atualizarCentroFiltrosCompras();
 }
 
 function toggleModoSelecao() {
