@@ -38,6 +38,20 @@ test('backend preserva historico e usa hora do servidor em alteracoes', () => {
   assert.equal(resultado.pedidosAtualizados.length, 1);
 });
 
+test('backend confirma configuracoes compartilhadas com hora do servidor', () => {
+  const atual = {
+    pedidosAtivos: [], produtos: [], categorias: [], fornecedores: [], colaboradores: [], restaurante: {},
+    configs: { exigirColaborador: true, atualizadoEm: 100 }
+  };
+  const novo = {
+    pedidosAtivos: [], produtos: [], categorias: [], fornecedores: [], colaboradores: [], restaurante: {},
+    configs: { exigirColaborador: false, atualizadoEm: 200 }
+  };
+  const resultado = context.aplicarTemposServidor_(atual, novo, 5000, false);
+  assert.equal(novo.configs.atualizadoEm, 5000);
+  assert.equal(resultado.configAtualizadoEm, 5000);
+});
+
 test('envio leve e idempotente acrescenta pedidos sem remover os existentes', () => {
   let partesGravadas = [];
   const aba = {

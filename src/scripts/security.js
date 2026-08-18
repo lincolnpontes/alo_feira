@@ -58,7 +58,7 @@ async function verificarSenhaAdmin(pin) {
     if(valido) {
         db.configs.senhaAdminHash = await gerarHashSenha(pin);
         delete db.configs.senhaAdmin;
-        marcarMudancaEstrutural();
+        marcarMudancaConfiguracao();
     }
     return valido;
 }
@@ -66,5 +66,5 @@ async function verificarSenhaAdmin(pin) {
 async function definirSenhaAdmin(pin) {
     db.configs.senhaAdminHash = await gerarHashSenha(pin);
     delete db.configs.senhaAdmin;
-    marcarMudancaEstrutural();
+    marcarMudancaConfiguracao();
 }

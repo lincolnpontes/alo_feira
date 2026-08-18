@@ -30,6 +30,14 @@ test('mescla pedidos pela alteracao mais recente e respeita a exclusao global', 
   assert.equal(resultado.some(p => p.idUnico === 'rascunho_local'), true);
 });
 
+test('propaga a limpeza quando ela possui data de alteracao mais nova', () => {
+  const remoto = [{ idUnico: 'pa_1', status: 'entregue', ocultoCompras: false, dataStatus: 100 }];
+  const local = [{ idUnico: 'pa_1', status: 'entregue', ocultoCompras: true, dataStatus: 200 }];
+  const resultado = domain.mesclarPedidos(local, remoto);
+  assert.equal(resultado[0].ocultoCompras, true);
+  assert.equal(resultado[0].dataStatus, 200);
+});
+
 test('registra a data indicada para pedido ao fornecedor e preserva no recebimento', () => {
   const pedido = { status: 'pendente', dataStatus: 10 };
   assert.equal(domain.aplicarTransicao(pedido, 'pedido_forn', 1000).ok, true);

@@ -47,7 +47,7 @@ function abrirFormColaborador(id) {
             catsPermitidasCompras: catsComp,
             catsPermitidas: [],
             ativo: true,
-            atualizadoEm: Date.now()
+            atualizadoEm: agoraServidor()
         });
         if(pin) novo.senhaHash = await gerarHashSenha(pin);
         else if(anterior.senha && !anterior.senhaHash) novo.senhaHash = await gerarHashSenha(anterior.senha);
@@ -76,7 +76,7 @@ function abrirFormColaborador(id) {
             telGerente: document.getElementById('fornTelGerente').value.trim(),
             telEmpresa: document.getElementById('fornTelEmpresa').value.trim(),
             ativo: true,
-            atualizadoEm: Date.now()
+            atualizadoEm: agoraServidor()
         });
         if(idx >= 0) db.fornecedores[idx] = novo; else db.fornecedores.push(novo);
         marcarMudancaEstrutural(novo);

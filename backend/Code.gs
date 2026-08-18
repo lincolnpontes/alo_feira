@@ -79,7 +79,8 @@ function aplicarTemposServidor_(atual, novoBanco, agora, forcar) {
   var resultado = {
     pedidosAtualizados: [],
     temposEstruturais: { produtos: [], categorias: [], fornecedores: [], colaboradores: [] },
-    restauranteAtualizadoEm: null
+    restauranteAtualizadoEm: null,
+    configAtualizadoEm: null
   };
   if (forcar) return resultado;
 
@@ -111,6 +112,11 @@ function aplicarTemposServidor_(atual, novoBanco, agora, forcar) {
   if (atual.restaurante && novoBanco.restaurante && mudouSemCampos_(atual.restaurante, novoBanco.restaurante, ['atualizadoEm'])) {
     novoBanco.restaurante.atualizadoEm = agora;
     resultado.restauranteAtualizadoEm = agora;
+  }
+  if (mudouSemCampos_(atual.configs, novoBanco.configs, ['atualizadoEm', 'ultimaMudancaLocal'])) {
+    novoBanco.configs = novoBanco.configs || {};
+    novoBanco.configs.atualizadoEm = agora;
+    resultado.configAtualizadoEm = agora;
   }
   return resultado;
 }
@@ -228,7 +234,8 @@ function doPost(e) {
       serverNow: agora,
       pedidosAtualizados: tempos.pedidosAtualizados,
       temposEstruturais: tempos.temposEstruturais,
-      restauranteAtualizadoEm: tempos.restauranteAtualizadoEm
+      restauranteAtualizadoEm: tempos.restauranteAtualizadoEm,
+      configAtualizadoEm: tempos.configAtualizadoEm
     });
   } catch (error) {
     return respostaJson_({ status: 'erro', msg: error.toString(), serverNow: Date.now() });

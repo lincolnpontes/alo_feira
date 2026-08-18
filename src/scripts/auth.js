@@ -69,7 +69,7 @@ function sairDoSistema() {
 
 function toggleExigirColab() {
     db.configs.exigirColaborador = document.getElementById('configExigirColab').checked;
-    marcarMudancaEstrutural();
+    marcarMudancaConfiguracao();
     sincronizarFundo(false, true);
 }
 

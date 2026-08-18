@@ -26,7 +26,7 @@ async function lerRespostaJson(response) {
 function prepararBancoParaNuvem() {
     const copia = JSON.parse(JSON.stringify(db));
     copia.pedidosAtivos = copia.pedidosAtivos.filter(p => p.status !== 'rascunho');
-    const configsLocais = ['url', 'colabAtivoId', 'modo', 'dadosBaixados', 'ultimoSyncConfirmado', 'syncPendente', 'relogioServidorOffset', 'relogioServidorSincronizadoEm'];
+    const configsLocais = ['url', 'colabAtivoId', 'modo', 'dadosBaixados', 'ultimaMudancaLocal', 'ultimoSyncConfirmado', 'syncPendente', 'relogioServidorOffset', 'relogioServidorSincronizadoEm'];
     configsLocais.forEach(campo => delete copia.configs[campo]);
     delete copia.configs.senhaAdmin;
     delete copia.serverNow;
@@ -53,6 +53,7 @@ function aplicarConfirmacaoServidor(resposta, inicioRequisicao, fimRequisicao) {
         });
     });
     if(resposta && resposta.restauranteAtualizadoEm) db.restaurante.atualizadoEm = resposta.restauranteAtualizadoEm;
+    if(resposta && resposta.configAtualizadoEm) db.configs.atualizadoEm = resposta.configAtualizadoEm;
 }
 
 function mesclarColecao(locais, remotos) {
@@ -86,7 +87,8 @@ function mesclarBancos(local, remotoBruto) {
     const banco = normalizarBanco(remoto);
     banco.pedidosAtivos = pedidos;
     banco.produtos = mesclarColecao(localNormalizado.produtos, remoto.produtos);
-    banco.categorias = mesclarColecao(localNormalizado.categorias, remoto.categorias);
+    banco.categorias = mesclarColecao(localNormalizado.categorias, remoto.categorias)
+        .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0));
     banco.fornecedores = mesclarColecao(localNormalizado.fornecedores, remoto.fornecedores);
     banco.colaboradores = mesclarColecao(localNormalizado.colaboradores, remoto.colaboradores);
 
@@ -96,11 +98,15 @@ function mesclarBancos(local, remotoBruto) {
 
     const locais = localNormalizado.configs;
     const remotos = remoto.configs;
-    banco.configs = Object.assign({}, remotos, {
+    const localConfigTs = Number(locais.atualizadoEm || 0);
+    const remotoConfigTs = Number(remotos.atualizadoEm || 0);
+    const configsCompartilhadas = localConfigTs > remotoConfigTs ? locais : remotos;
+    banco.configs = Object.assign({}, configsCompartilhadas, {
         url: locais.url,
         colabAtivoId: locais.colabAtivoId,
         modo: locais.modo,
         dadosBaixados: true,
+        ultimaMudancaLocal: locais.ultimaMudancaLocal || 0,
         ultimoSyncConfirmado: locais.ultimoSyncConfirmado || 0,
         relogioServidorOffset: Number(locais.relogioServidorOffset || 0),
         relogioServidorSincronizadoEm: Number(locais.relogioServidorSincronizadoEm || 0),
@@ -117,7 +123,7 @@ function mesclarBancos(local, remotoBruto) {
             return !remotoItem || Number(item.atualizadoEm || 0) > Number(remotoItem.atualizadoEm || 0);
         })
     );
-    const precisaEnviar = banco.configs.syncPendente || colecoesLocaisMaisNovas || localRestTs > remotoRestTs;
+    const precisaEnviar = banco.configs.syncPendente || colecoesLocaisMaisNovas || localRestTs > remotoRestTs || localConfigTs > remotoConfigTs;
     banco.configs.syncPendente = precisaEnviar;
     return { banco, precisaEnviar };
 }
@@ -257,6 +263,10 @@ async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
                 db = resultado.banco;
                 precisaEnviar = precisaEnviar || resultado.precisaEnviar;
                 salvarBanco();
+                atualizarBotaoPerfil();
+                atualizarVisibilidadeAdmin();
+                const exigirColab = document.getElementById('configExigirColab');
+                if(exigirColab) exigirColab.checked = db.configs.exigirColaborador;
                 if(!isUsuarioGerenciando()) {
                     renderizarFiltros();
                     renderizarLista();

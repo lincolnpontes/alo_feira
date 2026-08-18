@@ -9,7 +9,6 @@ function alterarModo(modo) {
     document.body.className = `theme-${modo}`;
     document.getElementById('metaThemeColor').content = modo === 'pedido' ? '#1565C0' : '#521565';
     document.getElementById('dicasCabecalho').innerHTML = '';
-    document.getElementById('actionBarCompras').style.display = 'none';
     document.getElementById('btnHistHoje').style.display = modo === 'pedido' ? 'inline-flex' : 'none';
     document.getElementById('btnLimparComprasBar').style.display = 'inline-flex';
     document.getElementById('btnRelatorioBar').style.display = modo === 'compras' ? 'inline-flex' : 'none';
@@ -153,7 +152,8 @@ function executarLimpezaComprasAntigas() {
     const idsAvulsosCancelados = new Set(concluidos.filter(pa => pa.status === 'cancelado').map(pa => pa.produtoId));
     const produtosAvulsos = db.produtos.filter(p => p.avulso && p.ativo !== false && idsAvulsosCancelados.has(p.id));
     const backupProdutos = produtosAvulsos.map(p => JSON.parse(JSON.stringify(p)));
-    concluidos.forEach(pa => { pa.ocultoCompras = true; });
+    const agora = agoraServidor();
+    concluidos.forEach(pa => { pa.ocultoCompras = true; pa.dataStatus = agora; });
     produtosAvulsos.forEach(p => { p.ativo = false; p.atualizadoEm = agoraServidor(); });
     pilhaDesfazer.push({ pedidos: backupEstados, produtos: backupProdutos });
     db.configs.syncPendente = true;
@@ -171,11 +171,13 @@ function atualizarControlesSelecao() {
     const btnVincular = document.getElementById('btnMassaVincular');
     const acoesSelecao = document.getElementById('acoesSelecaoCompras');
     const btnLimpar = document.getElementById('btnLimparComprasBar');
+    const barraFiltros = document.querySelector('.filters');
 
     btnComprado.style.display = 'inline-flex';
     btnPedidoFornecedor.style.display = 'inline-flex';
     btnVincular.style.display = 'inline-flex';
     acoesSelecao.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
+    barraFiltros.classList.toggle('selecionando', !pedido && modoSelecaoAtivo);
     btnLimpar.style.display = modoSelecaoAtivo ? 'none' : 'inline-flex';
     btnRelatorio.style.display = !pedido ? 'inline-flex' : 'none';
     if(modoSelecaoAtivo) {
@@ -184,13 +186,6 @@ function atualizarControlesSelecao() {
     } else {
         atualizarBotaoDesfazer();
     }
-    atualizarVisibilidadeBarraCompras();
-}
-
-function atualizarVisibilidadeBarraCompras() {
-    const compras = db.configs.modo === 'compras';
-    const temDesfazer = pilhaDesfazer.length > 0 && !modoSelecaoAtivo;
-    document.getElementById('actionBarCompras').style.display = compras && temDesfazer ? 'flex' : 'none';
 }
 
 function toggleModoSelecao() {

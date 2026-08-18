@@ -41,6 +41,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   const details = fs.readFileSync(path.join(root, 'src', 'scripts', 'purchase-details.js'), 'utf8');
   const drafts = fs.readFileSync(path.join(root, 'src', 'scripts', 'drafts.js'), 'utf8');
   const sync = fs.readFileSync(path.join(root, 'src', 'scripts', 'sync.js'), 'utf8');
+  const settings = fs.readFileSync(path.join(root, 'src', 'scripts', 'settings.js'), 'utf8');
   const layout = fs.readFileSync(path.join(root, 'src', 'styles', 'layout.css'), 'utf8');
   const scripts = fs.readdirSync(path.join(root, 'src', 'scripts')).filter(name => name.endsWith('.js')).map(name => fs.readFileSync(path.join(root, 'src', 'scripts', name), 'utf8')).join('\n');
   assert.match(html, /class="menu-compra"/);
@@ -49,7 +50,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(orders, /Filtrar por fornecedor/);
   assert.match(orders, /Agrupar por status/);
   assert.match(orders, /menu-ferramentas-separador[\s\S]*Agrupar por categoria:[\s\S]*menu-categoria-item/);
-  assert.match(html, /class="filtros-acoes"[\s\S]*id="btnHistHoje"[\s\S]*id="btnRelatorioBar"[\s\S]*id="btnLimparComprasBar"/);
+  assert.match(html, /class="filtros-acoes"[\s\S]*id="btnHistHoje"[\s\S]*id="btnRelatorioBar"[\s\S]*id="btnDesfazerBar"[\s\S]*id="btnLimparComprasBar"/);
   assert.match(html, /id="acoesSelecaoCompras"[\s\S]*id="btnMassaPedForn"[\s\S]*id="btnMassaComprado"[\s\S]*id="btnMassaVincular"/);
   assert.match(html, /id="btnLimparComprasBar"/);
   assert.match(html, /id="btnRelatorioBar"[\s\S]*Relatório para fornecedor/);
@@ -69,7 +70,9 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(catalog, /item-status-pedido[\s\S]*status-glyph/);
   assert.match(orders, /function selecionarGrupoCompras[\s\S]*alternarSelecaoGrupo/);
   assert.match(orders, /function mostrarTodosCompras[\s\S]*function ativarAgrupamentoCompras/);
-  assert.match(orders, /actionBarCompras'\)\.style\.display = compras && temDesfazer/);
+  assert.doesNotMatch(html + layout + orders, /actionBarCompras|action-bar-compras|btn-action-bar/);
+  assert.match(orders, /classList\.toggle\('selecionando'/);
+  assert.match(orders, /ocultoCompras = true; pa\.dataStatus = agora/);
   assert.match(orders, /\['comprado', 'entregue', 'cancelado'\]/);
   assert.match(orders, /btn-busca-filtros[\s\S]*boxBuscaPedido/);
   assert.match(purchases, /pedido\.status === 'rascunho'\) abrirModalEditarPedido/);
@@ -83,4 +86,8 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(drafts, /postarPedidosNovos\(rascunhos\)/);
   assert.match(sync, /meta=1/);
   assert.match(sync, /postarPedidosNovos[\s\S]*serverNow/);
+  assert.match(sync, /atualizarBotaoPerfil\(\)[\s\S]*atualizarVisibilidadeAdmin\(\)/);
+  assert.doesNotMatch(html, /Gerenciar Categorias<\/button>/);
+  assert.match(html + settings, /btnCategoriasProdutos[\s\S]*abrirCategoriasDosProdutos/);
+  assert.match(html, /Alô Feira v1\.3\.2/);
 });

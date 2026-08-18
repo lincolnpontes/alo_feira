@@ -1,10 +1,6 @@
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline:3px solid rgba(21,101,192,.35); outline-offset:2px; }
         button:disabled { opacity:.5; cursor:not-allowed; }
 
-        @media (max-width: 600px) {
-            .action-bar-compras { overflow-x:auto; }
-            .action-bar-compras > div { flex-wrap:nowrap !important; }
-        }
         @media (max-width: 350px) {
             .header { padding-left:6px; padding-right:6px; }
             .header-select { font-size:15px; }
