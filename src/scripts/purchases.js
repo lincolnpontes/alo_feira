@@ -167,15 +167,20 @@ function registrarDesfazer(pa) { pilhaDesfazer.push([JSON.parse(JSON.stringify(p
         const unidade = document.getElementById('precoRapidoUnidade').value;
         produto.historicoPrecos = produto.historicoPrecos || [];
         produto.historicoPrecos.push(criarRegistroPreco(preco, unidade, fornecedorId));
-        if(fornecedorId) {
-            produto.fornecedores = produto.fornecedores || [];
-            if(!produto.fornecedores.includes(fornecedorId)) produto.fornecedores.push(fornecedorId);
-        }
+        vincularFornecedorPossivel(produto, fornecedorId);
         marcarMudancaEstrutural(produto);
         fecharModal('modalPrecoRapido');
         renderizarLista();
         sincronizarFundo(false, true);
-        mostrarToast('Preço salvo no histórico.', 'sucesso');
+        mostrarToast(fornecedorId ? 'Preço salvo e fornecedor vinculado.' : 'Preço salvo no histórico.', 'sucesso');
+    }
+
+    function vincularFornecedorPossivel(produto, fornecedorId) {
+        if(!produto || !fornecedorId) return false;
+        produto.fornecedores = produto.fornecedores || [];
+        if(produto.fornecedores.includes(fornecedorId)) return false;
+        produto.fornecedores.push(fornecedorId);
+        return true;
     }
 
     function voltarStatusCompra(pa, destino) {

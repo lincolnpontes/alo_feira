@@ -21,6 +21,7 @@ function criarBancoBase() {
                 ultimoSyncConfirmado: 0,
                 relogioServidorOffset: 0,
                 relogioServidorSincronizadoEm: 0,
+                backendComControleRevisao: false,
                 atualizadoEm: 0,
                 syncPendente: false
             }
@@ -55,6 +56,7 @@ function criarBancoBase() {
         if(banco.configs.historicoApagadoEm === undefined) banco.configs.historicoApagadoEm = 0;
         if(banco.configs.relogioServidorOffset === undefined) banco.configs.relogioServidorOffset = 0;
         if(banco.configs.relogioServidorSincronizadoEm === undefined) banco.configs.relogioServidorSincronizadoEm = 0;
+        if(banco.configs.backendComControleRevisao === undefined) banco.configs.backendComControleRevisao = false;
         if(banco.configs.atualizadoEm === undefined) banco.configs.atualizadoEm = 0;
         if(banco.configs.syncPendente === undefined) banco.configs.syncPendente = false;
         return banco;

@@ -89,12 +89,15 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(sync, /meta=1/);
   assert.match(sync, /postarPedidosNovos[\s\S]*serverNow/);
   assert.match(sync, /atualizarBotaoPerfil\(\)[\s\S]*atualizarVisibilidadeAdmin\(\)/);
+  assert.match(sync, /function sincronizarInicializacao[\s\S]*baixarBancoNuvem\(8000\)[\s\S]*aplicarNuvemNaInicializacao/);
+  assert.doesNotMatch(sync, /temRascunho && db\.configs\.modo === 'pedido'/);
+  assert.match(fs.readFileSync(path.join(root, 'src', 'scripts', 'app.js'), 'utf8'), /updateViaCache: 'none'/);
   assert.doesNotMatch(html, /Gerenciar Categorias<\/button>/);
   assert.match(html + settings, /btnCategoriasProdutos[\s\S]*abrirCategoriasDosProdutos/);
   assert.match(html, /btnCategoriasProdutos[\s\S]*🏷️[\s\S]*Categorias/);
   assert.match(html + settings, /btnFiltroGerenciarCat[\s\S]*modalFiltroCategoriasProdutos[\s\S]*selecionarFiltroCategoriaProduto/);
   assert.match(html, /class="header-profile"[\s\S]*id="btnTrocarPerfil"[\s\S]*class="header-actions"/);
   assert.match(html, /Alô Feira v1\.3\.2/);
-  assert.match(html + serviceWorker, /v1\.3\.2-r2/);
-  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r1/);
+  assert.match(html + serviceWorker, /v1\.3\.2-r3/);
+  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r2/);
 });

@@ -22,6 +22,7 @@ const context = vm.createContext({
 
 vm.runInContext(fs.readFileSync(path.join(root, 'src', 'scripts', 'core.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(root, 'src', 'scripts', 'sync.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(root, 'src', 'scripts', 'purchases.js'), 'utf8'), context);
 
 function executar(expressao, entrada) {
   context.entradaTeste = entrada;
@@ -58,7 +59,7 @@ test('payload compartilha dados operacionais e preserva estado local do aparelho
   assert.equal(payload.pedidosAtivos.some(p => p.status === 'rascunho'), false);
   assert.equal(payload.configs.exigirColaborador, false);
   assert.equal(payload.configs.atualizadoEm, 250);
-  ['url', 'modo', 'colabAtivoId', 'ultimaMudancaLocal', 'syncPendente', 'ultimoSyncConfirmado', 'relogioServidorOffset']
+  ['url', 'modo', 'colabAtivoId', 'ultimaMudancaLocal', 'syncPendente', 'ultimoSyncConfirmado', 'relogioServidorOffset', 'backendComControleRevisao']
     .forEach(campo => assert.equal(Object.hasOwn(payload.configs, campo), false));
 });
 
@@ -130,4 +131,130 @@ test('mesclagem baixa limpeza da vassoura e emoji mais recentes', () => {
   const resultado = executar('mesclarBancos(entradaTeste.local, entradaTeste.remoto)', { local, remoto });
   assert.equal(resultado.banco.pedidosAtivos[0].ocultoCompras, true);
   assert.equal(resultado.banco.colaboradores[0].emoji, '🧑‍🍳');
+});
+
+test('abertura troca lista antiga pela nuvem e preserva somente rascunhos locais', () => {
+  const local = {
+    app_id: 'alofeira', syncRevision: 1,
+    pedidosAtivos: [
+      { idUnico:'pa_antigo', produtoId:'p_1', status:'pendente', dataStatus:900 },
+      { idUnico:'pa_rascunho', produtoId:'p_2', status:'rascunho', dataStatus:950 }
+    ],
+    colaboradores: [{ id:'col_1', nome:'Lincoln', emoji:'👤', atualizadoEm:100 }],
+    configs: { url:'local', modo:'pedido', colabAtivoId:'col_1', syncPendente:false }
+  };
+  const remoto = {
+    app_id: 'alofeira', syncRevision: 8,
+    pedidosAtivos: [{ idUnico:'pa_atual', produtoId:'p_1', status:'comprado', dataStatus:500 }],
+    colaboradores: [{ id:'col_1', nome:'Lincoln', emoji:'🧑‍🍳', atualizadoEm:500 }],
+    configs: { exigirColaborador:true, atualizadoEm:500 }
+  };
+  const resultado = executar('aplicarNuvemNaInicializacao(entradaTeste.local, entradaTeste.remoto)', { local, remoto });
+  assert.deepEqual(Array.from(resultado.banco.pedidosAtivos, item => item.idUnico).sort(), ['pa_atual', 'pa_rascunho']);
+  assert.equal(resultado.banco.colaboradores[0].emoji, '🧑‍🍳');
+  assert.equal(resultado.banco.configs.url, 'local');
+  assert.equal(resultado.banco.configs.colabAtivoId, 'col_1');
+  assert.equal(resultado.banco.syncRevision, 8);
+  assert.equal(resultado.precisaEnviar, false);
+});
+
+test('abertura reconcilia alteracoes realmente pendentes antes de enviar', () => {
+  const local = {
+    app_id:'alofeira', syncRevision:2,
+    colaboradores:[{ id:'col_1', nome:'Lincoln', emoji:'👨‍🍳', atualizadoEm:800 }],
+    configs:{ url:'local', modo:'compras', colabAtivoId:'col_1', syncPendente:true }
+  };
+  const remoto = {
+    app_id:'alofeira', syncRevision:3,
+    colaboradores:[{ id:'col_1', nome:'Lincoln', emoji:'👤', atualizadoEm:400 }],
+    configs:{}
+  };
+  const resultado = executar('aplicarNuvemNaInicializacao(entradaTeste.local, entradaTeste.remoto)', { local, remoto });
+  assert.equal(resultado.banco.colaboradores[0].emoji, '👨‍🍳');
+  assert.equal(resultado.precisaEnviar, true);
+});
+
+test('emoji enviado por um aparelho aparece na abertura de outro', () => {
+  const nuvem = {
+    app_id:'alofeira', syncRevision:12,
+    colaboradores:[{ id:'col_1', nome:'Lincoln', emoji:'🧑‍💼', atualizadoEm:1200 }],
+    configs:{}
+  };
+  const aparelhoAntigo = {
+    app_id:'alofeira', syncRevision:4,
+    colaboradores:[{ id:'col_1', nome:'Lincoln', emoji:'👤', atualizadoEm:100 }],
+    configs:{ url:'local', modo:'pedido', colabAtivoId:'col_1', syncPendente:false }
+  };
+  const resultado = executar('aplicarNuvemNaInicializacao(entradaTeste.local, entradaTeste.remoto)', { local:aparelhoAntigo, remoto:nuvem });
+  assert.equal(resultado.banco.colaboradores[0].emoji, '🧑‍💼');
+});
+
+test('preco com fornecedor vincula o local ao cadastro do produto sem duplicar', () => {
+  const produto = { id:'p_1', fornecedores:['f_1'] };
+  const primeira = executar('vincularFornecedorPossivel(entradaTeste.produto, entradaTeste.fornecedorId)', { produto, fornecedorId:'f_2' });
+  const repetida = executar('vincularFornecedorPossivel(entradaTeste.produto, entradaTeste.fornecedorId)', { produto, fornecedorId:'f_2' });
+  assert.equal(primeira, true);
+  assert.equal(repetida, false);
+  assert.deepEqual(produto.fornecedores, ['f_1', 'f_2']);
+});
+
+test('sincronizacao de abertura busca a nuvem mesmo com rascunho antigo', async () => {
+  const remoto = {
+    app_id:'alofeira', syncRevision:9, serverNow:5000,
+    pedidosAtivos:[{ idUnico:'pa_nuvem', produtoId:'p_1', status:'pendente', dataStatus:4000 }],
+    colaboradores:[{ id:'col_1', nome:'Lincoln', emoji:'🧑‍🍳', atualizadoEm:4000 }],
+    configs:{}
+  };
+  context.fetch = async () => ({ ok:true, async text() { return JSON.stringify(remoto); } });
+  executar('db = normalizarBanco(entradaTeste)', {
+    app_id:'alofeira', syncRevision:1,
+    pedidosAtivos:[{ idUnico:'pa_rascunho', produtoId:'p_1', status:'rascunho', dataStatus:100 }],
+    colaboradores:[{ id:'col_1', nome:'Lincoln', emoji:'👤', atualizadoEm:100 }],
+    configs:{ url:'https://backend.test', modo:'pedido', colabAtivoId:'col_1', syncPendente:false }
+  });
+  assert.equal(await vm.runInContext('sincronizarInicializacao()', context), true);
+  const estado = vm.runInContext('JSON.parse(JSON.stringify(db))', context);
+  assert.deepEqual(Array.from(estado.pedidosAtivos, item => item.idUnico).sort(), ['pa_nuvem', 'pa_rascunho']);
+  assert.equal(estado.colaboradores[0].emoji, '🧑‍🍳');
+  assert.equal(estado.configs.backendComControleRevisao, true);
+});
+
+test('falha ao consultar a nuvem nao transforma banco antigo em alteracao pendente', async () => {
+  const consoleOriginal = context.console;
+  context.console = Object.assign({}, console, { error() {} });
+  context.fetch = async () => { throw new Error('offline'); };
+  executar('db = normalizarBanco(entradaTeste)', {
+    app_id:'alofeira', pedidosAtivos:[],
+    configs:{ url:'https://backend.test', modo:'pedido', syncPendente:false }
+  });
+  assert.equal(await vm.runInContext('sincronizarInicializacao()', context), false);
+  assert.equal(vm.runInContext('db.configs.syncPendente', context), false);
+  context.console = consoleOriginal;
+});
+
+test('backend legado e conferido antes de qualquer gravacao completa', async () => {
+  const metodos = [];
+  let payloadEnviado = null;
+  const remoto = {
+    app_id:'alofeira', syncRevision:0,
+    pedidosAtivos:[{ idUnico:'pa_remoto', produtoId:'p_1', status:'pendente', dataStatus:200 }],
+    configs:{}
+  };
+  context.fetch = async (_url, options = {}) => {
+    const metodo = options.method || 'GET';
+    metodos.push(metodo);
+    if(metodo === 'POST') {
+      payloadEnviado = JSON.parse(options.body);
+      return { ok:true, async text() { return JSON.stringify({ status:'sucesso' }); } };
+    }
+    return { ok:true, async text() { return JSON.stringify(remoto); } };
+  };
+  executar('db = normalizarBanco(entradaTeste)', {
+    app_id:'alofeira', syncRevision:0,
+    pedidosAtivos:[{ idUnico:'pa_local', produtoId:'p_1', status:'pendente', dataStatus:300 }],
+    configs:{ url:'https://backend-legado.test', modo:'compras', syncPendente:true, backendComControleRevisao:false }
+  });
+  await vm.runInContext('postarBanco()', context);
+  assert.deepEqual(metodos, ['GET', 'POST']);
+  assert.deepEqual(payloadEnviado.dados.pedidosAtivos.map(item => item.idUnico).sort(), ['pa_local', 'pa_remoto']);
 });

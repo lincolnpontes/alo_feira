@@ -26,7 +26,7 @@ async function lerRespostaJson(response) {
 function prepararBancoParaNuvem() {
     const copia = JSON.parse(JSON.stringify(db));
     copia.pedidosAtivos = copia.pedidosAtivos.filter(p => p.status !== 'rascunho');
-    const configsLocais = ['url', 'colabAtivoId', 'modo', 'dadosBaixados', 'ultimaMudancaLocal', 'ultimoSyncConfirmado', 'syncPendente', 'relogioServidorOffset', 'relogioServidorSincronizadoEm'];
+    const configsLocais = ['url', 'colabAtivoId', 'modo', 'dadosBaixados', 'ultimaMudancaLocal', 'ultimoSyncConfirmado', 'syncPendente', 'relogioServidorOffset', 'relogioServidorSincronizadoEm', 'backendComControleRevisao'];
     configsLocais.forEach(campo => delete copia.configs[campo]);
     delete copia.configs.senhaAdmin;
     delete copia.serverNow;
@@ -136,6 +136,7 @@ function mesclarBancos(local, remotoBruto) {
         ultimoSyncConfirmado: locais.ultimoSyncConfirmado || 0,
         relogioServidorOffset: Number(locais.relogioServidorOffset || 0),
         relogioServidorSincronizadoEm: Number(locais.relogioServidorSincronizadoEm || 0),
+        backendComControleRevisao: Boolean(locais.backendComControleRevisao),
         historicoApagadoEm: corteHistorico,
         syncPendente: Boolean(locais.syncPendente || precisaEnviarPedidos)
     });
@@ -160,7 +161,46 @@ function mesclarBancos(local, remotoBruto) {
     return { banco, precisaEnviar };
 }
 
-async function postarBanco({ forcar = false, permitirRetry = true } = {}) {
+function aplicarNuvemNaInicializacao(local, remotoBruto) {
+    const localNormalizado = normalizarBanco(local);
+    const remoto = normalizarBanco(remotoBruto);
+    if(localNormalizado.configs.syncPendente) return mesclarBancos(localNormalizado, remoto);
+
+    const banco = normalizarBanco(remoto);
+    const corteHistorico = Math.max(
+        Number(localNormalizado.configs.historicoApagadoEm || 0),
+        Number(remoto.configs.historicoApagadoEm || 0)
+    );
+    const rascunhosLocais = localNormalizado.pedidosAtivos.filter(pa => pa.status === 'rascunho' && !pa.excluido);
+    banco.pedidosAtivos = AloFeiraDomain.mesclarPedidos(rascunhosLocais, remoto.pedidosAtivos, corteHistorico);
+    banco.configs = Object.assign({}, remoto.configs, {
+        url: localNormalizado.configs.url,
+        colabAtivoId: localNormalizado.configs.colabAtivoId,
+        modo: localNormalizado.configs.modo,
+        dadosBaixados: true,
+        ultimaMudancaLocal: localNormalizado.configs.ultimaMudancaLocal || 0,
+        ultimoSyncConfirmado: localNormalizado.configs.ultimoSyncConfirmado || 0,
+        relogioServidorOffset: Number(localNormalizado.configs.relogioServidorOffset || 0),
+        relogioServidorSincronizadoEm: Number(localNormalizado.configs.relogioServidorSincronizadoEm || 0),
+        backendComControleRevisao: Boolean(localNormalizado.configs.backendComControleRevisao),
+        historicoApagadoEm: corteHistorico,
+        syncPendente: false
+    });
+    if(localNormalizado.configs.senhaAdminHash && !banco.configs.senhaAdminHash) {
+        banco.configs.senhaAdminHash = localNormalizado.configs.senhaAdminHash;
+    }
+    banco.syncRevision = Number(remoto.syncRevision || 0);
+    return { banco, precisaEnviar: false };
+}
+
+async function postarBanco({ forcar = false, permitirRetry = true, nuvemConferida = false } = {}) {
+    if(!forcar && !nuvemConferida && !db.configs.backendComControleRevisao) {
+        const nuvem = await baixarBancoNuvem();
+        const resultado = mesclarBancos(db, nuvem);
+        db = resultado.banco;
+        db.configs.backendComControleRevisao = Boolean(nuvem.serverNow && nuvem.syncRevision !== undefined);
+        salvarBanco();
+    }
     const dadosEnviados = prepararBancoParaNuvem();
     const assinaturaEnviada = JSON.stringify(dadosEnviados);
     const payload = {
@@ -187,12 +227,13 @@ async function postarBanco({ forcar = false, permitirRetry = true } = {}) {
         db.syncRevision = Number(resposta.revision || db.syncRevision || 0);
         db.configs.syncPendente = true;
         salvarBanco();
-        return postarBanco({ forcar: false, permitirRetry: false });
+        return postarBanco({ forcar: false, permitirRetry: false, nuvemConferida: true });
     }
     if(!validacao.ok) throw new Error(validacao.mensagem || 'O servidor não confirmou a gravação.');
 
     const mudouDuranteEnvio = JSON.stringify(prepararBancoParaNuvem()) !== assinaturaEnviada;
     aplicarConfirmacaoServidor(resposta, inicioRequisicao, fimRequisicao);
+    db.configs.backendComControleRevisao = Boolean(resposta && resposta.serverNow && resposta.revision !== undefined);
     if(validacao.revision) db.syncRevision = validacao.revision;
     db.configs.syncPendente = mudouDuranteEnvio;
     db.configs.ultimoSyncConfirmado = agoraServidor();
@@ -236,6 +277,7 @@ async function postarPedidosNovos(pedidos, permitirRetry = true) {
     if(!validacao.ok) throw new Error(validacao.mensagem || 'O servidor não confirmou o pedido.');
 
     aplicarConfirmacaoServidor(resposta, inicioRequisicao, fimRequisicao);
+    db.configs.backendComControleRevisao = Boolean(resposta && resposta.serverNow && resposta.revision !== undefined);
     if(validacao.revision) db.syncRevision = validacao.revision;
     db.configs.ultimoSyncConfirmado = agoraServidor();
     salvarBanco();
@@ -261,10 +303,10 @@ async function consultarMetaNuvem() {
     throw new Error('Banco da nuvem inválido.');
 }
 
-async function baixarBancoNuvem() {
+async function baixarBancoNuvem(timeoutMs = 15000) {
     const fetchUrl = db.configs.url + (db.configs.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
     const inicioRequisicao = Date.now();
-    const response = await fetchComTimeout(fetchUrl, { redirect: 'follow', cache: 'no-store' });
+    const response = await fetchComTimeout(fetchUrl, { redirect: 'follow', cache: 'no-store' }, timeoutMs);
     const nuvem = await lerRespostaJson(response);
     const fimRequisicao = Date.now();
     registrarRelogioServidor(nuvem && nuvem.serverNow, inicioRequisicao, fimRequisicao);
@@ -272,14 +314,46 @@ async function baixarBancoNuvem() {
     return nuvem;
 }
 
+async function sincronizarInicializacao() {
+    if(!db.configs.url) {
+        atualizarEstadoSync('local', 'Dados somente neste aparelho');
+        return false;
+    }
+    if(!navigator.onLine) {
+        atualizarEstadoSync('offline', 'Sem internet; exibindo os dados guardados neste aparelho');
+        return false;
+    }
+    if(isSyncingFundo) return false;
+
+    isSyncingFundo = true;
+    atualizarEstadoSync('sincronizando', 'Atualizando dados antes de abrir');
+    try {
+        const nuvem = await baixarBancoNuvem(8000);
+        const backendComControleRevisao = Boolean(nuvem.serverNow && nuvem.syncRevision !== undefined);
+        const resultado = aplicarNuvemNaInicializacao(db, nuvem);
+        db = resultado.banco;
+        db.configs.backendComControleRevisao = backendComControleRevisao;
+        salvarBanco();
+        if(resultado.precisaEnviar) await postarBanco({ nuvemConferida: true });
+        db.configs.ultimoSyncConfirmado = agoraServidor();
+        salvarBanco();
+        atualizarEstadoSync('sincronizado', 'Dados atualizados');
+        setTimeout(() => atualizarEstadoSync('oculto', 'Dados atualizados'), 1800);
+        return true;
+    } catch(e) {
+        atualizarEstadoSync(navigator.onLine ? 'erro' : 'offline', navigator.onLine ? 'Não foi possível conferir a nuvem' : 'Sem internet; exibindo os dados guardados neste aparelho');
+        console.error('Erro na sincronização de inicialização', e);
+        return false;
+    } finally {
+        isSyncingFundo = false;
+    }
+}
+
 async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
     if(!db.configs.url) { atualizarEstadoSync('local', 'Dados somente neste aparelho'); return false; }
     if(isUsuarioGerenciando() && !forcado && !apenasEmpurrar) return false;
     if(isSyncingFundo) { syncRepetir = true; syncRepetirApenasEmpurrar = syncRepetirApenasEmpurrar || apenasEmpurrar; return false; }
     if(document.hidden && !forcado && !apenasEmpurrar) return false;
-    const temRascunho = db.pedidosAtivos.some(pa => pa.status === 'rascunho' && !pa.excluido);
-    if(temRascunho && db.configs.modo === 'pedido' && !forcado && !apenasEmpurrar) return false;
-
     isSyncingFundo = true;
     atualizarEstadoSync('sincronizando', 'Sincronizando com a nuvem');
     try {
@@ -312,7 +386,6 @@ async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
         setTimeout(() => atualizarEstadoSync('oculto', 'Dados confirmados na nuvem'), 1800);
         return true;
     } catch(e) {
-        db.configs.syncPendente = true;
         salvarBanco();
         atualizarEstadoSync(navigator.onLine ? 'erro' : 'offline', navigator.onLine ? 'Falha ao sincronizar' : 'Sem internet; alterações guardadas no aparelho');
         console.error('Erro na sincronização de fundo', e);
@@ -346,6 +419,7 @@ async function salvarURL() {
         db = resultado.banco;
         db.configs.url = inputUrl;
         db.configs.dadosBaixados = true;
+        db.configs.backendComControleRevisao = Boolean(nuvem.serverNow && nuvem.syncRevision !== undefined);
         salvarBanco();
         alert('Conexão estabelecida. Os dados deste aparelho e da nuvem foram conferidos.');
         location.reload();
