@@ -100,7 +100,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(html + settings, /btnFiltroGerenciarCat[\s\S]*modalFiltroCategoriasProdutos[\s\S]*selecionarFiltroCategoriaProduto/);
   assert.match(html, /class="header-profile"[\s\S]*id="btnTrocarPerfil"[\s\S]*class="header-actions"/);
   assert.match(html, /Alô Feira v1\.3\.2/);
-  assert.match(html + serviceWorker, /v1\.3\.2-r5/);
-  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r4/);
-  assert.doesNotMatch(html, /1\.3\.2-r[0-4]/);
+  assert.match(html + serviceWorker, /v1\.3\.2-r6/);
+  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r5/);
+  assert.doesNotMatch(html, /1\.3\.2-r[0-5]/);
 });

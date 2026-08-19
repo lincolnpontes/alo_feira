@@ -19,7 +19,7 @@
         .status-glyph.rascunho { color:#1565c0; background:#dcecff; border-color:#82b1e6; }
         .status-glyph.cancelado { color:#555; background:#e5e8ea; border-color:#c4c9cd; }
         .seletor-item-compra:active .status-glyph { transform:scale(.93); }
-        .item.selecionado .status-glyph { color:#fff; background:#521565; border-color:#521565; }
+        .item.selecionado .status-glyph { color:#fff; background:#626b72; border-color:#626b72; }
         .item-main-action { min-width:0; min-height:44px; flex:1; display:flex; align-items:center; justify-content:space-between; gap:6px; border:0; background:transparent; color:inherit; padding:0; text-align:left; cursor:pointer; font:inherit; }
         .item-status-pedido { width:44px; height:44px; margin-right:5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .status-pill { display:inline-flex; align-items:center; border-radius:999px; padding:5px 9px; font-size:10px; font-weight:800; background:#eceff1; color:#455a64; white-space:nowrap; }
