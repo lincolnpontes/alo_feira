@@ -9,9 +9,16 @@ const botaoWhatsApp = { disabled: false, dataset: {}, title: '' };
 const campos = {
   btnEnviarWhatsAppRelatorio: botaoWhatsApp,
   relatFornecedor: { value: '' },
-  relatTexto: { value: 'Relatorio', select() {} }
+  relatTexto: { value: 'Relatorio', select() {} },
+  relatToggleCab: { checked: true },
+  relatToggleCat: { checked: true },
+  relatToggleItens: { checked: true },
+  relatTogglePedido: { checked: false },
+  relatToggleQtd: { checked: true }
 };
 let aberturasWhatsApp = 0;
+let mudancasEstruturais = 0;
+let sincronizacoes = 0;
 const context = vm.createContext({
   db: {
     fornecedores: [],
@@ -29,6 +36,8 @@ const context = vm.createContext({
     execCommand() {}
   },
   window: { open() { aberturasWhatsApp++; } },
+  marcarMudancaEstrutural(fornecedor) { fornecedor.atualizadoEm = 1000; mudancasEstruturais++; },
+  sincronizarFundo() { sincronizacoes++; },
   alert() {},
   encodeURIComponent
 });
@@ -56,4 +65,33 @@ test('whatsapp e liberado quando existe fornecedor selecionado', () => {
   context.fornecedorTeste = fornecedor;
   vm.runInContext('atualizarEnvioWhatsAppRelatorio(fornecedorTeste)', context);
   assert.equal(botaoWhatsApp.disabled, false);
+});
+
+test('cada fornecedor recupera a ultima configuracao enviada', () => {
+  const fornecedor = {
+    id: 'f_2',
+    nome: 'Outro fornecedor',
+    preferenciasRelatorio: {
+      cabecalho: false,
+      agruparCategorias: false,
+      cotacao: false,
+      pedido: true,
+      mostrarQuantidade: false
+    }
+  };
+  context.fornecedorTeste = fornecedor;
+  vm.runInContext('aplicarPreferenciasRelatorio(fornecedorTeste)', context);
+  assert.equal(campos.relatToggleCab.checked, false);
+  assert.equal(campos.relatToggleCat.checked, false);
+  assert.equal(campos.relatToggleItens.checked, false);
+  assert.equal(campos.relatTogglePedido.checked, true);
+  assert.equal(campos.relatToggleQtd.checked, false);
+
+  campos.relatToggleCab.checked = true;
+  campos.relatToggleQtd.checked = true;
+  vm.runInContext('registrarPreferenciasRelatorioEnviadas(fornecedorTeste)', context);
+  assert.equal(fornecedor.preferenciasRelatorio.cabecalho, true);
+  assert.equal(fornecedor.preferenciasRelatorio.mostrarQuantidade, true);
+  assert.equal(mudancasEstruturais, 1);
+  assert.equal(sincronizacoes, 1);
 });

@@ -132,6 +132,26 @@ test('mesclagem preserva precos criados em aparelhos diferentes', () => {
   assert.equal(resultado.precisaEnviar, true);
 });
 
+test('preferencias de relatorio do fornecedor acompanham a sincronizacao', () => {
+  const local = {
+    app_id:'alofeira', syncRevision:3,
+    fornecedores:[{ id:'f_1', nome:'Fornecedor', atualizadoEm:100 }],
+    configs:{ url:'local', syncPendente:false }
+  };
+  const remoto = {
+    app_id:'alofeira', syncRevision:4,
+    fornecedores:[{
+      id:'f_1', nome:'Fornecedor', atualizadoEm:500,
+      preferenciasRelatorio:{ cabecalho:false, agruparCategorias:true, cotacao:false, pedido:true, mostrarQuantidade:false }
+    }],
+    configs:{}
+  };
+  const resultado = executar('mesclarBancos(entradaTeste.local, entradaTeste.remoto)', { local, remoto });
+  assert.equal(resultado.banco.fornecedores[0].preferenciasRelatorio.pedido, true);
+  assert.equal(resultado.banco.fornecedores[0].preferenciasRelatorio.cabecalho, false);
+  assert.equal(resultado.banco.fornecedores[0].preferenciasRelatorio.mostrarQuantidade, false);
+});
+
 test('mesclagem baixa limpeza da vassoura e emoji mais recentes', () => {
   const local = {
     app_id: 'alofeira', syncRevision: 2,

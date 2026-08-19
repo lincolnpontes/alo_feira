@@ -1,4 +1,24 @@
-function renderizarLista() {
+function statusEfetivoNoAgrupamento(pedido, agora = agoraServidor()) {
+        const iniciou = Number(pedido && pedido.transicaoProgresso || 0);
+        return iniciou && agora - iniciou < 10000 ? pedido.statusAnterior : pedido.status;
+    }
+
+    function agendarReagrupamentoCompras() {
+        if(timerReagruparCompras) clearTimeout(timerReagruparCompras);
+        timerReagruparCompras = null;
+        if(db.configs.modo !== 'compras' || !agrupamentoCompradoAtivo) return;
+        const agora = agoraServidor();
+        const esperas = db.pedidosAtivos
+            .filter(pedido => pedido.transicaoProgresso && agora - Number(pedido.transicaoProgresso) < 10000)
+            .map(pedido => Math.max(0, 10000 - (agora - Number(pedido.transicaoProgresso))));
+        if(!esperas.length) return;
+        timerReagruparCompras = setTimeout(() => {
+            timerReagruparCompras = null;
+            if(db.configs.modo === 'compras' && agrupamentoCompradoAtivo) renderizarLista();
+        }, Math.min(...esperas));
+    }
+
+    function renderizarLista() {
         const lista = document.getElementById('listaPrincipal');
         let htmlPrincipal = '';
         let itensMostrados = 0;
@@ -85,8 +105,8 @@ function renderizarLista() {
             if(agrupamentoCompradoAtivo) {
                 comprasParaMostrar.sort((a, b) => {
                     let getStatusPrio = (s) => s === 'pendente' ? 1 : (s === 'pedido_forn' ? 2 : (s === 'cancelado' ? 4 : 3));
-                    let statusEfetivoA = (a.transicaoProgresso && (Date.now() - a.transicaoProgresso < 10000)) ? a.statusAnterior : a.status;
-                    let statusEfetivoB = (b.transicaoProgresso && (Date.now() - b.transicaoProgresso < 10000)) ? b.statusAnterior : b.status;
+                    let statusEfetivoA = statusEfetivoNoAgrupamento(a);
+                    let statusEfetivoB = statusEfetivoNoAgrupamento(b);
                     let prioA = getStatusPrio(statusEfetivoA); let prioB = getStatusPrio(statusEfetivoB);
                     if (prioA !== prioB) return prioA - prioB;
                     let pA = db.produtos.find(p => p.id === a.produtoId); let pB = db.produtos.find(p => p.id === b.produtoId); return ordernarPorCategoriaESub({p: pA}, {p: pB});
@@ -102,7 +122,7 @@ function renderizarLista() {
                 let cObj = db.categorias.find(c => c.id === p.categoria); let catId = cObj ? cObj.id : "sem_cat"; let subcat = p.subcategoria || ""; let stGroupId = "st_" + pa.status; let catGroupId = "cat_" + idDomSeguro(catId); let subcatGroupId = "cat_" + idDomSeguro(catId) + "_sub_" + idDomSeguro(subcat);
                 if(buscaPedidoTexto) { let busca = normalizarTextoBusca(buscaPedidoTexto); let textoItem = normalizarTextoBusca(`${p.nome} ${p.descFornecedor || ''} ${p.obsPadrao || ''} ${pa.obs || ''} ${subcat} ${cObj ? cObj.nome : ''}`); if(!textoItem.includes(busca)) return; }
                 if (agrupamentoCompradoAtivo) {
-                    let statusEfetivo = (pa.transicaoProgresso && (Date.now() - pa.transicaoProgresso < 10000)) ? pa.statusAnterior : pa.status;
+                    let statusEfetivo = statusEfetivoNoAgrupamento(pa);
                     let currentGroup = statusEfetivo === 'pendente' ? '⏳ PENDENTES' : (statusEfetivo === 'pedido_forn' ? `${iconePedidoFornecedorSvg('icone-send icone-send-grupo')} PEDIDOS AO FORNECEDOR` : (statusEfetivo === 'cancelado' ? '🚫 CANCELADOS' : '✓ COMPRADOS / ENTREGUES'));
                     if (currentGroup !== lastGroup) { htmlPrincipal += `<li class="cat-header" style="background:#546e7a; color:#fff;"><span>${currentGroup}</span></li>`; lastGroup = currentGroup; lastCatId = ""; lastSubcat = null; }
                     catGroupId = stGroupId + "_" + catGroupId; subcatGroupId = stGroupId + "_" + subcatGroupId;
@@ -122,6 +142,7 @@ function renderizarLista() {
         }
         if(itensMostrados === 0) htmlPrincipal = `<li style="padding: 20px; text-align: center; color: #999;">Nenhum item.</li>`;
         lista.innerHTML = htmlPrincipal;
+        agendarReagrupamentoCompras();
     }
 
     function cliqueItemCompra(idUnico, el) { if(isModalFechando) return; abrirAcoesCompra(idUnico, el); }

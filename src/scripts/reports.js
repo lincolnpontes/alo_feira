@@ -10,8 +10,58 @@ function abrirModalRelatorio() {
             option.textContent = `${f.nome} (Vend: ${f.vendedor || 'N/A'})`;
             selForn.appendChild(option);
         });
+    aplicarPreferenciasRelatorio(null);
     document.getElementById('modalRelatorio').style.display = 'flex';
     gerarTextoRelatorio();
+}
+
+function normalizarPreferenciasRelatorio(preferencias) {
+    if(!preferencias || typeof preferencias !== 'object') {
+        return { cabecalho:true, agruparCategorias:true, cotacao:true, pedido:false, mostrarQuantidade:true };
+    }
+    const pedido = preferencias.pedido === true;
+    return {
+        cabecalho: preferencias.cabecalho !== false,
+        agruparCategorias: preferencias.agruparCategorias !== false,
+        cotacao: pedido ? false : preferencias.cotacao !== false,
+        pedido,
+        mostrarQuantidade: preferencias.mostrarQuantidade !== false
+    };
+}
+
+function lerPreferenciasRelatorioTela() {
+    return {
+        cabecalho: document.getElementById('relatToggleCab').checked,
+        agruparCategorias: document.getElementById('relatToggleCat').checked,
+        cotacao: document.getElementById('relatToggleItens').checked,
+        pedido: document.getElementById('relatTogglePedido').checked,
+        mostrarQuantidade: document.getElementById('relatToggleQtd').checked
+    };
+}
+
+function aplicarPreferenciasRelatorio(fornecedor) {
+    const preferencias = normalizarPreferenciasRelatorio(fornecedor && fornecedor.preferenciasRelatorio);
+    document.getElementById('relatToggleCab').checked = preferencias.cabecalho;
+    document.getElementById('relatToggleCat').checked = preferencias.agruparCategorias;
+    document.getElementById('relatToggleItens').checked = preferencias.cotacao;
+    document.getElementById('relatTogglePedido').checked = preferencias.pedido;
+    document.getElementById('relatToggleQtd').checked = preferencias.mostrarQuantidade;
+}
+
+function selecionarFornecedorRelatorio() {
+    const fornId = document.getElementById('relatFornecedor').value;
+    const fornecedor = db.fornecedores.find(item => item.id === fornId);
+    aplicarPreferenciasRelatorio(fornecedor);
+    gerarTextoRelatorio();
+}
+
+function registrarPreferenciasRelatorioEnviadas(fornecedor) {
+    if(!fornecedor) return;
+    const preferencias = lerPreferenciasRelatorioTela();
+    if(JSON.stringify(fornecedor.preferenciasRelatorio || null) === JSON.stringify(preferencias)) return;
+    fornecedor.preferenciasRelatorio = preferencias;
+    marcarMudancaEstrutural(fornecedor);
+    sincronizarFundo(false, true);
 }
 
 function toggleExclusivoRelatorio(tipo) {
@@ -124,6 +174,7 @@ function enviarWhatsAppAPI() {
         let num = tel.replace(/\D/g, '');
         if(num.length === 10 || num.length === 11) num = '55' + num;
         window.open(`https://wa.me/${num}?text=${encodeURIComponent(texto)}`, '_blank');
+        registrarPreferenciasRelatorioEnviadas(forn);
         return;
     }
 
@@ -132,4 +183,5 @@ function enviarWhatsAppAPI() {
     document.execCommand('copy');
     alert('Copiado! Selecione o contato no WhatsApp manualmente.');
     window.open('https://wa.me/', '_blank');
+    registrarPreferenciasRelatorioEnviadas(forn);
 }

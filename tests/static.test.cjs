@@ -62,6 +62,10 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(reports, /function obterItensProcessadosRelatorio[\s\S]*filter\(item => item\.pa && item\.p\)/);
   assert.doesNotMatch(reports, /item\.p\.fornecedores[\s\S]*includes\(fornId\)/);
   assert.match(reports, /if\(!forn\) return/);
+  assert.match(html, /Relatório para Fornecedor/);
+  assert.doesNotMatch(html, /Relatório p\/ Fornecedor|Agrupar Cat\.|Mostrar Qtd\./);
+  assert.match(html, /Fornecedor:<\/label>[\s\S]*relatFornecedor[\s\S]*Cabeçalho[\s\S]*Agrupar categorias[\s\S]*Mostrar quantidade/);
+  assert.match(reports, /preferenciasRelatorio[\s\S]*registrarPreferenciasRelatorioEnviadas[\s\S]*marcarMudancaEstrutural\(fornecedor\)[\s\S]*sincronizarFundo\(false, true\)/);
   assert.doesNotMatch(html + purchases, /modalConfirmarRemoverRascunho|abrirConfirmarRemoverRascunho/);
   assert.match(html, /id="modalConfirmacaoApp"/);
   assert.doesNotMatch(scripts, /\bconfirm\s*\(/);
@@ -73,6 +77,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.doesNotMatch(html + catalog + purchases, /✈/);
   assert.doesNotMatch(catalog, /✓ Todos/);
   assert.match(catalog, /class="seletor-item-compra"[\s\S]*selecionarItemCompraDireto/);
+  assert.match(catalog, /function statusEfetivoNoAgrupamento[\s\S]*10000[\s\S]*function agendarReagrupamentoCompras[\s\S]*setTimeout/);
   assert.match(html + catalog + purchases, /m22 2-7 20-4-9-9-4 20-7Z/);
   assert.doesNotMatch(catalog + orders, /seletor-item-pedido|selecionarItemPedidoDireto|selecionarGrupoPedido/);
   assert.doesNotMatch(catalog, /class="item-avatar"/);
@@ -108,7 +113,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(html + settings, /btnFiltroGerenciarCat[\s\S]*modalFiltroCategoriasProdutos[\s\S]*selecionarFiltroCategoriaProduto/);
   assert.match(html, /class="header-profile"[\s\S]*id="btnTrocarPerfil"[\s\S]*class="header-actions"/);
   assert.match(html, /Alô Feira v1\.3\.2/);
-  assert.match(html + serviceWorker, /v1\.3\.2-r8/);
-  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r7/);
-  assert.doesNotMatch(html, /1\.3\.2-r[0-7]/);
+  assert.match(html + serviceWorker, /v1\.3\.2-r9/);
+  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r8/);
+  assert.doesNotMatch(html, /1\.3\.2-r[0-8]/);
 });
