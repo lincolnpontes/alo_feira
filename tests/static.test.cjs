@@ -51,7 +51,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(orders, /Filtrar por fornecedor/);
   assert.match(orders, /Agrupar por status/);
   assert.match(orders, /menu-ferramentas-separador[\s\S]*Agrupar por categoria:[\s\S]*menu-categoria-item/);
-  assert.match(html, /id="filtrosCentroCompras"[\s\S]*id="acoesSelecaoCompras"[\s\S]*id="btnDesfazerBar"[\s\S]*class="filtros-acoes"[\s\S]*id="btnRelatorioBar"[\s\S]*id="btnLimparComprasBar"/);
+  assert.match(html, /id="filtrosCentroCompras"[\s\S]*id="acoesSelecaoCompras"[\s\S]*id="btnDesfazerBar"[\s\S]*class="filtros-acoes"[\s\S]*id="btnLimparComprasBar"[\s\S]*id="btnRelatorioBar"/);
   assert.match(html, /id="acoesSelecaoCompras"[\s\S]*id="btnMassaPedForn"[\s\S]*id="btnMassaComprado"[\s\S]*id="btnMassaVincular"/);
   assert.match(html, /id="btnLimparComprasBar"/);
   assert.match(html, /id="btnRelatorioBar"[\s\S]*Relatório para fornecedor/);
@@ -77,6 +77,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(orders, /ocultoCompras = true; pa\.dataStatus = agora/);
   assert.match(orders, /\['comprado', 'entregue', 'cancelado'\]/);
   assert.match(orders, /btnLimpar\.style\.display = !pedido && !modoSelecaoAtivo \? 'inline-flex' : 'none'/);
+  assert.match(orders, /btnCancelarSelecaoCompras[\s\S]*function cancelarSelecaoCompras\(\)/);
   assert.match(orders, /btn-busca-filtros[\s\S]*boxBuscaPedido/);
   assert.match(purchases, /pedido\.status === 'rascunho'\) abrirModalEditarPedido/);
   assert.match(purchases, /function removerPedidoPelaEdicao[\s\S]*db\.pedidosAtivos = db\.pedidosAtivos\.filter/);
@@ -99,7 +100,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(html + settings, /btnFiltroGerenciarCat[\s\S]*modalFiltroCategoriasProdutos[\s\S]*selecionarFiltroCategoriaProduto/);
   assert.match(html, /class="header-profile"[\s\S]*id="btnTrocarPerfil"[\s\S]*class="header-actions"/);
   assert.match(html, /Alô Feira v1\.3\.2/);
-  assert.match(html + serviceWorker, /v1\.3\.2-r4/);
-  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r3/);
-  assert.doesNotMatch(html, /1\.3\.2-r[0-3]/);
+  assert.match(html + serviceWorker, /v1\.3\.2-r5/);
+  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r4/);
+  assert.doesNotMatch(html, /1\.3\.2-r[0-4]/);
 });

@@ -9,6 +9,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
             .header-profile .btn-perfil { max-width:112px; padding:0 3px; }
             .perfil-emoji { font-size:21px; }
             .perfil-nome { font-size:15px; }
+            .filters.com-centro { gap:2px; }
+            .filters.com-centro .filtros-acoes-selecao button { width:30px; height:34px; font-size:16px; }
+            .filters.com-centro .btn-cancelar-selecao-inline { width:30px; height:38px; }
         }
         @media (min-width: 760px) {
             .app-container { max-width:760px; left:50%; transform:translateX(-50%); border-left:1px solid #ddd; border-right:1px solid #ddd; }

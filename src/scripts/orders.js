@@ -28,6 +28,7 @@ function renderizarFiltros() {
     const todosAtivo = categoriaAtual === null && (!compras || (!filtroFornecedorComprasId && !agrupamentoCompradoAtivo));
     let html = `<button id="btnTodosFiltros" class="chip ${todosAtivo ? 'active' : ''}" onclick="abrirMenuFerramentas(this)" aria-haspopup="menu" aria-expanded="false">TODOS</button>`;
     html += `<button class="btn-busca-filtros ${buscaPedidoTexto ? 'ativo' : ''}" onclick="abrirBuscaPedido()" id="btnBuscaPedido" title="Buscar item" aria-label="Buscar item">🔎</button>`;
+    html += `<button class="btn-cancelar-selecao-inline" onclick="cancelarSelecaoCompras()" id="btnCancelarSelecaoCompras" title="Cancelar seleção" aria-label="Cancelar seleção" style="display:${compras && modoSelecaoAtivo ? 'inline-flex' : 'none'}">✓</button>`;
     html += `<div id="boxBuscaPedido" class="busca-filtros-inline" style="display:${buscaPedidoTexto ? 'flex' : 'none'}"><input type="text" id="inputBuscaPedidoInline" value="${escaparHtml(buscaPedidoTexto)}" placeholder="Buscar item..." oninput="aplicarBuscaPedido()" onkeydown="if(event.key === 'Escape') limparBuscaPedido()"></div>`;
     document.getElementById('containerFiltros').innerHTML = html;
 }
@@ -171,6 +172,7 @@ function atualizarControlesSelecao() {
     const btnVincular = document.getElementById('btnMassaVincular');
     const acoesSelecao = document.getElementById('acoesSelecaoCompras');
     const btnLimpar = document.getElementById('btnLimparComprasBar');
+    const btnCancelarSelecao = document.getElementById('btnCancelarSelecaoCompras');
 
     btnComprado.style.display = 'inline-flex';
     btnPedidoFornecedor.style.display = 'inline-flex';
@@ -178,6 +180,7 @@ function atualizarControlesSelecao() {
     acoesSelecao.style.display = !pedido && modoSelecaoAtivo ? 'flex' : 'none';
     btnLimpar.style.display = !pedido && !modoSelecaoAtivo ? 'inline-flex' : 'none';
     btnRelatorio.style.display = !pedido ? 'inline-flex' : 'none';
+    if(btnCancelarSelecao) btnCancelarSelecao.style.display = !pedido && modoSelecaoAtivo ? 'inline-flex' : 'none';
     if(modoSelecaoAtivo) {
         fecharMenuFerramentas();
         document.getElementById('btnDesfazerBar').style.display = 'none';
@@ -185,6 +188,13 @@ function atualizarControlesSelecao() {
         atualizarBotaoDesfazer();
     }
     atualizarCentroFiltrosCompras();
+}
+
+function cancelarSelecaoCompras() {
+    itensSelecionadosRelatorio.clear();
+    modoSelecaoAtivo = false;
+    atualizarControlesSelecao();
+    renderizarLista();
 }
 
 function toggleModoSelecao() {
