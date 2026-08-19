@@ -1,4 +1,135 @@
-function abrirModalRelatorio() { const selForn = document.getElementById('relatFornecedor'); selForn.innerHTML = '<option value="">-- Todos --</option>'; [...db.fornecedores].filter(f => f.ativo !== false).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(f => { const option = document.createElement('option'); option.value = f.id; option.textContent = `${f.nome} (Vend: ${f.vendedor || 'N/A'})`; selForn.appendChild(option); }); document.getElementById('modalRelatorio').style.display = 'flex'; gerarTextoRelatorio(); }
-    function toggleExclusivoRelatorio(tipo) { if(tipo === 'cotacao' && document.getElementById('relatToggleItens').checked) { document.getElementById('relatTogglePedido').checked = false; } else if (tipo === 'pedido' && document.getElementById('relatTogglePedido').checked) { document.getElementById('relatToggleItens').checked = false; } }
-    function gerarTextoRelatorio() { const fornId = document.getElementById('relatFornecedor').value; const res = db.restaurante; const forn = db.fornecedores.find(f => f.id === fornId); const incluirCabecalho = document.getElementById('relatToggleCab').checked; const agruparCat = document.getElementById('relatToggleCat').checked; const isCotacao = document.getElementById('relatToggleItens').checked; const isPedido = document.getElementById('relatTogglePedido').checked; const mostrarQtd = document.getElementById('relatToggleQtd').checked; let blocos = []; if (incluirCabecalho) { let cab = `> *${res.nome.toUpperCase()}*\n> CNPJ: ${res.cnpj}\n> End.: ${res.rua}, ${res.numero}\n> ${res.bairro} - ${res.cidade} / ${res.uf}`; if(res.ponto) cab += `\n> Ponto de referência: ${res.ponto}`; blocos.push(cab); } if (isCotacao) blocos.push(`*ITENS PARA COTAÇÃO:*`); if (isPedido) blocos.push(`*ITENS DO PEDIDO:*`); let itensOrigem = itensSelecionadosRelatorio.size > 0 ? Array.from(itensSelecionadosRelatorio) : Array.from(document.querySelectorAll('.item')).map(el => el.getAttribute('data-id')).filter(id => id && id.includes('_')); let itensProcessados = itensOrigem.map(idUnico => { const pa = db.pedidosAtivos.find(x => x.idUnico === idUnico); const p = pa ? db.produtos.find(x => x.id === pa.produtoId) : null; return { pa, p }; }).filter(item => item.pa && item.p && (!fornId || (item.p.fornecedores || []).includes(fornId))); itensProcessados.sort(ordernarPorCategoriaESub); let blocosItens = []; if (agruparCat) { let gruposArr = []; itensProcessados.forEach(item => { let nomeGrupo = item.p.subcategoria && item.p.subcategoria.trim() !== "" ? item.p.subcategoria.trim() : (db.categorias.find(c => c.id === item.p.categoria)?.nome || "Outros"); let g = gruposArr.find(x => x.nome === nomeGrupo); if(!g) { g = { nome: nomeGrupo, itens: [] }; gruposArr.push(g); } g.itens.push(item); }); gruposArr.forEach(grupo => { let txtCat = `> *${grupo.nome}*\n`; let linhas = grupo.itens.map(item => { let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = ""; if (mostrarQtd) { if(qtyVal !== null && unVal !== null) qtdStr = ` *- Qtd: ${qtyVal} ${unVal}*`; else if(qtyVal !== null) qtdStr = ` *- Qtd: ${qtyVal}*`; else if(unVal !== null) qtdStr = ` *- Qtd: ${unVal}*`; } let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; return `▪ ${nomeItem}${marcasStr}${qtdStr}${obsStr}`; }); blocosItens.push(txtCat + linhas.join('\n')); }); } else { let linhas = itensProcessados.map(item => { let nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome; let marcasStr = (item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0) ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}` : ''; let qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null; let unVal = item.pa.unidade ? item.pa.unidade : null; let qtdStr = ""; if (mostrarQtd) { if(qtyVal !== null && unVal !== null) qtdStr = ` *- Qtd: ${qtyVal} ${unVal}*`; else if(qtyVal !== null) qtdStr = ` *- Qtd: ${qtyVal}*`; else if(unVal !== null) qtdStr = ` *- Qtd: ${unVal}*`; } let obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : ''; return `▪ ${nomeItem}${marcasStr}${qtdStr}${obsStr}`; }); if(linhas.length > 0) blocosItens.push(linhas.join('\n')); } if (blocosItens.length > 0) blocos.push(blocosItens.join('\n\n')); else blocos.push('_Nenhum item vinculado a este fornecedor._'); document.getElementById('relatTexto').value = blocos.join('\n\n'); const btnZap = document.querySelector('.btn-whatsapp'); btnZap.dataset.tel = forn && forn.telefone ? forn.telefone : ''; }
-    function enviarWhatsAppAPI() { const texto = document.getElementById('relatTexto').value; const fornId = document.getElementById('relatFornecedor').value; const forn = db.fornecedores.find(f => f.id === fornId); const tel = forn ? forn.telefone : null; if(tel) { let num = tel.replace(/\D/g,''); if(num.length === 10 || num.length === 11) num = '55' + num; window.open(`https://wa.me/${num}?text=${encodeURIComponent(texto)}`, '_blank'); } else { const txtArea = document.getElementById('relatTexto'); txtArea.select(); document.execCommand('copy'); alert("Copiado! Selecione o contato no WhatsApp manualmente."); window.open(`https://wa.me/`, '_blank'); } }
+function abrirModalRelatorio() {
+    const selForn = document.getElementById('relatFornecedor');
+    selForn.innerHTML = '<option value="">Selecione um fornecedor</option>';
+    [...db.fornecedores]
+        .filter(f => f.ativo !== false)
+        .sort((a, b) => a.nome.localeCompare(b.nome))
+        .forEach(f => {
+            const option = document.createElement('option');
+            option.value = f.id;
+            option.textContent = `${f.nome} (Vend: ${f.vendedor || 'N/A'})`;
+            selForn.appendChild(option);
+        });
+    document.getElementById('modalRelatorio').style.display = 'flex';
+    gerarTextoRelatorio();
+}
+
+function toggleExclusivoRelatorio(tipo) {
+    if(tipo === 'cotacao' && document.getElementById('relatToggleItens').checked) {
+        document.getElementById('relatTogglePedido').checked = false;
+    } else if(tipo === 'pedido' && document.getElementById('relatTogglePedido').checked) {
+        document.getElementById('relatToggleItens').checked = false;
+    }
+}
+
+function obterItensProcessadosRelatorio(ids, banco = db) {
+    return ids
+        .map(idUnico => {
+            const pa = banco.pedidosAtivos.find(item => item.idUnico === idUnico);
+            const p = pa ? banco.produtos.find(item => item.id === pa.produtoId) : null;
+            return { pa, p };
+        })
+        .filter(item => item.pa && item.p);
+}
+
+function gerarLinhaRelatorio(item, mostrarQtd) {
+    const nomeItem = item.p.descFornecedor ? item.p.descFornecedor : item.p.nome;
+    const marcasStr = item.pa.marcasSelecionadas && item.pa.marcasSelecionadas.length > 0
+        ? ` - Marca: ${item.pa.marcasSelecionadas.join(', ')}`
+        : '';
+    const qtyVal = item.pa.qtd !== '' ? item.pa.qtd : null;
+    const unVal = item.pa.unidade ? item.pa.unidade : null;
+    let qtdStr = '';
+    if(mostrarQtd) {
+        if(qtyVal !== null && unVal !== null) qtdStr = ` *- Qtd: ${qtyVal} ${unVal}*`;
+        else if(qtyVal !== null) qtdStr = ` *- Qtd: ${qtyVal}*`;
+        else if(unVal !== null) qtdStr = ` *- Qtd: ${unVal}*`;
+    }
+    const obsStr = item.pa.obs ? ` *(obs.: ${item.pa.obs})*` : '';
+    return `▪ ${nomeItem}${marcasStr}${qtdStr}${obsStr}`;
+}
+
+function atualizarEnvioWhatsAppRelatorio(fornecedor) {
+    const botao = document.getElementById('btnEnviarWhatsAppRelatorio');
+    if(!botao) return;
+    botao.disabled = !fornecedor;
+    botao.dataset.tel = fornecedor && fornecedor.telefone ? fornecedor.telefone : '';
+    botao.title = fornecedor ? 'Enviar relatório pelo WhatsApp' : 'Selecione um fornecedor';
+}
+
+function gerarTextoRelatorio() {
+    const fornId = document.getElementById('relatFornecedor').value;
+    const res = db.restaurante;
+    const forn = db.fornecedores.find(f => f.id === fornId);
+    const incluirCabecalho = document.getElementById('relatToggleCab').checked;
+    const agruparCat = document.getElementById('relatToggleCat').checked;
+    const isCotacao = document.getElementById('relatToggleItens').checked;
+    const isPedido = document.getElementById('relatTogglePedido').checked;
+    const mostrarQtd = document.getElementById('relatToggleQtd').checked;
+    const blocos = [];
+
+    if(incluirCabecalho) {
+        let cab = `> *${res.nome.toUpperCase()}*\n> CNPJ: ${res.cnpj}\n> End.: ${res.rua}, ${res.numero}\n> ${res.bairro} - ${res.cidade} / ${res.uf}`;
+        if(res.ponto) cab += `\n> Ponto de referência: ${res.ponto}`;
+        blocos.push(cab);
+    }
+    if(isCotacao) blocos.push('*ITENS PARA COTAÇÃO:*');
+    if(isPedido) blocos.push('*ITENS DO PEDIDO:*');
+
+    const itensOrigem = itensSelecionadosRelatorio.size > 0
+        ? Array.from(itensSelecionadosRelatorio)
+        : Array.from(document.querySelectorAll('.item'))
+            .map(el => el.getAttribute('data-id'))
+            .filter(id => id && id.includes('_'));
+    const itensProcessados = obterItensProcessadosRelatorio(itensOrigem);
+    itensProcessados.sort(ordernarPorCategoriaESub);
+
+    const blocosItens = [];
+    if(agruparCat) {
+        const gruposArr = [];
+        itensProcessados.forEach(item => {
+            const nomeGrupo = item.p.subcategoria && item.p.subcategoria.trim() !== ''
+                ? item.p.subcategoria.trim()
+                : (db.categorias.find(c => c.id === item.p.categoria)?.nome || 'Outros');
+            let grupo = gruposArr.find(itemGrupo => itemGrupo.nome === nomeGrupo);
+            if(!grupo) {
+                grupo = { nome: nomeGrupo, itens: [] };
+                gruposArr.push(grupo);
+            }
+            grupo.itens.push(item);
+        });
+        gruposArr.forEach(grupo => {
+            const linhas = grupo.itens.map(item => gerarLinhaRelatorio(item, mostrarQtd));
+            blocosItens.push(`> *${grupo.nome}*\n${linhas.join('\n')}`);
+        });
+    } else {
+        const linhas = itensProcessados.map(item => gerarLinhaRelatorio(item, mostrarQtd));
+        if(linhas.length > 0) blocosItens.push(linhas.join('\n'));
+    }
+
+    if(blocosItens.length > 0) blocos.push(blocosItens.join('\n\n'));
+    else blocos.push('_Nenhum item disponível para o relatório._');
+    document.getElementById('relatTexto').value = blocos.join('\n\n');
+    atualizarEnvioWhatsAppRelatorio(forn);
+}
+
+function enviarWhatsAppAPI() {
+    const texto = document.getElementById('relatTexto').value;
+    const fornId = document.getElementById('relatFornecedor').value;
+    const forn = db.fornecedores.find(f => f.id === fornId);
+    if(!forn) return;
+
+    const tel = forn.telefone;
+    if(tel) {
+        let num = tel.replace(/\D/g, '');
+        if(num.length === 10 || num.length === 11) num = '55' + num;
+        window.open(`https://wa.me/${num}?text=${encodeURIComponent(texto)}`, '_blank');
+        return;
+    }
+
+    const txtArea = document.getElementById('relatTexto');
+    txtArea.select();
+    document.execCommand('copy');
+    alert('Copiado! Selecione o contato no WhatsApp manualmente.');
+    window.open('https://wa.me/', '_blank');
+}

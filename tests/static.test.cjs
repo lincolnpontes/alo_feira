@@ -40,6 +40,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   const orders = fs.readFileSync(path.join(root, 'src', 'scripts', 'orders.js'), 'utf8');
   const details = fs.readFileSync(path.join(root, 'src', 'scripts', 'purchase-details.js'), 'utf8');
   const drafts = fs.readFileSync(path.join(root, 'src', 'scripts', 'drafts.js'), 'utf8');
+  const reports = fs.readFileSync(path.join(root, 'src', 'scripts', 'reports.js'), 'utf8');
   const sync = fs.readFileSync(path.join(root, 'src', 'scripts', 'sync.js'), 'utf8');
   const settings = fs.readFileSync(path.join(root, 'src', 'scripts', 'settings.js'), 'utf8');
   const layout = fs.readFileSync(path.join(root, 'src', 'styles', 'layout.css'), 'utf8');
@@ -57,6 +58,10 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(html, /id="acoesSelecaoCompras"[\s\S]*id="btnMassaPedForn"[\s\S]*id="btnMassaComprado"[\s\S]*id="btnMassaVincular"/);
   assert.match(html, /id="btnLimparComprasBar"/);
   assert.match(html, /id="btnRelatorioBar"[\s\S]*Relatório para fornecedor/);
+  assert.match(html, /id="btnEnviarWhatsAppRelatorio"[^>]*disabled/);
+  assert.match(reports, /function obterItensProcessadosRelatorio[\s\S]*filter\(item => item\.pa && item\.p\)/);
+  assert.doesNotMatch(reports, /item\.p\.fornecedores[\s\S]*includes\(fornId\)/);
+  assert.match(reports, /if\(!forn\) return/);
   assert.doesNotMatch(html + purchases, /modalConfirmarRemoverRascunho|abrirConfirmarRemoverRascunho/);
   assert.match(html, /id="modalConfirmacaoApp"/);
   assert.doesNotMatch(scripts, /\bconfirm\s*\(/);
@@ -103,7 +108,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(html + settings, /btnFiltroGerenciarCat[\s\S]*modalFiltroCategoriasProdutos[\s\S]*selecionarFiltroCategoriaProduto/);
   assert.match(html, /class="header-profile"[\s\S]*id="btnTrocarPerfil"[\s\S]*class="header-actions"/);
   assert.match(html, /Alô Feira v1\.3\.2/);
-  assert.match(html + serviceWorker, /v1\.3\.2-r7/);
-  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r6/);
-  assert.doesNotMatch(html, /1\.3\.2-r[0-6]/);
+  assert.match(html + serviceWorker, /v1\.3\.2-r8/);
+  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r7/);
+  assert.doesNotMatch(html, /1\.3\.2-r[0-7]/);
 });
