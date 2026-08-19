@@ -365,10 +365,14 @@ async function sincronizarFundo(forcado = false, apenasEmpurrar = false) {
             let nuvem = meta.banco;
             if(!nuvem && meta.revision !== Number(db.syncRevision || 0)) nuvem = await baixarBancoNuvem();
             if(nuvem) {
+                const agrupamentoCompartilhadoAnterior = Boolean(db.configs.agruparComprasPorStatus);
                 const resultado = mesclarBancos(db, nuvem);
                 db = resultado.banco;
                 precisaEnviar = precisaEnviar || resultado.precisaEnviar;
                 salvarBanco();
+                if(Boolean(db.configs.agruparComprasPorStatus) !== agrupamentoCompartilhadoAnterior) {
+                    aplicarPreferenciaAgrupamentoCompras();
+                }
                 atualizarBotaoPerfil();
                 atualizarVisibilidadeAdmin();
                 const exigirColab = document.getElementById('configExigirColab');

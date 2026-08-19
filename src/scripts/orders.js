@@ -2,7 +2,7 @@ function alterarModo(modo) {
     db.configs.modo = modo;
     modoSelecaoAtivo = false;
     itensSelecionadosRelatorio.clear();
-    agrupamentoCompradoAtivo = false;
+    aplicarPreferenciaAgrupamentoCompras();
     if(modo === 'pedido') filtroFornecedorComprasId = null;
     fecharMenuFerramentas();
     fecharMenuAcaoCompra();
@@ -129,9 +129,20 @@ function ativarAgrupamentoCompras() {
     filtroFornecedorComprasId = null;
     agrupamentoCompradoAtivo = true;
     categoriaAtual = null;
+    db.configs.agruparComprasPorStatus = true;
+    marcarMudancaConfiguracao();
     atualizarEstadoMenuFerramentas();
     renderizarFiltros();
     renderizarLista();
+    sincronizarFundo(false, true);
+}
+
+function aplicarPreferenciaAgrupamentoCompras() {
+    agrupamentoCompradoAtivo = db.configs.modo === 'compras' && db.configs.agruparComprasPorStatus === true;
+    if(agrupamentoCompradoAtivo) {
+        filtroFornecedorComprasId = null;
+        categoriaAtual = null;
+    }
 }
 
 function limparComprasAntigas() {

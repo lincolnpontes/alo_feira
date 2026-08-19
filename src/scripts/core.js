@@ -13,6 +13,7 @@ function criarBancoBase() {
                 modo: "pedido",
                 senhaAdminHash: "",
                 exigirColaborador: true,
+                agruparComprasPorStatus: false,
                 colabAtivoId: null,
                 url: "",
                 dadosBaixados: false,
@@ -52,6 +53,7 @@ function criarBancoBase() {
         banco.produtos.forEach(p => { if(!p.unidades) p.unidades = ['']; if(!p.fornecedores) p.fornecedores = []; p.historicoPrecos = AloFeiraDomain.normalizarHistoricoPrecos(p.historicoPrecos, p.atualizadoEm); if(!p.precosExcluidos || typeof p.precosExcluidos !== 'object') p.precosExcluidos = {}; if(p.ativo === undefined) p.ativo = true; });
         banco.fornecedores.forEach(f => { if(f.ativo === undefined) f.ativo = true; });
         banco.colaboradores.forEach(c => { if(c.ativo === undefined) c.ativo = true; if(!c.emoji) c.emoji = '👤'; });
+        banco.configs.agruparComprasPorStatus = banco.configs.agruparComprasPorStatus === true;
         if(banco.configs.ultimaMudancaLocal === undefined) banco.configs.ultimaMudancaLocal = 0;
         if(banco.configs.historicoApagadoEm === undefined) banco.configs.historicoApagadoEm = 0;
         if(banco.configs.relogioServidorOffset === undefined) banco.configs.relogioServidorOffset = 0;

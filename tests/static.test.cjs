@@ -50,6 +50,8 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(orders, /Mostrar todos os itens/);
   assert.match(orders, /Filtrar por fornecedor/);
   assert.match(orders, /Agrupar por status/);
+  assert.match(orders, /function ativarAgrupamentoCompras[\s\S]*agruparComprasPorStatus = true[\s\S]*marcarMudancaConfiguracao\(\)[\s\S]*sincronizarFundo\(false, true\)/);
+  assert.match(orders, /function aplicarPreferenciaAgrupamentoCompras[\s\S]*db\.configs\.agruparComprasPorStatus === true/);
   assert.match(orders, /menu-ferramentas-separador[\s\S]*Agrupar por categoria:[\s\S]*menu-categoria-item/);
   assert.match(html, /id="filtrosCentroCompras"[\s\S]*id="acoesSelecaoCompras"[\s\S]*id="btnDesfazerBar"[\s\S]*class="filtros-acoes"[\s\S]*id="btnLimparComprasBar"[\s\S]*id="btnRelatorioBar"/);
   assert.match(html, /id="acoesSelecaoCompras"[\s\S]*id="btnMassaPedForn"[\s\S]*id="btnMassaComprado"[\s\S]*id="btnMassaVincular"/);
@@ -91,6 +93,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(sync, /meta=1/);
   assert.match(sync, /postarPedidosNovos[\s\S]*serverNow/);
   assert.match(sync, /atualizarBotaoPerfil\(\)[\s\S]*atualizarVisibilidadeAdmin\(\)/);
+  assert.match(sync, /agrupamentoCompartilhadoAnterior[\s\S]*aplicarPreferenciaAgrupamentoCompras\(\)/);
   assert.match(sync, /function sincronizarInicializacao[\s\S]*baixarBancoNuvem\(8000\)[\s\S]*aplicarNuvemNaInicializacao/);
   assert.doesNotMatch(sync, /temRascunho && db\.configs\.modo === 'pedido'/);
   assert.match(fs.readFileSync(path.join(root, 'src', 'scripts', 'app.js'), 'utf8'), /updateViaCache: 'none'/);
@@ -100,7 +103,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(html + settings, /btnFiltroGerenciarCat[\s\S]*modalFiltroCategoriasProdutos[\s\S]*selecionarFiltroCategoriaProduto/);
   assert.match(html, /class="header-profile"[\s\S]*id="btnTrocarPerfil"[\s\S]*class="header-actions"/);
   assert.match(html, /Alô Feira v1\.3\.2/);
-  assert.match(html + serviceWorker, /v1\.3\.2-r6/);
-  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r5/);
-  assert.doesNotMatch(html, /1\.3\.2-r[0-5]/);
+  assert.match(html + serviceWorker, /v1\.3\.2-r7/);
+  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r6/);
+  assert.doesNotMatch(html, /1\.3\.2-r[0-6]/);
 });

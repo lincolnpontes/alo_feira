@@ -63,6 +63,23 @@ test('payload compartilha dados operacionais e preserva estado local do aparelho
     .forEach(campo => assert.equal(Object.hasOwn(payload.configs, campo), false));
 });
 
+test('preferencia de agrupar compras por status persiste e acompanha a nuvem', () => {
+  const local = {
+    app_id: 'alofeira', syncRevision: 4,
+    configs: { url: 'local', modo: 'compras', agruparComprasPorStatus: false, atualizadoEm: 100, syncPendente: false }
+  };
+  const remoto = {
+    app_id: 'alofeira', syncRevision: 5,
+    configs: { agruparComprasPorStatus: true, atualizadoEm: 500 }
+  };
+  const resultado = executar('aplicarNuvemNaInicializacao(entradaTeste.local, entradaTeste.remoto)', { local, remoto });
+  assert.equal(resultado.banco.configs.agruparComprasPorStatus, true);
+  assert.equal(resultado.banco.configs.url, 'local');
+
+  const payload = executar('db = entradaTeste; prepararBancoParaNuvem()', resultado.banco);
+  assert.equal(payload.configs.agruparComprasPorStatus, true);
+});
+
 test('mesclagem traz emoji, conserva configuracao mais nova e respeita ordem das categorias', () => {
   const local = {
     app_id: 'alofeira', syncRevision: 4,
