@@ -44,6 +44,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   const sync = fs.readFileSync(path.join(root, 'src', 'scripts', 'sync.js'), 'utf8');
   const settings = fs.readFileSync(path.join(root, 'src', 'scripts', 'settings.js'), 'utf8');
   const layout = fs.readFileSync(path.join(root, 'src', 'styles', 'layout.css'), 'utf8');
+  const features = fs.readFileSync(path.join(root, 'src', 'styles', 'features.css'), 'utf8');
   const serviceWorker = fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8');
   const scripts = fs.readdirSync(path.join(root, 'src', 'scripts')).filter(name => name.endsWith('.js')).map(name => fs.readFileSync(path.join(root, 'src', 'scripts', name), 'utf8')).join('\n');
   assert.match(html, /class="menu-compra"/);
@@ -78,6 +79,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.doesNotMatch(catalog, /✓ Todos/);
   assert.match(catalog, /class="seletor-item-compra"[\s\S]*selecionarItemCompraDireto/);
   assert.match(catalog, /function statusEfetivoNoAgrupamento[\s\S]*10000[\s\S]*function agendarReagrupamentoCompras[\s\S]*setTimeout/);
+  assert.match(features, /\.icone-send-grupo[^}]*display:inline-block[^}]*vertical-align:middle/);
   assert.match(html + catalog + purchases, /m22 2-7 20-4-9-9-4 20-7Z/);
   assert.doesNotMatch(catalog + orders, /seletor-item-pedido|selecionarItemPedidoDireto|selecionarGrupoPedido/);
   assert.doesNotMatch(catalog, /class="item-avatar"/);
@@ -113,7 +115,7 @@ test('listas usam clique direto, selecao explicita e confirmacao segura', () => 
   assert.match(html + settings, /btnFiltroGerenciarCat[\s\S]*modalFiltroCategoriasProdutos[\s\S]*selecionarFiltroCategoriaProduto/);
   assert.match(html, /class="header-profile"[\s\S]*id="btnTrocarPerfil"[\s\S]*class="header-actions"/);
   assert.match(html, /Alô Feira v1\.3\.2/);
-  assert.match(html + serviceWorker, /v1\.3\.2-r9/);
-  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r8/);
-  assert.doesNotMatch(html, /1\.3\.2-r[0-8]/);
+  assert.match(html + serviceWorker, /v1\.3\.2-r10/);
+  assert.doesNotMatch(html + serviceWorker, /v1\.3\.2-r9/);
+  assert.doesNotMatch(html, /1\.3\.2-r(?:[0-9](?!\d))/);
 });

@@ -53,7 +53,7 @@
         .icone-send-barra { width:19px; height:19px; }
         .icone-send-status { width:16px; height:16px; }
         .icone-send-menu { width:17px; height:17px; }
-        .icone-send-grupo { width:16px; height:16px; }
+        .icone-send-grupo { width:16px; height:16px; display:inline-block; vertical-align:middle; margin-right:4px; }
         .modal-confirmacao-pedido { border-top:5px solid #1565c0; }
         .modal-confirmacao-global { z-index:12000; }
         .modal-confirmacao-app { max-width:390px; border-top:5px solid #1565c0; }
